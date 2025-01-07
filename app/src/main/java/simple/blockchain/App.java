@@ -13,7 +13,5 @@ public class App {
     public static void main(String[] args) {
         System.out.println(new App().getGreeting());
         Block block = new Block();
-        System.out.println(block.getName());
-
     }
 }
