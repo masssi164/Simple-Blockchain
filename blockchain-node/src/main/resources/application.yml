@@ -1,0 +1,10 @@
+spring:
+    application:
+        name: blockchain-node
+server:
+  port: 8081       # individuellen Port anpassen
+
+node:
+  host: localhost
+  bootstrap: []       # Seed-Peers; kann leer sein
+  sync-interval: 30s   # Cron-Intervall für Fallback-Sync (wenn WS down)

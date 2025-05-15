@@ -1,0 +1,14 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Spring Boot-BlockchainNodeApplication<blockchain-node>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "de.flashyotter.blockchain_node.BlockchainNodeApplication",
+            "projectName": "blockchain-node",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}
