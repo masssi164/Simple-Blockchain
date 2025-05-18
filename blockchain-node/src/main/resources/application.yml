@@ -1,10 +1,13 @@
-spring:
-    application:
-        name: blockchain-node
-server:
-  port: 8081       # individuellen Port anpassen
-
+# application.yaml  –  Default-Werte
 node:
+  role: FULL                 # FULL | MINER | LIGHT
   host: localhost
-  bootstrap: []       # Seed-Peers; kann leer sein
-  sync-interval: 30s   # Cron-Intervall für Fallback-Sync (wenn WS down)
+  bootstrap: []              # List<URI>
+  sync-interval-ms: 30000
+
+  mining:                    # nur MINER
+    enabled: false           # wird per Rolle automatisch überschrieben
+    interval-ms: 10000
+
+  storage:                   # nur LIGHT
+    prune-after-blocks: 2016

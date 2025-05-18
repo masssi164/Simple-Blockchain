@@ -18,10 +18,9 @@ public class BlockchainNodeApplication {
 		SpringApplication.run(BlockchainNodeApplication.class, args);
 	}
 
-	@Bean 
-	RestTemplate restTemplate() { 
-		return new RestTemplate(); 
+	@Bean
+	RestTemplate restTemplate() {
+		return new RestTemplate();
 	}
-
 
 }

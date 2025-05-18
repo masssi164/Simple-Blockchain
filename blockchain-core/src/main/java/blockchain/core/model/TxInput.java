@@ -1,10 +1,12 @@
-package blockchain.core.Architecture;
+package blockchain.core.model;
 
 import java.security.PublicKey;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
-@Data
+/** New UTXO created by the TX: value + recipient PK */
+@Data 
 @AllArgsConstructor
 public class TxInput {
     private String   referencedOutputId;

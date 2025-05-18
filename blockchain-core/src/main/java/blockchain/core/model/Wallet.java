@@ -1,4 +1,4 @@
-package blockchain.core.Architecture;
+package blockchain.core.model;
 
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
