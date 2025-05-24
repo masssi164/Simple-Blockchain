@@ -1,83 +1,156 @@
 package blockchain.core.consensus;
 
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-
 import blockchain.core.crypto.HashingUtils;
 import blockchain.core.exceptions.BlockchainException;
-import blockchain.core.model.Block;
-import blockchain.core.model.Transaction;
-import blockchain.core.model.TxOutput;
-import blockchain.core.model.Wallet;
+import blockchain.core.model.*;
 
-/** Very small PoW chain – genesis + append + difficulty retarget. */
+import java.math.BigInteger;
+import java.util.*;
+
+/**
+ * Tiny PoW chain with:
+ *  • genesis creation
+ *  • append-only blocks
+ *  • difficulty retarget
+ *  • full TX validation (fees, size, double-spend-in-block, coinbase maturity)
+ */
 public class Chain {
 
-    private static final long TARGET_MS  = 60_000;
-    private static final int  ADJUST_INT = 10;
-
     private int currentBits = 0x1f0fffff;
-    private final List<Block> blocks = new ArrayList<>();
-    private final Map<String, TxOutput> utxo = new HashMap<>();
+
+    private final List<Block>           blocks            = new ArrayList<>();
+    private final Map<String, TxOutput> utxo              = new HashMap<>();
+    private final Set<String>           coinbaseOutputs   = new HashSet<>();
+    private final Map<String, Integer>  blockHeightIndex  = new HashMap<>();
 
     public Chain() {
-        blocks.add(genesisBlock());
+        Block g = genesisBlock();
+        blocks.add(g);
+        blockHeightIndex.put(g.getHashHex(), g.getHeight());
     }
 
-    /* ---------- public API ---------- */
 
-    public synchronized Block getLatest() { return blocks.get(blocks.size() - 1); }
-
+    public synchronized Block getLatest()   { return blocks.get(blocks.size() - 1); }
     public synchronized List<Block> getBlocks() { return List.copyOf(blocks); }
 
+    /** Append after *all* validations succeed. */
     public synchronized void addBlock(Block b) {
-        if (!b.isProofValid()) throw new BlockchainException("invalid PoW");
+
+        if (!b.isProofValid())                                           throw new BlockchainException("invalid PoW");
         if (!Objects.equals(b.getPreviousHashHex(), getLatest().getHashHex()))
             throw new BlockchainException("prev-hash mismatch");
-        validateTxs(b.getTxList());
+
+        validateTxs(b);
+        enforceBlockSize(b);
+
         blocks.add(b);
+        blockHeightIndex.put(b.getHashHex(), b.getHeight());
+
         updateUtxo(b);
         maybeAdjustDifficulty();
     }
 
-    /* ---------- helpers ---------- */
 
     private Block genesisBlock() {
-        Wallet w = new Wallet();
-        Transaction coinbase = new Transaction(w.getPublicKey(), 50);
+        Wallet miner = new Wallet();
+        Transaction coinbase = new Transaction(miner.getPublicKey(),
+                ConsensusParams.blockReward(0));
         Block g = new Block(0, "0".repeat(64), List.of(coinbase), currentBits);
         updateUtxo(g);
         return g;
     }
 
-    private void validateTxs(List<Transaction> txs) {
-        for (Transaction tx : txs)
-            if (!tx.verifySignatures()) throw new BlockchainException("bad TX sig");
+
+    private void validateTxs(Block b) {
+
+        List<Transaction> txs = b.getTxList();
+        if (txs.isEmpty()) throw new BlockchainException("block must contain tx");
+
+        Transaction coinbase = txs.get(0);
+        if (!coinbase.isCoinbase()) throw new BlockchainException("first tx must be coinbase");
+
+        double totalFees = 0;
+        Set<String> spentInBlock = new HashSet<>();
+
+        for (int i = 1; i < txs.size(); i++) {
+            Transaction tx = txs.get(i);
+
+            if (!tx.verifySignatures()) throw new BlockchainException("bad sig");
+            double inSum = 0;
+
+            for (TxInput in : tx.getInputs()) {
+
+                /* double spend in the same block? */
+                if (!spentInBlock.add(in.getReferencedOutputId()))
+                    throw new BlockchainException("double spend in block: " + in.getReferencedOutputId());
+
+                TxOutput prev = utxo.get(in.getReferencedOutputId());
+                if (prev == null) throw new BlockchainException("unknown UTXO " + in.getReferencedOutputId());
+                inSum += prev.value();
+
+                /* coinbase maturity */
+                if (coinbaseOutputs.contains(in.getReferencedOutputId())) {
+                    String parentHash = in.getReferencedOutputId().split(":")[0];
+                    int parentHeight = blockHeightIndex.get(parentHash);
+                    if (b.getHeight() - parentHeight < ConsensusParams.COINBASE_MATURITY)
+                        throw new BlockchainException("premature spend of coinbase output");
+                }
+            }
+
+            double outSum = tx.getOutputs().stream().mapToDouble(TxOutput::value).sum();
+            if (inSum + 1e-8 < outSum) throw new BlockchainException("inputs < outputs");
+
+            totalFees += inSum - outSum;
+        }
+
+        /* subsidy + fees check */
+        double allowed = ConsensusParams.blockReward(b.getHeight()) + totalFees;
+        double coinbaseOut = coinbase.getOutputs().stream().mapToDouble(TxOutput::value).sum();
+        if (coinbaseOut - 1e-8 > allowed)
+            throw new BlockchainException("coinbase > subsidy + fees");
     }
+
+    private void enforceBlockSize(Block b) {
+        // crude estimate: header (80) + tx_count*(≈250)
+        int est = 80 + b.getTxList().size() * 250;
+        if (est > ConsensusParams.MAX_BLOCK_SIZE_BYTES)
+            throw new BlockchainException("block > 1 MB cap");
+    }
+
 
     private void updateUtxo(Block b) {
         for (Transaction tx : b.getTxList()) {
-            tx.getInputs().forEach(in -> utxo.remove(in.getReferencedOutputId()));
+
+            /* spend old */
+            tx.getInputs().forEach(in -> {
+                utxo.remove(in.getReferencedOutputId());
+                coinbaseOutputs.remove(in.getReferencedOutputId());
+            });
+
+            /* add new */
             int idx = 0;
-            for (TxOutput out : tx.getOutputs())
-                utxo.put(out.id(tx.calcHashHex(), idx++), out);
+            for (TxOutput out : tx.getOutputs()) {
+                String id = out.id(tx.calcHashHex(), idx++);
+                utxo.put(id, out);
+                if (tx.isCoinbase()) coinbaseOutputs.add(id);
+            }
         }
     }
 
+    /* -- difficulty retarget ------------------------------------------- */
+
     private void maybeAdjustDifficulty() {
         int h = blocks.size() - 1;
-        if (h == 0 || h % ADJUST_INT != 0) return;
+        if (h == 0 || h % ConsensusParams.DIFFICULTY_WINDOW != 0) return;
 
-        long actualSpan = blocks.get(h).getTimeMillis() - blocks.get(h - ADJUST_INT).getTimeMillis();
-        long idealSpan  = TARGET_MS * ADJUST_INT;
+        long span = blocks.get(h).getTimeMillis() -
+                    blocks.get(h - ConsensusParams.DIFFICULTY_WINDOW).getTimeMillis();
+        long ideal = ConsensusParams.TARGET_BLOCK_INTERVAL_MS * ConsensusParams.DIFFICULTY_WINDOW;
 
         BigInteger target = HashingUtils.compactToTarget(currentBits);
-        if (actualSpan < idealSpan / 2)      target = target.shiftRight(1);
-        else if (actualSpan > idealSpan * 2) target = target.shiftLeft(1);
+
+        if (span < ideal / 2)      target = target.shiftRight(1);
+        else if (span > ideal * 2) target = target.shiftLeft(1);
 
         currentBits = HashingUtils.targetToCompact(target);
     }

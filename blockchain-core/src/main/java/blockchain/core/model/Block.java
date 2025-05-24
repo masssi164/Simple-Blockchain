@@ -10,48 +10,60 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Immutable block.
- * PoW target = compactDifficultyBits → realTarget (see HashingUtils).
+ * Immutable block B.
+ *
+ * Fields<br>
+ * • height h (0-based)  • timeMillis t  • prevHash p  • txList T  • difficulty bits n<br>
+ *
+ * Block hash   H = SHA-256(h ∥ p ∥ t ∥ nonce ∥ merkleRoot).  
+ * PoW is valid iff interpreted integer hᵢ ⩽ target, where target ← bits.
  */
-@Data
-@Slf4j
+@Data @Slf4j
 public class Block {
 
-    private final int    height;            // zero-based index
-    private final long   timeMillis;        // unix epoch ms
-    private final String previousHashHex;
+    /*  header (immutable) */
+    private final int      height;
+    private final long     timeMillis;        // unix epoch ms
+    private final String   previousHashHex;
     private final List<Transaction> txList;
-    private final int    compactDifficultyBits;
+    private final int      compactDifficultyBits;
 
-    /* derived */
+    // derived values
     private final String merkleRootHex;
-    private int          nonce = 0;
-    private String       hashHex;           // set after mine() or verify()
+    private       int    nonce   = 0;
+    private       String hashHex;             // populated after .mineLocally()
 
+    
     public Block(int height, String prevHash, List<Transaction> tx, int bits) {
-        this.height                 = height;
-        this.timeMillis             = Instant.now().toEpochMilli();
-        this.previousHashHex        = prevHash;
-        this.txList                 = tx;
-        this.compactDifficultyBits  = bits;
-        this.merkleRootHex          = HashingUtils.computeMerkleRoot(
-                                          tx.stream().map(Transaction::calcHashHex)
-                                            .collect(Collectors.toList()));
-        this.hashHex = computeBlockHashHex();
+        this.height                = height;
+        this.timeMillis            = Instant.now().toEpochMilli();
+        this.previousHashHex       = prevHash;
+        this.txList                = List.copyOf(tx);
+        this.compactDifficultyBits = bits;
+
+        this.merkleRootHex = HashingUtils.computeMerkleRoot(
+                tx.stream().map(Transaction::calcHashHex).collect(Collectors.toList()));
+        this.hashHex       = computeBlockHashHex();
     }
 
-    /** H(height∥prev∥time∥nonce∥merkleRoot). */
+    /** Fast one-off header hash. */
     private String computeBlockHashHex() {
         return HashingUtils.computeSha256Hex(
                 height + previousHashHex + timeMillis + nonce + merkleRootHex);
     }
 
-    /** Proof-of-work loop – exits when hash ≤ target. */
+    /**
+     * Proof-of-Work loop – increments {@code nonce} until hash ≤ target.  
+     * Complexity ≈ O(2ᵏ) where k is leading-zero difficulty.
+     */
     public void mineLocally() {
-        BigInteger target = HashingUtils.compactToTarget(compactDifficultyBits);
+        final BigInteger target = HashingUtils.compactToTarget(compactDifficultyBits);
+
         while (true) {
             byte[] hBytes = HashingUtils.computeSha256Bytes(
                     height + previousHashHex + timeMillis + nonce + merkleRootHex);
+
+            // compare h ≤ T
             if (new BigInteger(1, hBytes).compareTo(target) <= 0) {
                 hashHex = HashingUtils.bytesToHex(hBytes);
                 log.info("⛏️  Block {} mined → {}", height, hashHex);
@@ -61,12 +73,12 @@ public class Block {
         }
     }
 
-    /** Verifies a foreign block’s PoW. */
+    /** Re-evaluates PoW for a received (foreign) block. */
     public boolean isProofValid() {
         BigInteger target = HashingUtils.compactToTarget(compactDifficultyBits);
-        BigInteger val    = new BigInteger(1,
+        BigInteger val = new BigInteger(1,
                 HashingUtils.computeSha256Bytes(height + previousHashHex +
                                                 timeMillis + nonce + merkleRootHex));
-        return val.compareTo(target) <= 0;
+        return val.compareTo(target) <= 0;   // pass if hᵢ ≤ T
     }
 }
