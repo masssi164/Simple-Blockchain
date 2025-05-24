@@ -7,5 +7,5 @@ management:
       exposure:
         include: "health,metrics"
 node:
-  peers:
-    - "localhost:8081"
+  peers: []
+    # - "localhost:8081"

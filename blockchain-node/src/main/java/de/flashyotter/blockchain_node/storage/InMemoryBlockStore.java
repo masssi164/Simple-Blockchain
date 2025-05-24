@@ -1,12 +1,13 @@
 package de.flashyotter.blockchain_node.storage;
 
 import blockchain.core.model.Block;
-import org.springframework.context.annotation.Primary;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.springframework.stereotype.Component;
+
 /** In-memory store (non-persistent). */
-@Primary
+@Component
 public class InMemoryBlockStore implements BlockStore {
 
     private final Map<String, Block> db = new ConcurrentHashMap<>();

@@ -4,7 +4,7 @@ import blockchain.core.model.Block;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.iq80.leveldb.DB;
 import org.iq80.leveldb.Options;
-import org.springframework.stereotype.Component;
+import org.springframework.context.annotation.Primary;
 
 import jakarta.annotation.PreDestroy;
 import java.io.File;
@@ -18,7 +18,7 @@ import static org.iq80.leveldb.impl.Iq80DBFactory.factory;
  * Keys   → blockHash (UTF-8)  
  * Values → raw JSON of {@link Block}
  */
-@Component
+@Primary
 public class LevelDbBlockStore implements BlockStore {
 
     private final ObjectMapper mapper;
