@@ -32,6 +32,14 @@ public class Wallet {
         }
     }
 
+    public Wallet(PrivateKey priv, PublicKey pub) {      // << new
+        this.privateKey = priv;
+        this.publicKey  = pub;
+    }
+
+
+
+
     /**
      * Crafts a signed TX sending {@code amount} to {@code to}.
      *

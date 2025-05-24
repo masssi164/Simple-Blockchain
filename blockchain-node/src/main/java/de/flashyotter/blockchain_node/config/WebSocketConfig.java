@@ -1,23 +1,34 @@
+// blockchain-node/src/main/java/de/flashyotter/blockchain_node/config/WebSocketConfig.java
 package de.flashyotter.blockchain_node.config;
 
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.socket.config.annotation.EnableWebSocket;
-import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
-import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry;
+import org.springframework.messaging.simp.config.MessageBrokerRegistry;
+import org.springframework.web.socket.config.annotation.*;
 
-import de.flashyotter.blockchain_node.websocket.BlockWebSocketHandler;
-import de.flashyotter.blockchain_node.websocket.PeerWebSocketHandler;
-import lombok.RequiredArgsConstructor;
-
+/**
+ * Servlet-based STOMP/WebSocket setup.
+ *
+ *  • `/ws` endpoint for P2P peers  
+ *  • in-memory broker for `/topic/*`
+ *
+ * NOTE  
+ * ----  
+ * Do **not** annotate with @EnableWebFlux – bringing both the
+ * WebFlux and WebMVC auto-configs into the same context creates two
+ * `requestMappingHandlerMapping` beans which fails the bootstrap.
+ */
 @Configuration
-@EnableWebSocket
-@RequiredArgsConstructor
-public class WebSocketConfig implements WebSocketConfigurer {
-    private final BlockWebSocketHandler blockHandler;
-    private final PeerWebSocketHandler  peerHandler;
+@EnableWebSocketMessageBroker          //  ← keep
+public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
-    public void registerWebSocketHandlers(WebSocketHandlerRegistry r) {
-        r.addHandler(blockHandler, "/ws/blocks").setAllowedOrigins("*");
-        r.addHandler(peerHandler , "/ws/peers" ).setAllowedOrigins("*");
+    @Override
+    public void registerStompEndpoints(StompEndpointRegistry registry) {
+        registry.addEndpoint("/ws").setAllowedOrigins("*");
+    }
+
+    @Override
+    public void configureMessageBroker(MessageBrokerRegistry registry) {
+        registry.enableSimpleBroker("/topic");
+        registry.setApplicationDestinationPrefixes("/app");
     }
 }

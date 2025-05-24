@@ -1,8 +1,31 @@
 package de.flashyotter.blockchain_node.service;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
+import blockchain.core.mempool.Mempool;
+import blockchain.core.model.Transaction;
+import blockchain.core.model.TxOutput;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Thin wrapper exposing core.Mempool to Spring beans.
+ * Holds a reference to the global UTXO map of the Chain.
+ */
 @Service
-@ConditionalOnExpression("#{ @nodeProperties.isFull() }")
-public class MempoolService { … }
+public class MempoolService {
+
+    private final Mempool mempool = new Mempool();
+
+    public void submit(Transaction tx, Map<String, TxOutput> utxo) {
+        mempool.add(tx, utxo);
+    }
+
+    public List<Transaction> take(int max) {
+        return mempool.take(max);
+    }
+
+    public void purge(List<Transaction> confirmed) {
+        mempool.removeAll(confirmed);
+    }
+}

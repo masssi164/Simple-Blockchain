@@ -1,41 +1,46 @@
 plugins {
-	id 'java'
-	id 'org.springframework.boot' version '3.5.0-SNAPSHOT'
-	id 'io.spring.dependency-management' version '1.1.7'
+    id 'java'
+    id 'org.springframework.boot' version '3.5.0-SNAPSHOT'
+    id 'io.spring.dependency-management' version '1.1.7'
 }
 
-group = 'de.flashyotter'
+group   = 'de.flashyotter'
 version = '0.0.1-SNAPSHOT'
 
 java {
-	toolchain {
-		languageVersion = JavaLanguageVersion.of(17)
-	}
+    toolchain { languageVersion = JavaLanguageVersion.of(17) }
 }
 
 configurations {
-	compileOnly {
-		extendsFrom annotationProcessor
-	}
+    compileOnly { extendsFrom annotationProcessor }
 }
 
 repositories {
-	mavenCentral()
-	maven { url 'https://repo.spring.io/milestone' }
-	maven { url 'https://repo.spring.io/snapshot' }
+    mavenCentral()
+    maven { url 'https://repo.spring.io/milestone' }
+    maven { url 'https://repo.spring.io/snapshot' }
 }
 
 dependencies {
-	implementation project(':blockchain-core')
-	implementation 'org.springframework.boot:spring-boot-starter-web'
-	implementation 'org.springframework.boot:spring-boot-starter-websocket'
-	    implementation 'com.fasterxml.jackson.module:jackson-module-parameter-names'
-	compileOnly 'org.projectlombok:lombok'
-	annotationProcessor 'org.projectlombok:lombok'
-	testImplementation 'org.springframework.boot:spring-boot-starter-test'
-	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    implementation project(':blockchain-core')
+
+    implementation 'org.springframework.boot:spring-boot-starter-websocket'  // servlet stack + STOMP
+    implementation 'org.springframework:spring-webflux'                      // WebClient + codecs
+    implementation 'io.projectreactor.netty:reactor-netty-http'              // Netty HttpClient/WebSocket
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'   // health / metrics
+
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
+    implementation 'com.fasterxml.jackson.module:jackson-module-parameter-names'
+    implementation 'com.google.guava:guava'
+    implementation 'org.iq80.leveldb:leveldb:0.12'
+
+    compileOnly          'org.projectlombok:lombok:1.18.30'
+    annotationProcessor  'org.projectlombok:lombok:1.18.30'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testRuntimeOnly    'org.junit.platform:junit-platform-launcher'
 }
 
 tasks.named('test') {
-	useJUnitPlatform()
+    useJUnitPlatform()
 }

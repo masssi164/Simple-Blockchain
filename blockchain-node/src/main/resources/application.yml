@@ -1,13 +1,11 @@
-# application.yaml  –  Default-Werte
+spring:
+  main:
+    banner-mode: off
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,metrics"
 node:
-  role: FULL                 # FULL | MINER | LIGHT
-  host: localhost
-  bootstrap: []              # List<URI>
-  sync-interval-ms: 30000
-
-  mining:                    # nur MINER
-    enabled: false           # wird per Rolle automatisch überschrieben
-    interval-ms: 10000
-
-  storage:                   # nur LIGHT
-    prune-after-blocks: 2016
+  peers:
+    - "localhost:8081"
