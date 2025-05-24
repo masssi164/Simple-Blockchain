@@ -1,0 +1,47 @@
+# .github/workflows/ci.yml
+name: Java&nbsp;CI
+
+on:
+  push:
+    branches: [ "main" ]   # adjust if you use a different default branch
+  pull_request:
+    branches: [ "dev" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        java-version: [ "17" ]   # add more versions if you want a matrix
+
+    steps:
+    - name: ⬇️  Checkout sources
+      uses: actions/checkout@v4
+
+    - name: Set up Temurin JDK
+      uses: actions/setup-java@v4
+      with:
+        distribution: "temurin"
+        java-version: ${{ matrix.java-version }}
+        cache: gradle              # enable Gradle build‑cache between runs
+
+    - name: Make gradlew executable
+      run: chmod +x ./gradlew
+
+    - name: Build & test (Gradle)
+      run: ./gradlew clean build --no-daemon
+
+    - name: Upload node JAR (artifact)
+      uses: actions/upload-artifact@v4
+      if: success()
+      with:
+        name: blockchain-node-jar
+        path: blockchain-node/build/libs/**/*.jar
+
+    - name: Upload core JAR (artifact)
+      uses: actions/upload-artifact@v4
+      if: success()
+      with:
+        name: blockchain-core-jar
+        path: blockchain-core/build/libs/**/*.jar
