@@ -14,46 +14,33 @@ import de.flashyotter.blockchain_node.dto.NewBlockDto;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import reactor.core.publisher.Mono;
+import reactor.core.publisher.Flux;
 import reactor.util.retry.Retry;
 
-/**
- * Streams NEW_BLOCK messages from a peer and feeds them into our Chain.
- * JSON parsing errors are converted to RuntimeException to satisfy
- * the reactive pipeline without cluttering it with checked exceptions.
- */
-@Slf4j
 @Service
-@RequiredArgsConstructor
+@RequiredArgsConstructor @Slf4j
 public class SyncService {
 
-    private final Chain                         chain;
-    private final ObjectMapper                  mapper;
-    private final ReactorNettyWebSocketClient   wsClient;
+    private final Chain                       chain;
+    private final ObjectMapper                mapper;
+    private final ReactorNettyWebSocketClient wsClient;
 
-    /** Connects to {@code wsUrl} and continuously imports remote blocks. */
-    public Mono<Void> followPeer(String wsUrl) {
+    /** Dauerhafte Block-Synchro mit automatischem Re-Connect */
+    public Flux<Void> followPeer(String wsUrl) {
 
-    return wsClient.execute(URI.create(wsUrl), sess -> sess.receive()
-            .map(f -> f.getPayloadAsText())
-            .map(this::toNewBlockDto)
-            .map(this::toBlock)
-            .doOnNext(chain::addBlock)
-            .then())
-        .retryWhen(                             // endlos reconnect-Loop
-            Retry.backoff(Long.MAX_VALUE, Duration.ofSeconds(5)))
-        .doOnError(e -> log.warn("sync({}) – {}", wsUrl, e.toString()));
-}
-
-    /* ---------- helpers ---------- */
-
-    @SneakyThrows
-    private NewBlockDto toNewBlockDto(String json) {
-        return mapper.readValue(json, NewBlockDto.class);
+        return Flux.defer(() ->
+                wsClient.execute(URI.create(wsUrl),
+                                 s -> s.receive()
+                                       .map(fr -> fr.getPayloadAsText())
+                                       .map(this::toNewBlockDto)
+                                       .map(this::toBlock)
+                                       .doOnNext(chain::addBlock)
+                                       .then()))
+            .retryWhen(Retry.backoff(Long.MAX_VALUE, Duration.ofSeconds(5)))
+            .doOnError(e -> log.warn("sync({}) – {}", wsUrl, e.getMessage()));
     }
 
-    @SneakyThrows
-    private Block toBlock(NewBlockDto dto) {
-        return mapper.readValue(dto.rawBlockJson(), Block.class);
-    }
+    /* helper */
+    @SneakyThrows private NewBlockDto toNewBlockDto(String j){ return mapper.readValue(j,NewBlockDto.class);}
+    @SneakyThrows private Block       toBlock(NewBlockDto d){ return mapper.readValue(d.rawBlockJson(), Block.class);}
 }
