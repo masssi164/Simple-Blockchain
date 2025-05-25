@@ -28,3 +28,11 @@ replay_pid*
 
 # Ignore Gradle build output directory
 build
+
+
+# -------------------------  Gradle Wrapper  -------------------------
+!gradle/wrapper/gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.properties
+!gradlew
+!gradlew.bat
+# -------------------------------------------------------------------
