@@ -1,22 +1,28 @@
 package de.flashyotter.blockchain_node.service;
 
+import java.net.URI;
+import java.time.Duration;
+
+import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.socket.client.ReactorNettyWebSocketClient;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import blockchain.core.consensus.Chain;
 import blockchain.core.model.Block;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import de.flashyotter.blockchain_node.dto.NewBlockDto;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
-import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.socket.client.ReactorNettyWebSocketClient;
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
-
-import java.net.URI;
+import reactor.util.retry.Retry;
 
 /**
  * Streams NEW_BLOCK messages from a peer and feeds them into our Chain.
  * JSON parsing errors are converted to RuntimeException to satisfy
  * the reactive pipeline without cluttering it with checked exceptions.
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class SyncService {
@@ -27,15 +33,17 @@ public class SyncService {
 
     /** Connects to {@code wsUrl} and continuously imports remote blocks. */
     public Mono<Void> followPeer(String wsUrl) {
-        return wsClient.execute(
-                URI.create(wsUrl),
-                session -> session.receive()
-                        .map(frame -> frame.getPayloadAsText())
-                        .map(this::toNewBlockDto)
-                        .map(this::toBlock)
-                        .doOnNext(chain::addBlock)
-                        .then());
-    }
+
+    return wsClient.execute(URI.create(wsUrl), sess -> sess.receive()
+            .map(f -> f.getPayloadAsText())
+            .map(this::toNewBlockDto)
+            .map(this::toBlock)
+            .doOnNext(chain::addBlock)
+            .then())
+        .retryWhen(                             // endlos reconnect-Loop
+            Retry.backoff(Long.MAX_VALUE, Duration.ofSeconds(5)))
+        .doOnError(e -> log.warn("sync({}) – {}", wsUrl, e.toString()));
+}
 
     /* ---------- helpers ---------- */
 
