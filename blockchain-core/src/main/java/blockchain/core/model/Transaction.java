@@ -2,67 +2,60 @@ package blockchain.core.model;
 
 import blockchain.core.crypto.CryptoUtils;
 import blockchain.core.crypto.HashingUtils;
-import lombok.Getter;
 
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Immutable transaction TX.
- *
- * • Coinbase – created with {@link #Transaction(PublicKey, double)}  
- * • Ordinary  – create empty, then populate inputs/outputs, sign.
- */
-@Getter
+/** Mutable until signatures are applied, then effectively frozen. */
 public class Transaction {
 
     private final List<TxInput>  inputs  = new ArrayList<>();
     private final List<TxOutput> outputs = new ArrayList<>();
-    private       String        txHashHex;          // lazy-calculated
+    private String txHashHex;                      // lazily computed
 
-    
-    /** Coinbase TX paying {@code reward} to {@code miner}. */
-    public Transaction(PublicKey miner, double reward) {
-        outputs.add(new TxOutput(reward, miner));
-        txHashHex = computeTxHashHex();
-    }
+    /* --------- constructors --------- */
 
-    /** Ordinary TX – populate IO lists, then {@link #signInputs}. */
+    /** Empty ctor used by wallet / mem-pool. */
     public Transaction() { }
 
-    public boolean isCoinbase() { return inputs.isEmpty(); }
+    /** Convenience coin-base constructor used in genesis & mining. */
+    public Transaction(PublicKey recipient, double reward) {
+        outputs.add(new TxOutput(reward, recipient));
+        // coin-base has no inputs
+    }
 
-    
-    /**
-     * Signs every input with {@code privKey}.  
-     * Skips coinbase since it has no inputs.
-     */
+    /* --------- getters --------- */
+
+    public List<TxInput>  getInputs()  { return inputs; }
+    public List<TxOutput> getOutputs() { return outputs; }
+    public boolean isCoinbase()        { return inputs.isEmpty(); }
+
+    /* --------- signing / verification --------- */
+
     public void signInputs(PrivateKey privKey) {
         if (isCoinbase()) return;
-
-        inputs.forEach(in ->
-                in.setSignature(
-                        CryptoUtils.applyEcdsaSignature(privKey, in.getReferencedOutputId())));
-        txHashHex = computeTxHashHex();     // new sig → new hash
+        inputs.forEach(in -> in.setSignature(
+                CryptoUtils.applyEcdsaSignature(privKey, in.getReferencedOutputId())));
+        txHashHex = null;     // force re-hash after signatures
     }
 
-    /** Verifies all input signatures (always true for coinbase). */
     public boolean verifySignatures() {
-        return isCoinbase() || inputs.stream().allMatch(in ->
-                CryptoUtils.verifyEcdsaSignature(
-                        in.getSender(), in.getReferencedOutputId(), in.getSignature()));
+        if (isCoinbase()) return true;
+        return inputs.stream().allMatch(in ->
+                CryptoUtils.verifyEcdsaSignature(in.getSender(),
+                                                 in.getReferencedOutputId(),
+                                                 in.getSignature()));
     }
 
-    /* hashing  */
+    /* --------- hashing --------- */
 
-    /** Returns the cached hash or recomputes if not yet set. */
     public String calcHashHex() {
-        return txHashHex != null ? txHashHex : computeTxHashHex();
+        if (txHashHex == null) txHashHex = computeTxHashHex();
+        return txHashHex;
     }
 
-    /** Deterministic TX hash = SHA-256(inputs ∥ outputs). */
     private String computeTxHashHex() {
         StringBuilder sb = new StringBuilder();
         inputs .forEach(i -> sb.append(i.getReferencedOutputId()));

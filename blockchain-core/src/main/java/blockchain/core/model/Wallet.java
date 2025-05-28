@@ -3,27 +3,30 @@ package blockchain.core.model;
 import blockchain.core.exceptions.BlockchainException;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import java.security.*;
 import java.security.spec.ECGenParameterSpec;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
-/**
- * Simplest non-custodial wallet: generates ECDSA key-pair and can
- * aggregate UTXOs to craft & sign a new {@link Transaction}.
- */
-@Slf4j @Getter
+/** Simple key-pair holder plus convenience sendFunds. */
+@Slf4j
+@Getter
 public class Wallet {
+
+    static {
+        // Register Bouncy-Castle as Security Provider
+        Security.addProvider(new BouncyCastleProvider());
+    }
 
     private final PrivateKey privateKey;
     private final PublicKey  publicKey;
 
     public Wallet() {
         try {
-            KeyPairGenerator kpg = KeyPairGenerator.getInstance("EC");
-            kpg.initialize(new ECGenParameterSpec("secp256r1"), new SecureRandom());
+            // Use BouncyCastle ("BC") for secp256k1 support
+            KeyPairGenerator kpg = KeyPairGenerator.getInstance("EC", "BC");
+            kpg.initialize(new ECGenParameterSpec("secp256k1"), new SecureRandom());
             KeyPair kp = kpg.generateKeyPair();
             privateKey = kp.getPrivate();
             publicKey  = kp.getPublic();
@@ -32,44 +35,34 @@ public class Wallet {
         }
     }
 
-    public Wallet(PrivateKey priv, PublicKey pub) {      // << new
+    public Wallet(PrivateKey priv, PublicKey pub) {
         this.privateKey = priv;
         this.publicKey  = pub;
     }
 
-
-
-
-    /**
-     * Crafts a signed TX sending {@code amount} to {@code to}.
-     *
-     * @param utxo Global UTXO set (read-only).  Wallet selects its own outputs.
-     */
+    /** Build and sign a new transaction spending our own UTXOs. */
     public Transaction sendFunds(PublicKey to, double amount, Map<String, TxOutput> utxo) {
-
         double gathered = 0;
-        List<String> used = new ArrayList<>();
+        List<String> usedIds = new ArrayList<>();
 
-        /* gather own UTXOs until >= amount */
         for (var e : utxo.entrySet()) {
-            if (e.getValue().recipient().equals(publicKey)) {
-                gathered += e.getValue().value();
-                used.add(e.getKey());
-                if (gathered >= amount) break;
-            }
+            TxOutput out = e.getValue();
+            if (!out.recipient().equals(publicKey)) continue;
+            gathered += out.value();
+            usedIds.add(e.getKey());
+            if (gathered + 1e-9 >= amount) break;
         }
-
-        if (gathered < amount) {
-            log.warn("Wallet {}: balance {} < {} – abort", this, gathered, amount);
-            throw new BlockchainException("Insufficient funds");
-        }
+        if (gathered + 1e-9 < amount)
+            throw new BlockchainException("balance too low");
 
         Transaction tx = new Transaction();
-        used.forEach(id -> tx.getInputs().add(new TxInput(id, null, publicKey)));
+        usedIds.forEach(id -> tx.getInputs()
+                                .add(new TxInput(id, new byte[0], publicKey)));
+        tx.getOutputs().add(new TxOutput(amount, to));
 
-        tx.getOutputs().add(new TxOutput(amount, to));              // payment
-        if (gathered > amount)
-            tx.getOutputs().add(new TxOutput(gathered - amount, publicKey)); // change
+        double change = gathered - amount;
+        if (change > 1e-9)
+            tx.getOutputs().add(new TxOutput(change, publicKey));
 
         tx.signInputs(privateKey);
         return tx;

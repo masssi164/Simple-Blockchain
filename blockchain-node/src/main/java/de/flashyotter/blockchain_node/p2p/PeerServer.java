@@ -11,21 +11,19 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
-
 import java.util.List;
 
 /**
- * Handles inbound WebSocket P2P messages.  Uses instanceof checks
- * to stay compatible with Java 17 (no pattern-matching switch).
+ * Handles raw JSON P2P frames – uses plain instanceof checks so Java 17
  */
 @Component
 @RequiredArgsConstructor
 public class PeerServer extends TextWebSocketHandler {
 
-    private final ObjectMapper          mapper;
-    private final NodeService           node;
-    private final PeerRegistry          registry;
-    private final P2PBroadcastService   broadcaster;
+    private final ObjectMapper        mapper;
+    private final NodeService         node;
+    private final PeerRegistry        registry;
+    private final P2PBroadcastService broadcaster;
 
     @Override
     @SneakyThrows
@@ -33,48 +31,35 @@ public class PeerServer extends TextWebSocketHandler {
 
         P2PMessageDto dto = mapper.readValue(msg.getPayload(), P2PMessageDto.class);
 
-        /* --- NEW_BLOCK ------------------------------------------------ */
-        if (dto instanceof NewBlockDto nb) {
-            var blk = mapper.readValue(nb.rawBlockJson(), blockchain.core.model.Block.class);
-            node.acceptExternalBlock(blk);
-            broadcaster.broadcastBlock(nb, null);
-            return;
-        }
-
-        /* --- NEW_TX --------------------------------------------------- */
-        if (dto instanceof NewTxDto nt) {
-            var tx = mapper.readValue(nt.rawTxJson(), blockchain.core.model.Transaction.class);
+        if (dto instanceof NewTxDto nt) {                      // new transaction
+            var tx = mapper.readValue(nt.rawTxJson(),
+                                       blockchain.core.model.Transaction.class);
             node.acceptExternalTx(tx);
             broadcaster.broadcastTx(nt, null);
             return;
         }
 
-        /* --- PEER_LIST ------------------------------------------------ */
-        if (dto instanceof PeerListDto pl) {
-            pl.peers().forEach(s -> {
-                var sp = s.split(":");
-                registry.add(new Peer(sp[0], Integer.parseInt(sp[1])));
-            });
+        if (dto instanceof NewBlockDto nb) {                   // new block
+            var blk = mapper.readValue(nb.rawBlockJson(),
+                                        blockchain.core.model.Block.class);
+            node.acceptExternalBlock(blk);
+            broadcaster.broadcastBlock(nb, null);
             return;
         }
 
-        /* --- GET_BLOCKS ---------------------------------------------- */
-        if (dto instanceof GetBlocksDto gb) {
-            List<blockchain.core.model.Block> blocks = node.blocksFromHeight(gb.fromHeight());
+        if (dto instanceof GetBlocksDto gb) {                  // range request
+            List<blockchain.core.model.Block> blocks =
+                    node.blocksFromHeight(gb.fromHeight());
             List<String> raws = blocks.stream()
-                    .map(blockchain.core.serialization.JsonUtils::toJson)
-                    .toList();
+                                       .map(blockchain.core.serialization.JsonUtils::toJson)
+                                       .toList();
             sess.sendMessage(new TextMessage(
                     mapper.writeValueAsString(new BlocksDto(raws))));
             return;
         }
 
-        /* --- BLOCKS --------------------------------------------------- */
-        if (dto instanceof BlocksDto blks) {
-            for (String raw : blks.rawBlocks()) {
-                var blk = mapper.readValue(raw, blockchain.core.model.Block.class);
-                node.acceptExternalBlock(blk);
-            }
+        if (dto instanceof PeerListDto pl) {                   // discovery
+            registry.addAll(pl.peers().stream().map(Peer::fromString).toList());
         }
     }
 }

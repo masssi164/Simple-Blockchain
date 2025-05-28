@@ -5,6 +5,8 @@ plugins {
 repositories { mavenCentral() }
 
 dependencies {
+        api 'org.bouncycastle:bcprov-jdk15on:1.70'
+    api 'org.bouncycastle:bcpkix-jdk15on:1.70'    
     // --- Annotation / logging ---
     implementation 'org.projectlombok:lombok:1.18.30'
     annotationProcessor 'org.projectlombok:lombok:1.18.30'

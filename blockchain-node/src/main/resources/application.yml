@@ -6,8 +6,10 @@ management:
     web:
       exposure:
         include: "health,metrics"
-node:
-  peers: []
-    # - "localhost:8081"
 server:
   port: 3333
+
+node:
+  # List of peer addresses (host:port)
+  peers: []
+  wallet-password: changeMeSuperSecret

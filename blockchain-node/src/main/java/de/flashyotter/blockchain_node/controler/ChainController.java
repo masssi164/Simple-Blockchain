@@ -3,11 +3,8 @@ package de.flashyotter.blockchain_node.controler;
 import blockchain.core.model.Block;
 import de.flashyotter.blockchain_node.service.NodeService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-/** Read-only chain endpoints (health & latest header). */
 @RestController
 @RequestMapping("/api/chain")
 @RequiredArgsConstructor
@@ -15,8 +12,15 @@ public class ChainController {
 
     private final NodeService node;
 
+    /** Latest block (tip of the best chain). */
     @GetMapping("/latest")
     public Block latest() {
         return node.latestBlock();
+    }
+
+    /** All blocks from a given height (inclusive). */
+    @GetMapping
+    public java.util.List<Block> blocks(@RequestParam(defaultValue = "0") int from) {
+        return node.blocksFromHeight(from);
     }
 }

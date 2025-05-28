@@ -3,21 +3,19 @@ package de.flashyotter.blockchain_node.service;
 import blockchain.core.consensus.Chain;
 import blockchain.core.model.Block;
 import blockchain.core.model.Transaction;
+import blockchain.core.model.TxOutput;
+import blockchain.core.serialization.JsonUtils;
 import de.flashyotter.blockchain_node.dto.NewBlockDto;
 import de.flashyotter.blockchain_node.dto.NewTxDto;
-import de.flashyotter.blockchain_node.storage.BlockStore;
-import blockchain.core.serialization.JsonUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.util.List;
 import java.util.Map;
 
-import blockchain.core.model.TxOutput;
-
-/**
- * Main façade used by REST and P2P layers.
- */
+/** Coordinates mem-pool, chain, mining and the P2P layer. */
 @Service
 @RequiredArgsConstructor
 public class NodeService {
@@ -25,37 +23,36 @@ public class NodeService {
     private final Chain               chain;
     private final MempoolService      mempool;
     private final MiningService       mining;
-    private final BlockStore          store;
     private final P2PBroadcastService broadcaster;
+    private final de.flashyotter.blockchain_node.storage.BlockStore store;
 
-    /* ───────────────── chain view ─────────────────────────────────── */
+    /* ---------- mining ---------- */
 
-    public Block latestBlock() { return chain.getLatest(); }
-
-    public List<Block> blocksFromHeight(int height) {
-        return chain.getBlocks().stream()
-                    .filter(b -> b.getHeight() > height)
-                    .toList();
+    public Mono<Block> mineNow() {
+        return Mono.fromCallable(mining::mine)
+                   .subscribeOn(Schedulers.boundedElastic())
+                   .doOnNext(this::onLocalBlockMined);
     }
 
-
-    
-    public void acceptExternalTx(Transaction tx) {
-        mempool.submit(tx, chain.getUtxoSnapshot());
-    }
-
-    /* ───────────────── mining ─────────────────────────────────────── */
-
-    public Block mineNow() {
-        Block b = mining.mine();
+    private void onLocalBlockMined(Block b) {
         chain.addBlock(b);
         store.save(b);
-        broadcaster.broadcastBlock(new NewBlockDto(JsonUtils.toJson(b)), null);
         mempool.purge(b.getTxList());
-        return b;
+        broadcaster.broadcastBlock(new NewBlockDto(JsonUtils.toJson(b)), null);
     }
 
-    /* ───────────────── external blocks ────────────────────────────── */
+    /* ---------- transactions ---------- */
+
+    public void submitTx(Transaction tx) {
+        mempool.submit(tx, currentUtxo());
+        broadcaster.broadcastTx(new NewTxDto(JsonUtils.toJson(tx)), null);
+    }
+
+    public void acceptExternalTx(Transaction tx) {
+        mempool.submit(tx, currentUtxo());
+    }
+
+    /* ---------- blocks from peers ---------- */
 
     public void acceptExternalBlock(Block blk) {
         chain.addBlock(blk);
@@ -63,19 +60,19 @@ public class NodeService {
         mempool.purge(blk.getTxList());
     }
 
+    /* ---------- simple getters ---------- */
+
     public Map<String, TxOutput> currentUtxo() {
-        try {
-            var f = Chain.class.getDeclaredField("utxo"); f.setAccessible(true);
-            //noinspection unchecked
-            return Map.copyOf((Map<String, TxOutput>) f.get(chain));
-        } catch (Exception e) { return Map.of(); }
+        return chain.getUtxoSnapshot();
     }
 
-    /* submitTx, mineNow … remain identical except: */
-    public void submitTx(Transaction tx) {
-        mempool.submit(tx, currentUtxo());
-        broadcaster.broadcastTx(new NewTxDto(
-                blockchain.core.serialization.JsonUtils.toJson(tx)), null);
+    public List<Block> blocksFromHeight(int from) {
+        return chain.getBlocks().stream()
+                    .filter(b -> b.getHeight() >= from)
+                    .toList();
     }
 
+    public Block latestBlock() {
+        return chain.getLatest();
+    }
 }

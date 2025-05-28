@@ -1,6 +1,5 @@
 package de.flashyotter.blockchain_node.controler;
 
-import blockchain.core.crypto.CryptoUtils;
 import blockchain.core.model.Transaction;
 import de.flashyotter.blockchain_node.dto.SendFundsDto;
 import de.flashyotter.blockchain_node.dto.WalletInfoDto;
@@ -17,22 +16,24 @@ public class WalletController {
     private final WalletService wallet;
     private final NodeService   node;
 
-    /* ─── info ──────────────────────────────────────────────────── */
-    @GetMapping("/info")
-    public WalletInfoDto info() {
-        double bal = wallet.balance(node.currentUtxo());
-        return new WalletInfoDto(
-                CryptoUtils.keyToBase64(wallet.getLocalWallet().getPublicKey()),
-                bal);
-    }
-
-    /* ─── send ──────────────────────────────────────────────────── */
+    /** Send funds from this node’s wallet. */
     @PostMapping("/send")
     public Transaction send(@RequestBody SendFundsDto dto) {
         Transaction tx = wallet.createTx(dto.recipient(),
                                          dto.amount(),
                                          node.currentUtxo());
-        node.submitTx(tx);          // broadcast + mem-pool
+        node.submitTx(tx);
         return tx;
+    }
+
+    /** Simple balance / address endpoint for the UI. */
+    @GetMapping
+    public WalletInfoDto info() {
+        double bal = wallet.balance(node.currentUtxo());
+        return new WalletInfoDto(wallet.getLocalWallet()
+                                       .getPublicKey()
+                                       .getEncoded()
+                                       .toString(),  // base64 in UI layer
+                                 bal);
     }
 }
