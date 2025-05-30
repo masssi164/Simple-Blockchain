@@ -32,7 +32,7 @@ class NodeServiceTest {
     private Chain chain;
     private MempoolService mempool;
     private MiningService mining;
-    private P2PBroadcastService broadcaster;
+    private P2PBroadcastService broadcaster; // ✔ korrekte Typ-Deklaration
     private BlockStore store;
     private NodeService svc;
 

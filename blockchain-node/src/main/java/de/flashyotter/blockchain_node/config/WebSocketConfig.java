@@ -3,6 +3,7 @@ package de.flashyotter.blockchain_node.config;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
+import org.springframework.web.socket.config.annotation.EnableWebSocket;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
@@ -25,29 +26,26 @@ import lombok.RequiredArgsConstructor;
  * `requestMappingHandlerMapping` beans which fails the bootstrap.
  */
 @Configuration
-@EnableWebSocketMessageBroker
+@EnableWebSocketMessageBroker   // für STOMP/SockJS
+@EnableWebSocket                // für raw WebSocketHandler
 @RequiredArgsConstructor
-public class WebSocketConfig
-        implements WebSocketMessageBrokerConfigurer,   // STOMP
-                   WebSocketConfigurer {               // ↖ P2P-JSON
+public class WebSocketConfig 
+     implements WebSocketMessageBrokerConfigurer, WebSocketConfigurer {
 
-
-    private final PeerServer peerServer;   
+    private final PeerServer peerServer;
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry reg) {
-        reg.addEndpoint("/stomp").setAllowedOrigins("*");   // ② neuen Pfad für STOMP
+        reg.addEndpoint("/stomp").setAllowedOrigins("*");
     }
 
-    
     @Override
     public void configureMessageBroker(MessageBrokerRegistry reg) {
         reg.enableSimpleBroker("/topic");
         reg.setApplicationDestinationPrefixes("/app");
     }
 
-    /* ---------- raw P2P JSON on /ws ---------- */
-    @Override                                           // ← jetzt korrekt
+    @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry reg) {
         reg.addHandler(peerServer, "/ws")
            .setAllowedOrigins("*");

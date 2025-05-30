@@ -7,9 +7,11 @@ management:
       exposure:
         include: "health,metrics"
 server:
+  address: 0.0.0.0
   port: 3333
 
 node:
   # List of peer addresses (host:port)
-  peers: []
+  peers:  []  
   wallet-password: changeMeSuperSecret
+

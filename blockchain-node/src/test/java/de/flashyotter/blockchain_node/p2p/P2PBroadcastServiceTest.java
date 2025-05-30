@@ -1,4 +1,3 @@
-// P2PBroadcastServiceTest.java
 package de.flashyotter.blockchain_node.p2p;
 
 import static org.mockito.ArgumentMatchers.any;
