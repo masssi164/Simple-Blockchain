@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.List;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import blockchain.core.consensus.Chain;
@@ -71,4 +72,36 @@ class ChainEdgeCaseTest {
             () -> chain.addBlock(candidate));
         assertEquals("prev-hash mismatch", ex.getMessage());
     }
+
+    @Test
+    @DisplayName("Heavier fork re-organises the active chain")
+    void forkReorganisation() {
+        Chain c = new Chain();
+        Block g = c.getLatest();
+
+        // ── build branch A (length 2 – total work W) ───────────────
+        Wallet miner = new Wallet();
+        Transaction cb1 = new Transaction(miner.getPublicKey(),
+                                        ConsensusParams.blockReward(1));
+        Block a1 = new Block(1, g.getHashHex(), List.of(cb1),
+                            g.getCompactDifficultyBits()); a1.mineLocally();
+        c.addBlock(a1);                               // tip = a1
+
+        // ── competing branch B (length 3 – more work) ──────────────
+        Transaction cb2 = new Transaction(miner.getPublicKey(),
+                                        ConsensusParams.blockReward(1));
+        Block b1 = new Block(1, g.getHashHex(), List.of(cb2),
+                            g.getCompactDifficultyBits()); b1.mineLocally();
+        c.addBlock(b1);
+
+        Transaction cb3 = new Transaction(miner.getPublicKey(),
+                                        ConsensusParams.blockReward(2));
+        Block b2 = new Block(2, b1.getHashHex(), List.of(cb3),
+                            g.getCompactDifficultyBits()); b2.mineLocally();
+        c.addBlock(b2);                               // triggers re-org
+
+        assertEquals(b2, c.getLatest(), "tip switched to heavier fork");
+        assertEquals(3, c.getBlocks().size(), "active height now 3 (g,b1,b2)");
+    }
+
 }

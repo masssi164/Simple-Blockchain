@@ -12,6 +12,6 @@ server:
 
 node:
   # List of peer addresses (host:port)
-  peers:  []  
+  peers: []  
   wallet-password: changeMeSuperSecret
 

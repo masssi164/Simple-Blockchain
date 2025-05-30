@@ -1,104 +1,69 @@
 package blockchain.core.model;
 
-import blockchain.core.crypto.HashingUtils;
-import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
-
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.List;
-import java.util.stream.Collectors;
+
+import blockchain.core.crypto.HashingUtils;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
- * Immutable block B.
- *
- * Fields<br>
- * • height h (0-based) • timeMillis t • prevHash p • txList T • difficulty bits n<br>
- *
- * Block hash H = SHA-256(h ∥ p ∥ t ∥ nonce ∥ merkleRoot).  
- * PoW is valid iff the interpreted integer hᵢ ≤ target, where target ← bits.
+ * A full block = immutable header + transaction list.
+ * Mining / PoW live entirely in the header.
  */
-@Data @Slf4j
+@Getter @Slf4j
 public class Block {
 
-    /* ─────────── header fields (immutable after construction) ────────── */
-    private final int      height;
-    private final long     timeMillis;              // unix epoch ms
-    private final String   previousHashHex;
+    private final BlockHeader       header;
     private final List<Transaction> txList;
-    private final int      compactDifficultyBits;
 
-    /* ─────────── derived / mutable fields ────────── */
-    private final String merkleRootHex;
-    private       int    nonce   = 0;
-    private       String hashHex;                   // set by ctor or mineLocally()
-
-    /* ===================================================================
-     *  standard constructor – time = now, nonce starts at 0
-     * =================================================================== */
+    /* ── public ctor used by code & tests ───────────────────────────── */
     public Block(int height,
-                 String prevHash,
-                 List<Transaction> tx,
-                 int bits) {
-        this(height, prevHash, tx, bits,
-             Instant.now().toEpochMilli(),          // time
-             0);                                    // nonce
+                 String prevHashHex,
+                 List<Transaction> txs,
+                 int compactBits) {
+        this(height, prevHashHex, txs, compactBits,
+             Instant.now().toEpochMilli(), 0);
     }
 
-    /* ===================================================================
-     *  extended constructor – allows deterministic genesis creation
-     * =================================================================== */
-    public Block(int height,
-                 String prevHash,
-                 List<Transaction> tx,
-                 int bits,
+    /* ── extended ctor (genesis, determin. tests) ───────────────────── */
+    public Block(int  height,
+                 String prevHashHex,
+                 List<Transaction> txs,
+                 int  compactBits,
                  long fixedTimeMillis,
                  int  fixedNonce) {
 
-        this.height                = height;
-        this.timeMillis            = fixedTimeMillis;
-        this.previousHashHex       = prevHash;
-        this.txList                = List.copyOf(tx);
-        this.compactDifficultyBits = bits;
+        String merkle = HashingUtils.computeMerkleRoot(
+                txs.stream().map(Transaction::calcHashHex).toList());
 
-        this.merkleRootHex = HashingUtils.computeMerkleRoot(
-                tx.stream().map(Transaction::calcHashHex).collect(Collectors.toList()));
-
-        this.nonce   = fixedNonce;
-        this.hashHex = computeBlockHashHex();
+        this.header = new BlockHeader(height, prevHashHex, merkle,
+                                      compactBits, fixedTimeMillis, fixedNonce);
+        this.txList = List.copyOf(txs);
     }
 
-    /* ─────────── internal helpers ────────── */
-    private String computeBlockHashHex() {
-        return HashingUtils.computeSha256Hex(
-                height + previousHashHex + timeMillis + nonce + merkleRootHex);
-    }
-
-    /* ===================================================================
-     *  mining – brute-force nonce until hash ≤ target
-     * =================================================================== */
+    /* ── mining helpers ─────────────────────────────────────────────── */
     public void mineLocally() {
-        final BigInteger target = HashingUtils.compactToTarget(compactDifficultyBits);
+        BigInteger target = HashingUtils.compactToTarget(header.compactDifficultyBits);
 
         while (true) {
-            byte[] hBytes = HashingUtils.computeSha256Bytes(
-                    height + previousHashHex + timeMillis + nonce + merkleRootHex);
-
-            if (new BigInteger(1, hBytes).compareTo(target) <= 0) {
-                hashHex = HashingUtils.bytesToHex(hBytes);
-                log.info("⛏️  Block {} mined → {}", height, hashHex);
+            if (header.isProofValid()) {
+                log.info("⛏️  Block {} mined → {}", header.height, header.getHashHex());
                 return;
             }
-            nonce++;
+            header.incrementNonce();              // bump & re-hash
         }
     }
 
-    /** Re-evaluates PoW for a received (foreign) block. */
-    public boolean isProofValid() {
-        BigInteger target = HashingUtils.compactToTarget(compactDifficultyBits);
-        BigInteger val    = new BigInteger(1,
-                HashingUtils.computeSha256Bytes(height + previousHashHex +
-                                                timeMillis + nonce + merkleRootHex));
-        return val.compareTo(target) <= 0;   // pass if hᵢ ≤ T
-    }
+    public boolean isProofValid() { return header.isProofValid(); }
+
+    /* ── delegates keep external API unchanged ─────────────────────── */
+    public int    getHeight()                { return header.height; }
+    public String getPreviousHashHex()       { return header.previousHashHex; }
+    public long   getTimeMillis()            { return header.timeMillis; }
+    public int    getCompactDifficultyBits() { return header.compactDifficultyBits; }
+    public String getHashHex()               { return header.getHashHex(); }
+    public int    getNonce()                 { return header.getNonce(); }
+    public String getMerkleRootHex()         { return header.merkleRootHex; }
 }

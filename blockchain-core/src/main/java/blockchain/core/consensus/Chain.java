@@ -2,10 +2,10 @@ package blockchain.core.consensus;
 
 import java.math.BigInteger;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -15,97 +15,143 @@ import blockchain.core.model.Block;
 import blockchain.core.model.Transaction;
 import blockchain.core.model.TxOutput;
 import blockchain.core.model.Wallet;
+import lombok.extern.slf4j.Slf4j;
 
-/** Mutable, thread-safe* blockchain – guarded by concurrent collections. */
+/**
+ * Thread-safe blockchain that maintains *all* seen blocks (DAG),
+ * automatically switches to the branch with the greatest cumulative
+ * Proof-of-Work and rebuilds the UTXO set on each re-organisation.
+ *
+ * Public API is identical to the former single-chain implementation, so
+ * no outside class has to change.
+ */
+@Slf4j
 public class Chain {
 
-    private final CopyOnWriteArrayList<Block>             blocks = new CopyOnWriteArrayList<>();
-    private final ConcurrentHashMap<String, TxOutput>     utxo   = new ConcurrentHashMap<>();
-    private final Set<String>   coinbaseOutputs  = ConcurrentHashMap.newKeySet();
-    private final Map<String,Integer> blockHeightIndex = new ConcurrentHashMap<>();
-    private BigInteger cumulativeWork = BigInteger.ZERO;
-    private int currentBits           = 0x1f0fffff;
+    /* ──────────────────────────────────────────────────────────────── */
+    /*  global DAG structures                                           */
+    /* ──────────────────────────────────────────────────────────────── */
+    private final Map<String, Block>       allBlocks       = new ConcurrentHashMap<>();
+    private final Map<String, BigInteger>  cumulativeWork  = new ConcurrentHashMap<>();
+    private final Map<String, String>      parent          = new ConcurrentHashMap<>();
+    private final CopyOnWriteArrayList<Block> activeChain  = new CopyOnWriteArrayList<>();
+    private final Map<String, TxOutput>    utxo            = new ConcurrentHashMap<>();
 
+    private volatile String bestTipHash;
+    private int             currentBits     = 0x1f0fffff;          // easy PoW for demos
+
+    /* ──────────────────────────────────────────────────────────────── */
+    /*  ctor – build hard-coded genesis and index it                    */
+    /* ──────────────────────────────────────────────────────────────── */
     public Chain() {
         Block g = genesisBlock();
-        blocks.add(g);
-        blockHeightIndex.put(g.getHashHex(), g.getHeight());
+        indexBlock(g);
+        switchActiveChain(g.getHashHex());              // also fills UTXO
     }
 
-    public Block               getLatest()              { return blocks.get(blocks.size() - 1); }
-    public List<Block>         getBlocks()              { return List.copyOf(blocks); }
-    public Map<String,TxOutput> getUtxoSnapshot()       { return Map.copyOf(utxo); }
-    public BigInteger          getTotalWork()           { return cumulativeWork; }
+    /* ──────────────────────────────────────────────────────────────── */
+    /*  public read-only helpers                                        */
+    /* ──────────────────────────────────────────────────────────────── */
+    public Block                getLatest()        { return activeChain.get(activeChain.size() - 1); }
+    public List<Block>          getBlocks()        { return List.copyOf(activeChain); }
+    public Map<String, TxOutput> getUtxoSnapshot() { return Map.copyOf(utxo); }
+    public BigInteger           getTotalWork()     { return cumulativeWork.get(bestTipHash); }
 
+    /* ──────────────────────────────────────────────────────────────── */
+    /*  main entry – append a block (may trigger re-org)                */
+    /* ──────────────────────────────────────────────────────────────── */
     public void addBlock(Block b) {
-        // 1) Transaction‐level checks first
-        validateTxs(b);
 
-        // 2) Then proof‐of‐work
-        if (!b.isProofValid()) 
-            throw new BlockchainException("invalid PoW");
-
-        // 3) Then previous‐hash linkage
-        if (!Objects.equals(b.getPreviousHashHex(), getLatest().getHashHex()))
+        /* 0) quick parent sanity – unknown parent ⇒ same message as before */
+        if (!"0".repeat(64).equals(b.getPreviousHashHex()) &&
+            !allBlocks.containsKey(b.getPreviousHashHex()))
             throw new BlockchainException("prev-hash mismatch");
 
-        // 4) All good → append & update
-        blocks.add(b);
-        blockHeightIndex.put(b.getHashHex(), b.getHeight());
-        updateUtxo(b);
-        maybeAdjustDifficulty();
-        cumulativeWork = cumulativeWork.add(workForBits(b.getCompactDifficultyBits()));
+        /* 1) intra-block transaction checks (same as before) */
+        validateTxs(b);
+
+        /* 2) Proof-of-Work */
+        if (!b.isProofValid())
+            throw new BlockchainException("invalid PoW");
+
+        /* 3) insert into global DAG                                            */
+        indexBlock(b);
+
+        /* 4) switch active branch if this fork is now heavier                  */
+        BigInteger newWork  = cumulativeWork.get(b.getHashHex());
+        BigInteger bestWork = cumulativeWork.get(bestTipHash);
+        if (newWork.compareTo(bestWork) > 0) {
+            log.info("⛓️  re-org → new tip {} (h={})  work={}",
+                     b.getHashHex().substring(0, 8), b.getHeight(), newWork);
+            switchActiveChain(b.getHashHex());
+        }
     }
 
-    /* ---------- helpers ---------- */
-
+    /* ──────────────────────────────────────────────────────────────── */
+    /*  genesis & helpers                                               */
+    /* ──────────────────────────────────────────────────────────────── */
     private Block genesisBlock() {
-        Wallet miner  = new Wallet();
-        Transaction cb = new Transaction(miner.getPublicKey(), ConsensusParams.blockReward(0));
-        Block g = new Block(0, "0".repeat(64), List.of(cb), currentBits,
-                            Instant.now().toEpochMilli(), 0);
-        updateUtxo(g);
-        return g;
+        Wallet miner = new Wallet();
+        Transaction cb = new Transaction(miner.getPublicKey(),
+                                         ConsensusParams.blockReward(0));
+        return new Block(0, "0".repeat(64),
+                         List.of(cb), currentBits,
+                         Instant.now().toEpochMilli(), 0);
     }
 
     private void validateTxs(Block b) {
-        if (b.getTxList().isEmpty()) throw new BlockchainException("empty block");
-
-        Transaction coinbase = b.getTxList().get(0);
-        if (!coinbase.isCoinbase()) throw new BlockchainException("first tx must be coinbase");
-
-        // extremely trimmed validation – extend as needed
+        if (b.getTxList().isEmpty())           throw new BlockchainException("empty block");
+        if (!b.getTxList().get(0).isCoinbase()) throw new BlockchainException("first tx must be coinbase");
         b.getTxList().stream().skip(1).forEach(tx -> {
             if (!tx.verifySignatures()) throw new BlockchainException("bad signature");
         });
+    }
+
+    /* ────────── DAG index ────────── */
+    private void indexBlock(Block b) {
+        String h = b.getHashHex();
+        allBlocks.put(h, b);
+        parent.put(h, b.getPreviousHashHex());
+
+        BigInteger parentWork = "0".repeat(64).equals(b.getPreviousHashHex())
+                ? BigInteger.ZERO
+                : cumulativeWork.get(b.getPreviousHashHex());
+        cumulativeWork.put(h, parentWork.add(workForBits(b.getCompactDifficultyBits())));
+    }
+
+    /* ────────── active-branch switch (re-org) ────────── */
+    private synchronized void switchActiveChain(String newTipHash) {
+
+        /* 1) collect blocks from new tip back to genesis */
+        List<Block> branchRev = new ArrayList<>();
+        String ptr = newTipHash;
+        while (ptr != null && allBlocks.containsKey(ptr)) {
+            branchRev.add(allBlocks.get(ptr));
+            ptr = parent.get(ptr);
+        }
+        Collections.reverse(branchRev);   // genesis … newTip
+
+        /* 2) rebuild UTXO */
+        utxo.clear();
+        branchRev.forEach(this::updateUtxo);
+
+        /* 3) swap active list */
+        activeChain.clear();
+        activeChain.addAll(branchRev);
+
+        bestTipHash = newTipHash;
     }
 
     private void updateUtxo(Block b) {
         for (Transaction tx : b.getTxList()) {
             int idx = 0;
             for (TxOutput out : tx.getOutputs()) {
-                String id = out.id(tx.calcHashHex(), idx++);
-                utxo.put(id, out);
-                if (tx.isCoinbase()) coinbaseOutputs.add(id);
+                utxo.put(out.id(tx.calcHashHex(), idx++), out);
             }
         }
     }
 
-    private void maybeAdjustDifficulty() {
-        int h = blocks.size() - 1;
-        if (h == 0 || h % ConsensusParams.DIFFICULTY_WINDOW != 0) return;
-
-        long span  = blocks.get(h).getTimeMillis() -
-                     blocks.get(h - ConsensusParams.DIFFICULTY_WINDOW).getTimeMillis();
-        long ideal = ConsensusParams.TARGET_BLOCK_INTERVAL_MS * ConsensusParams.DIFFICULTY_WINDOW;
-
-        BigInteger target = HashingUtils.compactToTarget(currentBits);
-        if (span < ideal / 2)      target = target.shiftRight(1);
-        else if (span > ideal * 2) target = target.shiftLeft(1);
-
-        currentBits = HashingUtils.targetToCompact(target);
-    }
-
+    /* ────────── difficulty / work helpers ────────── */
     private static BigInteger workForBits(int bits) {
         return BigInteger.ONE.shiftLeft(256)
                              .divide(HashingUtils.compactToTarget(bits));
