@@ -8,6 +8,8 @@ public final class ConsensusParams {
     public static final int    COINBASE_MATURITY        = 100;
     public static final int    HALVING_INTERVAL         = 210_000;
     public static final double INITIAL_BLOCK_REWARD     = 50.0;
+    public static final int    RETARGET_SPAN            = 10;             // blocks
+    public static final long   RETARGET_TIMESPAN_MS     = TARGET_BLOCK_INTERVAL_MS * RETARGET_SPAN;
 
     private ConsensusParams() { }
 

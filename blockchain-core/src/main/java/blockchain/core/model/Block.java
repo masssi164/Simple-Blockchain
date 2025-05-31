@@ -43,7 +43,7 @@ public class Block {
         this.txList = List.copyOf(txs);
     }
 
-    /* ── mining helpers ─────────────────────────────────────────────── */
+    /* mining helpers  */
     public void mineLocally() {
         BigInteger target = HashingUtils.compactToTarget(header.compactDifficultyBits);
 

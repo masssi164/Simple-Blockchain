@@ -151,9 +151,27 @@ public class Chain {
         }
     }
 
-    /* ────────── difficulty / work helpers ────────── */
     private static BigInteger workForBits(int bits) {
         return BigInteger.ONE.shiftLeft(256)
                              .divide(HashingUtils.compactToTarget(bits));
+    }
+    
+    /** Calculates new bits every window; else returns current. */
+    public synchronized int nextCompactBits() {
+        if (getLatest().getHeight() % ConsensusParams.RETARGET_SPAN != 0
+            || getLatest().getHeight() == 0)
+            return currentBits;
+
+        Block tail = activeChain.get(activeChain.size() - ConsensusParams.RETARGET_SPAN);
+        long   diff = getLatest().getTimeMillis() - tail.getTimeMillis();
+
+        long   target = ConsensusParams.RETARGET_TIMESPAN_MS;
+        double factor = Math.max(0.25, Math.min(4.0, (double) diff / target));
+
+        BigInteger oldTarget = HashingUtils.compactToTarget(currentBits);
+        BigInteger newTarget = oldTarget.multiply(BigInteger.valueOf((long)(factor * 1_000_000)))
+                                        .divide(BigInteger.valueOf(1_000_000));
+        currentBits = HashingUtils.targetToCompact(newTarget);
+        return currentBits;
     }
 }

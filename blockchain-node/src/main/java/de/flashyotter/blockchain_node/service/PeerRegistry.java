@@ -20,8 +20,13 @@ public class PeerRegistry {
     }
 
     public void add(Peer p) { 
-        peers.add(p); 
-    }
+        if (peers.add(p)) pending.add(p);          // mark for dial
+     }
+
+    /* dial queue consumed by discovery loop */
+    private final java.util.concurrent.BlockingQueue<Peer> pending =
+            new java.util.concurrent.LinkedBlockingQueue<>();
+    public java.util.concurrent.BlockingQueue<Peer> pending() { return pending; }
 
     public void addAll(Iterable<Peer> newPeers) {
          newPeers.forEach(peers::add); 

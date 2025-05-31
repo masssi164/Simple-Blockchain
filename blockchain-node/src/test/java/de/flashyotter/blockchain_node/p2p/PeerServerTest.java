@@ -1,4 +1,3 @@
-// src/test/java/de/flashyotter/blockchain_node/p2p/PeerServerTest.java
 package de.flashyotter.blockchain_node.p2p;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -61,7 +60,10 @@ class PeerServerTest {
             .thenReturn(new blockchain.core.model.Transaction());
 
         // when
-        peerServer.handleTextMessage(session, new TextMessage("{\"type\":\"NewTxDto\",\"rawTxJson\":" + rawTxJson + "}"));
+        peerServer.handleTextMessage(
+            session,
+            new TextMessage("{\"type\":\"NewTxDto\",\"rawTxJson\":" + rawTxJson + "}")
+        );
 
         // then
         verify(nodeService).acceptExternalTx(any());
@@ -77,7 +79,10 @@ class PeerServerTest {
         when(mapper.readValue(rawBlockJson, blockchain.core.model.Block.class))
             .thenReturn(new blockchain.core.model.Block(0, "0".repeat(64), List.of(), 0));
 
-        peerServer.handleTextMessage(session, new TextMessage("{\"type\":\"NewBlockDto\",\"rawBlockJson\":" + rawBlockJson + "}"));
+        peerServer.handleTextMessage(
+            session,
+            new TextMessage("{\"type\":\"NewBlockDto\",\"rawBlockJson\":" + rawBlockJson + "}")
+        );
 
         verify(nodeService).acceptExternalBlock(any());
         verify(broadcastService).broadcastBlock(eq(dto), isNull());
@@ -90,13 +95,16 @@ class PeerServerTest {
         List<blockchain.core.model.Block> blocks = List.of(
             new blockchain.core.model.Block(5, "0".repeat(64), List.of(), 0)
         );
-        BlocksDto resp = new BlocksDto(List.of("someJson"));
 
         when(mapper.readValue(anyString(), eq(P2PMessageDto.class))).thenReturn(req);
         when(nodeService.blocksFromHeight(5)).thenReturn(blocks);
-        when(mapper.writeValueAsString(any(BlocksDto.class))).thenReturn("{\"rawBlocks\":[\"someJson\"]}");
+        when(mapper.writeValueAsString(any(BlocksDto.class)))
+             .thenReturn("{\"rawBlocks\":[\"someJson\"]}");
 
-        peerServer.handleTextMessage(session, new TextMessage("{\"type\":\"GetBlocksDto\",\"fromHeight\":5}"));
+        peerServer.handleTextMessage(
+            session,
+            new TextMessage("{\"type\":\"GetBlocksDto\",\"fromHeight\":5}")
+        );
 
         verify(session).sendMessage(messageCaptor.capture());
         String sent = messageCaptor.getValue().getPayload();
@@ -109,13 +117,14 @@ class PeerServerTest {
 
         when(mapper.readValue(anyString(), eq(P2PMessageDto.class))).thenReturn(dto);
 
-        peerServer.handleTextMessage(session, new TextMessage("{\"type\":\"PeerListDto\",\"peers\":[\"host1:1234\",\"host2:5678\"]}"));
+        peerServer.handleTextMessage(
+            session,
+            new TextMessage("{\"type\":\"PeerListDto\",\"peers\":[\"host1:1234\",\"host2:5678\"]}")
+        );
 
-        // registry.addAll should be called with two Peer instances
+        // registry.addAll should be called with exactly two Peer instances
         verify(registry).addAll(argThat(iter -> {
-            int count = 0;
-            for (var unused : iter) count++;
-            return count == 2;
-        }));
+            return ((java.util.Collection<?>) iter).size() == 2;
+       }));
     }
 }

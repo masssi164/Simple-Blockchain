@@ -6,7 +6,6 @@ import java.security.PublicKey;
 import java.util.Map;
 import java.util.Optional;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import blockchain.core.crypto.CryptoUtils;
@@ -24,7 +23,6 @@ public class WalletService {
     private final KeyStoreProvider store;
     @Getter private final Wallet localWallet;
 
-    @Autowired
     public WalletService(KeyStoreProvider store) {
         this.store = store;
         this.localWallet = loadOrCreate();

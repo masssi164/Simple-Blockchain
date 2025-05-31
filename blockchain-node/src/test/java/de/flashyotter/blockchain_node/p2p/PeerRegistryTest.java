@@ -1,6 +1,5 @@
 package de.flashyotter.blockchain_node.p2p;
 import de.flashyotter.blockchain_node.service.PeerRegistry;
-import de.flashyotter.blockchain_node.p2p.Peer;    // for the Peer class
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 class PeerRegistryTest {

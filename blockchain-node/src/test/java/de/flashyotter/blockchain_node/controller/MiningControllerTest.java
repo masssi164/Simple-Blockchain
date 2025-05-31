@@ -10,7 +10,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
 import blockchain.core.model.Block;
@@ -24,7 +24,7 @@ class MiningControllerTest {
     @Autowired
     private WebTestClient client;
 
-    @MockBean
+    @MockitoBean
     private NodeService nodeSvc;
 
     @Test

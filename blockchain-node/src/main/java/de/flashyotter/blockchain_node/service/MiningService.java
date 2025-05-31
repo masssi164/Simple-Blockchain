@@ -24,8 +24,7 @@ public class MiningService {
 
         int nextHeight = chain.getLatest().getHeight() + 1;
         String prevHash = chain.getLatest().getHashHex();
-        int bits = chain.getLatest().getCompactDifficultyBits(); // reuse current difficulty
-
+        int bits = chain.nextCompactBits();
         Block candidate = new Block(nextHeight, prevHash, txs, bits);
         candidate.mineLocally();
         return candidate;

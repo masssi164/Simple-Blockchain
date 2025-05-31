@@ -1,5 +1,7 @@
 package blockchain.core.crypto;
 
+import java.io.IOException;
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
@@ -10,7 +12,11 @@ import java.security.Signature;
 import java.security.spec.X509EncodedKeySpec;     // ← ensure this import
 import java.util.Base64;
 
+import org.bouncycastle.asn1.ASN1Integer;
+import org.bouncycastle.asn1.ASN1Sequence;
+import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.jce.interfaces.ECPrivateKey;
+import org.bouncycastle.jce.interfaces.ECPublicKey;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.jce.spec.ECParameterSpec;
 import org.bouncycastle.jce.spec.ECPublicKeySpec;
@@ -30,34 +36,36 @@ public final class CryptoUtils {
 
     public static byte[] applyEcdsaSignature(PrivateKey privKey, String msg) {
         try {
-            // explicit BC provider
             Signature signer = Signature.getInstance(
-                "SHA256withECDSA", BouncyCastleProvider.PROVIDER_NAME);
+                    "SHA256withECDSA", BouncyCastleProvider.PROVIDER_NAME);
             signer.initSign(privKey);
             signer.update(msg.getBytes(StandardCharsets.UTF_8));
-            return signer.sign();
+
+            byte[] der = signer.sign();                         // R|S, aber evtl. high-S
+
+            // --- Low-S-Kanonisierung ------------------------------------------
+            ASN1Sequence seq = ASN1Sequence.getInstance(der);
+            BigInteger r = ((ASN1Integer) seq.getObjectAt(0)).getValue();
+            BigInteger s = ((ASN1Integer) seq.getObjectAt(1)).getValue();
+
+            BigInteger n = ((ECPrivateKey) privKey).getParameters().getN();
+            if (s.compareTo(n.subtract(s)) > 0) {               // S > n/2 ?
+                s = n.subtract(s);                              //   → spiegeln
+            }
+
+            var canon = new DERSequence(new ASN1Integer[] {
+                    new ASN1Integer(r), new ASN1Integer(s) });
+
+            return canon.getEncoded();                          // garantiert Low-S
         } catch (GeneralSecurityException e) {
             throw new RuntimeException("ECDSA signing failed", e);
         }
-    }
-
-    public static boolean verifyEcdsaSignature(PublicKey pubKey,
-                                               String msg,
-                                               byte[] sigBytes) {
-        try {
-            // same provider for verification
-            Signature verifier = Signature.getInstance(
-                "SHA256withECDSA", BouncyCastleProvider.PROVIDER_NAME);
-            verifier.initVerify(pubKey);
-            verifier.update(msg.getBytes(StandardCharsets.UTF_8));
-            return verifier.verify(sigBytes);
-        } catch (GeneralSecurityException e) {
-            throw new RuntimeException("ECDSA verification failed", e);
+        catch(IOException e) {
+            throw new RuntimeException("ECDSA signing failed", e);
         }
     }
-
+    
     /* -------- key (de)serialisation -------- */
-
     public static String keyToBase64(PublicKey key) {
         return Base64.getEncoder().encodeToString(key.getEncoded());
     }
@@ -95,4 +103,46 @@ public final class CryptoUtils {
             throw new RuntimeException("PublicKey derivation failed", e);
         }
     }
-}    
+
+
+    public static boolean verifyEcdsaSignature(PublicKey pubKey,
+        String     msg,
+                                               byte[]     sigBytes) {
+        try {
+            // Low-S-Enforcement – S darf höchstens n/2 sein
+            if (!isLowS(sigBytes, pubKey)) return false;
+
+            Signature verifier = Signature.getInstance(
+                    "SHA256withECDSA", BouncyCastleProvider.PROVIDER_NAME);
+            verifier.initVerify(pubKey);
+            verifier.update(msg.getBytes(StandardCharsets.UTF_8));
+            return verifier.verify(sigBytes);
+        } catch (GeneralSecurityException e) {
+            throw new RuntimeException("ECDSA verification failed", e);
+        }
+    }
+
+     /*
+     * Low-S-Check (BIP-62):  S <= n/2
+     * * @param derSig  the DER-encoded signature
+     * @param pubKey  the public key to verify against
+     * @return true if the signature is low-S, false otherwise
+     */
+    private static boolean isLowS(byte[] derSig, PublicKey pubKey) {
+        try {
+            ASN1Sequence seq = ASN1Sequence.getInstance(derSig);
+            BigInteger   s   = ((ASN1Integer) seq.getObjectAt(1)).getValue();
+
+            // Kurven-Order (secp256k1) – entweder aus dem Key oder Fallback
+            BigInteger n = (pubKey instanceof ECPublicKey ec)
+                    ? ec.getParameters().getN()
+                    : new BigInteger(
+                        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141",
+                        16);
+
+            return s.compareTo(n.shiftRight(1)) <= 0;   // S ≤ n/2
+        } catch (Exception e) {
+            return false;                               // Parse-Fehler ⇒ ungültig
+        }
+    }       
+}
