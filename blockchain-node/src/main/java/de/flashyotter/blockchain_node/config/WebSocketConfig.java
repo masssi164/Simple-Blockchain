@@ -36,7 +36,7 @@ public class WebSocketConfig
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry reg) {
-        reg.addEndpoint("/stomp").setAllowedOrigins("*");
+        reg.addEndpoint("/stomp").setAllowedOriginPatterns("*");
     }
 
     @Override
@@ -48,6 +48,6 @@ public class WebSocketConfig
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry reg) {
         reg.addHandler(peerServer, "/ws")
-           .setAllowedOrigins("*");
+           .setAllowedOriginPatterns("*");
     }
 }
