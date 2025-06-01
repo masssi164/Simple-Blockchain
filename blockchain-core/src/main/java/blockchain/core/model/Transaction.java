@@ -1,12 +1,12 @@
 package blockchain.core.model;
 
-import blockchain.core.crypto.CryptoUtils;
-import blockchain.core.crypto.HashingUtils;
-
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.List;
+
+import blockchain.core.crypto.CryptoUtils;
+import blockchain.core.crypto.HashingUtils;
 
 /** Mutable until signatures are applied, then effectively frozen. */
 public class Transaction {
@@ -15,24 +15,25 @@ public class Transaction {
     private final List<TxOutput> outputs = new ArrayList<>();
     private String txHashHex;                      // lazily computed
 
-    /* --------- constructors --------- */
+    /* ------------------------------------------------------------------ */
+    /* ctors                                                              */
+    /* ------------------------------------------------------------------ */
 
     /** Empty ctor used by wallet / mem-pool. */
     public Transaction() { }
 
-    /** Convenience coin-base constructor used in genesis & mining. */
-    public Transaction(PublicKey recipient, double reward) {
-        outputs.add(new TxOutput(reward, recipient));
-        // coin-base has no inputs
-    }
 
-    /* --------- getters --------- */
+    /* ------------------------------------------------------------------ */
+    /* getters                                                            */
+    /* ------------------------------------------------------------------ */
 
     public List<TxInput>  getInputs()  { return inputs; }
     public List<TxOutput> getOutputs() { return outputs; }
     public boolean isCoinbase()        { return inputs.isEmpty(); }
 
-    /* --------- signing / verification --------- */
+    /* ------------------------------------------------------------------ */
+    /* signing / verification                                             */
+    /* ------------------------------------------------------------------ */
 
     public void signInputs(PrivateKey privKey) {
         if (isCoinbase()) return;
@@ -49,17 +50,28 @@ public class Transaction {
                                                  in.getSignature()));
     }
 
-    /* --------- hashing --------- */
+    /* ------------------------------------------------------------------ */
+    /* hashing                                                            */
+    /* ------------------------------------------------------------------ */
 
     public String calcHashHex() {
         if (txHashHex == null) txHashHex = computeTxHashHex();
         return txHashHex;
     }
 
-    private String computeTxHashHex() {
-        StringBuilder sb = new StringBuilder();
-        inputs .forEach(i -> sb.append(i.getReferencedOutputId()));
-        outputs.forEach(o -> sb.append(o.recipient()).append(o.value()));
-        return HashingUtils.computeSha256Hex(sb.toString());
-    }
+    // coin-base convenience ctor
+public Transaction(PublicKey recipient, double reward) {
+    outputs.add(new TxOutput(reward, recipient));   // ⇐ now uses the new ctor above
+    // no inputs
+}
+
+/* -------- internal -------- */
+private String computeTxHashHex() {
+    StringBuilder sb = new StringBuilder();
+    inputs .forEach(i -> sb.append(i.getReferencedOutputId()));
+    // NOTE: recipientAddress(), not recipient()
+    outputs.forEach(o -> sb.append(o.recipientAddress()).append(o.value()));
+    return HashingUtils.computeSha256Hex(sb.toString());
+}
+
 }

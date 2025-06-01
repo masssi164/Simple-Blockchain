@@ -2,6 +2,7 @@ import useSWR from 'swr';
 import { get } from '../api/rest';
 import type { Block } from '../types/block';   // ❶ Type-only-Import
 import { StatCard } from '../components/StatCard';
+import WalletView from '../components/WalletView';
 
 export default function Dashboard() {
   const { data: tip } = useSWR<Block>(
@@ -12,9 +13,13 @@ export default function Dashboard() {
 
   return (
     <main className="max-w-6xl mx-auto p-4 grid gap-4 md:grid-cols-3">
-      <StatCard label="Block height" value={tip?.height ?? '…'} />
-      <StatCard label="Difficulty bits" value={tip?.compactDifficultyBits ?? '…'} />
-      <StatCard label="Latest hash" value={tip ? tip.hashHex.slice(0, 16) : '…'} />
-    </main>
+      <div>
+        <h1>Chain info</h1>
+        <StatCard label="Block height" value={tip?.height ?? '…'} />
+        <StatCard label="Difficulty bits" value={tip?.compactDifficultyBits ?? '…'} />
+        <StatCard label="Latest hash" value={tip ? tip.hashHex.slice(0, 16) : '…'} />
+      </div>
+      <WalletView />
+      </main>
   );
 }

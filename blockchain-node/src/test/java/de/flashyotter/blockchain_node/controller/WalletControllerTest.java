@@ -2,7 +2,7 @@ package de.flashyotter.blockchain_node.controller;
 
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -11,6 +11,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.security.KeyFactory;
+import java.security.PublicKey;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.Map;
 
 import org.junit.jupiter.api.DisplayName;
@@ -23,7 +26,9 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import blockchain.core.crypto.AddressUtils;
 import blockchain.core.model.Transaction;
+import blockchain.core.model.Wallet;
 import de.flashyotter.blockchain_node.controler.WalletController;
 import de.flashyotter.blockchain_node.dto.SendFundsDto;
 import de.flashyotter.blockchain_node.service.NodeService;
@@ -32,55 +37,34 @@ import de.flashyotter.blockchain_node.wallet.WalletService;
 @WebMvcTest(WalletController.class)
 class WalletControllerTest {
 
-    @Autowired
-    private MockMvc mvc;
+    @Autowired MockMvc mvc;
+    @MockitoBean WalletService walletSvc;
+    @MockitoBean NodeService   nodeSvc;
+    @Autowired ObjectMapper    mapper;
 
-    @MockitoBean
-    private WalletService walletSvc;
-
-    @MockitoBean
-    private NodeService nodeSvc;
-
-    @Autowired
-    ObjectMapper mapper;
-
-    @Test
-    @DisplayName("GET /api/wallet returns wallet info")
+    @Test @DisplayName("GET /api/wallet gives balance & address")
     void info() throws Exception {
-        String pk = "pubkey-bytes";
-        double bal = 42.0;
-
-        // stub: Wallet.getLocalWallet().getPublicKey()
-        when(walletSvc.getLocalWallet()).thenReturn(
-            new blockchain.core.model.Wallet() {
-                @Override public java.security.PublicKey getPublicKey() {
-                    try {
-                        return java.security.KeyFactory
-                              .getInstance("EC")
-                              .generatePublic(new java.security.spec.X509EncodedKeySpec(pk.getBytes()));
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-            }
-        );
+        String pkBase64 = "MFYw…fake…==";
+        PublicKey pk = KeyFactory.getInstance("EC")
+                         .generatePublic(new X509EncodedKeySpec(pkBase64.getBytes()));
+        Wallet w = mock(Wallet.class);
+        when(w.getPublicKey()).thenReturn(pk);
+        when(walletSvc.getLocalWallet()).thenReturn(w);
         when(nodeSvc.currentUtxo()).thenReturn(Map.of());
-        when(walletSvc.balance(anyMap())).thenReturn(bal);
+        when(walletSvc.balance(anyMap())).thenReturn(42.0);
 
         mvc.perform(get("/api/wallet"))
            .andExpect(status().isOk())
-           .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-           .andExpect(jsonPath("$.confirmedBalance").value(bal))
-           .andExpect(jsonPath("$.publicKeyBase64").isNotEmpty());
+           .andExpect(jsonPath("$.confirmedBalance").value(42.0))
+           .andExpect(jsonPath("$.address").value(
+               AddressUtils.publicKeyToAddress(pk)));
     }
 
-    @Test
-    @DisplayName("POST /api/wallet/send sends funds")
+    @Test @DisplayName("POST /api/wallet/send routes tx")
     void send() throws Exception {
-        SendFundsDto dto = new SendFundsDto("rEcIpIeNt", 1.23);
-        Transaction tx = new Transaction();
-        when(walletSvc.createTx(eq(dto.recipient()), eq(dto.amount()), anyMap()))
-            .thenReturn(tx);
+        SendFundsDto dto = new SendFundsDto("addr1", 1.0);
+        Transaction  tx  = new Transaction();
+        when(walletSvc.createTx(eq("addr1"), eq(1.0), anyMap())).thenReturn(tx);
 
         mvc.perform(post("/api/wallet/send")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -88,6 +72,6 @@ class WalletControllerTest {
            .andExpect(status().isOk())
            .andExpect(content().json(mapper.writeValueAsString(tx)));
 
-        verify(nodeSvc, times(1)).submitTx(tx);
+        verify(nodeSvc).submitTx(tx);
     }
 }

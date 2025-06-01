@@ -1,5 +1,6 @@
 package blockchain.core.model;
 
+import blockchain.core.crypto.AddressUtils;
 import blockchain.core.exceptions.BlockchainException;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -10,21 +11,17 @@ import java.security.spec.ECGenParameterSpec;
 import java.util.*;
 
 /** Simple key-pair holder plus convenience sendFunds. */
-@Slf4j
-@Getter
+@Slf4j @Getter
 public class Wallet {
 
-    static {
-        // Register Bouncy-Castle as Security Provider
-        Security.addProvider(new BouncyCastleProvider());
-    }
+    static { Security.addProvider(new BouncyCastleProvider()); }
 
     private final PrivateKey privateKey;
     private final PublicKey  publicKey;
 
+
     public Wallet() {
         try {
-            // Use BouncyCastle ("BC") for secp256k1 support
             KeyPairGenerator kpg = KeyPairGenerator.getInstance("EC", "BC");
             kpg.initialize(new ECGenParameterSpec("secp256k1"), new SecureRandom());
             KeyPair kp = kpg.generateKeyPair();
@@ -36,35 +33,49 @@ public class Wallet {
     }
 
     public Wallet(PrivateKey priv, PublicKey pub) {
-        this.privateKey = priv;
-        this.publicKey  = pub;
+        this.privateKey = priv; this.publicKey = pub;
     }
 
-    /** Build and sign a new transaction spending our own UTXOs. */
-    public Transaction sendFunds(PublicKey to, double amount, Map<String, TxOutput> utxo) {
+
+    /** NEW – address based API used by the node/UI layer. */
+    public Transaction sendFunds(String toAddr,
+                                 double amount,
+                                 Map<String, TxOutput> utxo) {
+
+        String myAddr = AddressUtils.publicKeyToAddress(publicKey);
+
         double gathered = 0;
-        List<String> usedIds = new ArrayList<>();
+        List<String> spendIds = new ArrayList<>();
 
         for (var e : utxo.entrySet()) {
             TxOutput out = e.getValue();
-            if (!out.recipient().equals(publicKey)) continue;
+            if (!myAddr.equals(out.recipientAddress())) continue;
             gathered += out.value();
-            usedIds.add(e.getKey());
+            spendIds.add(e.getKey());
             if (gathered + 1e-9 >= amount) break;
         }
         if (gathered + 1e-9 < amount)
             throw new BlockchainException("balance too low");
 
         Transaction tx = new Transaction();
-        usedIds.forEach(id -> tx.getInputs()
-                                .add(new TxInput(id, new byte[0], publicKey)));
-        tx.getOutputs().add(new TxOutput(amount, to));
+        spendIds.forEach(id ->
+                tx.getInputs().add(new TxInput(id, new byte[0], publicKey)));
+
+        tx.getOutputs().add(new TxOutput(amount, toAddr));
 
         double change = gathered - amount;
         if (change > 1e-9)
-            tx.getOutputs().add(new TxOutput(change, publicKey));
+            tx.getOutputs().add(new TxOutput(change, myAddr));
 
         tx.signInputs(privateKey);
         return tx;
+    }
+
+    /** Compatibility helper for old PublicKey-based callers. */
+    @Deprecated
+    public Transaction sendFunds(PublicKey to,
+                                 double amount,
+                                 Map<String, TxOutput> utxo) {
+        return sendFunds(AddressUtils.publicKeyToAddress(to), amount, utxo);
     }
 }
