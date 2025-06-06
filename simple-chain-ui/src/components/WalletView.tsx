@@ -2,7 +2,7 @@ import { useState } from 'react';
 import QRCode from 'react-qr-code';
 import useSWR from 'swr';
 import { get, post } from '../api/rest';
-
+import { MineArea } from '../components/MiningArea';
 type WalletInfo = { address: string; confirmedBalance: number };
 type SendDto    = { recipient: string; amount: number };
 
@@ -48,6 +48,7 @@ export default function WalletView() {
         </p>
 
     </div>
+    <MineArea />
 
   {/* Send form -------------------------------------------------- */}
       <form className="p-4 border rounded shadow-sm flex flex-col gap-4"
