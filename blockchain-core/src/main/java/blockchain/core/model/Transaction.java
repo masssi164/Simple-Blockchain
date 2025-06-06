@@ -71,6 +71,9 @@ private String computeTxHashHex() {
     inputs .forEach(i -> sb.append(i.getReferencedOutputId()));
     // NOTE: recipientAddress(), not recipient()
     outputs.forEach(o -> sb.append(o.recipientAddress()).append(o.value()));
+    if (isCoinbase()) {
+        sb.append(System.identityHashCode(this));   // oder height, timestamp, …
+    }
     return HashingUtils.computeSha256Hex(sb.toString());
 }
 
