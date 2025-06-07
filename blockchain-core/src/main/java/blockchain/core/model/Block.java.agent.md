@@ -1,0 +1,1 @@
+`Block.java` defines the immutable block structure used across the project. It bundles a `BlockHeader` and the list of transactions. Mining logic is provided via `mineLocally()`, which iterates the nonce until the hash meets the PoW target.
