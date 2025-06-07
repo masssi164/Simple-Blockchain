@@ -30,7 +30,7 @@ jobs:
       run: chmod +x ./gradlew
 
     - name: Build & test (Gradle)
-      run: ./gradlew clean build --no-daemon
+      run: ./gradlew clean jacocoTestReport --no-daemon
 
     - name: Upload node JAR (artifact)
       uses: actions/upload-artifact@v4
