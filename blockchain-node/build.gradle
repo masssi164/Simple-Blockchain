@@ -51,3 +51,12 @@ compileOnly          'org.projectlombok:lombok:1.18.30'
     testImplementation 'io.projectreactor:reactor-test'
     testRuntimeOnly    'org.junit.platform:junit-platform-launcher'
 }
+
+tasks.named('test') {
+    useJUnitPlatform()
+    finalizedBy jacocoTestReport
+}
+
+tasks.named('jacocoTestReport') {
+    dependsOn test
+}
