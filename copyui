@@ -1,0 +1,43 @@
+#!/bin/bash
+
+# Basisverzeichnis: ui/src im aktuellen Arbeitsverzeichnis
+ROOT_DIR="$(pwd)/ui/src"
+
+# Prüfen, ob das Verzeichnis existiert
+if [ ! -d "$ROOT_DIR" ]; then
+  echo "Fehler: Verzeichnis ui/src wurde nicht gefunden."
+  exit 1
+fi
+
+# Temporäre Datei für das Zusammenfügen
+TEMP_FILE="$(mktemp)"
+
+# Rekursiv alle .ts und .tsx Dateien finden
+find "$ROOT_DIR" -type f \( -name "*.ts" -o -name "*.tsx" \) | while read -r file; do
+  # Relativen Pfad ermitteln
+  REL_PATH="${file#$ROOT_DIR/}"
+
+  # Pfad als Kommentar hinzufügen
+  echo "// $REL_PATH" >> "$TEMP_FILE"
+  # Dateiinhalt anhängen
+  cat "$file" >> "$TEMP_FILE"
+  # Leerzeilen zur optischen Trennung
+  echo "" >> "$TEMP_FILE"
+  echo "" >> "$TEMP_FILE"
+done
+
+# In die Zwischenablage kopieren
+if command -v pbcopy &> /dev/null; then
+  cat "$TEMP_FILE" | pbcopy
+  echo "Inhalte wurden in die macOS-Zwischenablage kopiert."
+elif command -v xclip &> /dev/null; then
+  cat "$TEMP_FILE" | xclip -selection clipboard
+  echo "Inhalte wurden in die X11-Zwischenablage kopiert."
+else
+  echo "Warnung: Keines der Tools pbcopy oder xclip gefunden. Datei liegt hier:"
+  echo "$TEMP_FILE"
+  exit 1
+fi
+
+# Temporäre Datei löschen
+rm "$TEMP_FILE"

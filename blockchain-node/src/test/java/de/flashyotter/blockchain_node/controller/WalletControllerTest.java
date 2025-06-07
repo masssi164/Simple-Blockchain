@@ -2,7 +2,7 @@ package de.flashyotter.blockchain_node.controller;
 
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -42,22 +42,27 @@ class WalletControllerTest {
     @MockitoBean NodeService   nodeSvc;
     @Autowired ObjectMapper    mapper;
 
-    @Test @DisplayName("GET /api/wallet gives balance & address")
+    @Test @DisplayName("GET /api/wallet gives balance & address, using pending UTXO")
     void info() throws Exception {
+        // prepare a fake public key and wallet
         String pkBase64 = "MFYw…fake…==";
         PublicKey pk = KeyFactory.getInstance("EC")
                          .generatePublic(new X509EncodedKeySpec(pkBase64.getBytes()));
-        Wallet w = mock(Wallet.class);
-        when(w.getPublicKey()).thenReturn(pk);
+        Wallet w = walletSvc.getLocalWallet();
         when(walletSvc.getLocalWallet()).thenReturn(w);
-        when(nodeSvc.currentUtxo()).thenReturn(Map.of());
+        when(nodeSvc.currentUtxoIncludingPending()).thenReturn(Map.of());
         when(walletSvc.balance(anyMap())).thenReturn(42.0);
 
+        // perform request
         mvc.perform(get("/api/wallet"))
            .andExpect(status().isOk())
            .andExpect(jsonPath("$.confirmedBalance").value(42.0))
            .andExpect(jsonPath("$.address").value(
-               AddressUtils.publicKeyToAddress(pk)));
+               AddressUtils.publicKeyToAddress(pk)))
+           ;
+
+        // verify that we used the new UTXO method
+        verify(nodeSvc, times(1)).currentUtxoIncludingPending();
     }
 
     @Test @DisplayName("POST /api/wallet/send routes tx")

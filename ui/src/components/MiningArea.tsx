@@ -4,12 +4,13 @@ import { post } from '../api/rest';
 import type { Block } from '../types/block';
 
 // Subcomponent to render block details
+// …unverändert…
 function BlockDetails({ block }: { block: Block }) {
   return (
     <div className="mt-6 p-4 bg-white bg-opacity-20 rounded-lg">
       <h3 className="text-xl font-semibold mb-2">Newly Mined Block</h3>
       <ul className="space-y-1 text-sm font-mono">
-        <li><strong>Height:</strong> {block.height}</li>
+        <li><strong>Height: {block.height}</strong></li>
         <li><strong>Difficulty Bits:</strong> {block.compactDifficultyBits}</li>
         <li><strong>Hash:</strong> {block.hashHex}</li>
       </ul>

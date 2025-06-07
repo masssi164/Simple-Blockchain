@@ -1,0 +1,13 @@
+plugins {
+    id "com.github.node-gradle.node" version "7.1.0"
+}
+
+node {
+    // Node und npm auf dem PATH verwenden
+    download = false
+}
+
+tasks.register("runApp", com.github.gradle.node.npm.task.NpmTask) {
+    dependsOn("npmInstall")       // Dependencies zuerst installieren
+    args = ["run", "dev"]         // entspricht: npm run dev
+}

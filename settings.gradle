@@ -16,5 +16,5 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = 'simple-blockchain'
-include 'blockchain-core', 'blockchain-node'
+include 'blockchain-core', 'blockchain-node', 'ui'
 
