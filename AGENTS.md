@@ -5,4 +5,4 @@ This repository contains a proof-of-concept blockchain implementation. The follo
 - `ui` – React + TypeScript front‑end.
 - `gradle` – Gradle wrapper and dependency version catalog.
 
-Other items include test resources under each module, a helper script `copyui`, and persistent `data` for LevelDB blocks.
+Other items include test resources under each module, and persistent `data` for LevelDB blocks.
