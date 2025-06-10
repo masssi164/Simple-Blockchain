@@ -7,8 +7,8 @@ import type { Block } from '../types/block';
 // …unverändert…
 function BlockDetails({ block }: { block: Block }) {
   return (
-    <div className="mt-6 p-4 bg-white bg-opacity-20 rounded-lg">
-      <h3 className="text-xl font-semibold mb-2">Newly Mined Block</h3>
+    <div className="mt-6 rounded-lg bg-white/20 p-4">
+      <h3 className="mb-2 text-xl font-semibold">Newly Mined Block</h3>
       <ul className="space-y-1 text-sm font-mono">
         <li><strong>Height: {block.height}</strong></li>
         <li><strong>Difficulty Bits:</strong> {block.compactDifficultyBits}</li>
@@ -29,15 +29,16 @@ export function MineArea() {
     try {
       const newBlock = await post<Block>('/mining/mine');
       setBlock(newBlock);
-    } catch (err: any) {
-      setError(err.message ?? 'Unknown error');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Unknown error';
+      setError(msg);
     } finally {
       setIsMining(false);
     }
   };
 
   return (
-    <section className="bg-gradient-to-r from-purple-500 to-indigo-600 p-6 rounded-2xl shadow-lg text-white">
+    <section className="rounded-xl bg-gradient-to-r from-purple-600 to-indigo-700 p-6 text-white shadow-lg">
       <h2 className="text-2xl font-bold mb-4">Mine a New Block</h2>
       <button
         onClick={doMine}

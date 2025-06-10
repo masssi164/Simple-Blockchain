@@ -61,10 +61,10 @@ export function Transfer() {
     setErrorMsg(null);
   };
 
-  const closeModal = () => {
+  const closeModal = useCallback(() => {
     setOpen(false);
     resetForm();
-  };
+  }, []);
 
   /* ------------------------------------------------------------------------ */
   /* Submit handler                                                           */
@@ -96,11 +96,11 @@ export function Transfer() {
         /* ------------------------------------------------------------------ */
         /* Optimistic SWR cache update – decrease confirmed balance           */
         /* ------------------------------------------------------------------ */
-        mutate(
-          '/wallet',
-          (current: any) =>
-            current && typeof current.confirmedBalance === 'number'
-              ? {
+          mutate(
+            '/wallet',
+            (current: { confirmedBalance?: number } | undefined) =>
+              current && typeof current.confirmedBalance === 'number'
+                ? {
                   ...current,
                   confirmedBalance: current.confirmedBalance - amount,
                 }
@@ -129,7 +129,7 @@ export function Transfer() {
 
         /*       ✅ Alles ok – Formular zurücksetzen und Modal schließen      */
         closeModal();
-      } catch (err) {
+      } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : 'Transaction failed';
         setErrorMsg(msg);
         toast.error(msg);
@@ -137,7 +137,7 @@ export function Transfer() {
         setSubmitting(false);
       }
     },
-    [recipient, amountStr],
+    [closeModal, recipient, amountStr],
   );
 
   /* ------------------------------------------------------------------------ */

@@ -12,14 +12,18 @@ export default function Dashboard() {
   );
 
   return (
-    <main className="max-w-6xl mx-auto p-4 grid gap-4 md:grid-cols-3">
-      <div>
-        <h1>Chain info</h1>
-        <StatCard label="Block height" value={tip?.height ?? '…'} />
-        <StatCard label="Difficulty bits" value={tip?.compactDifficultyBits ?? '…'} />
-        <StatCard label="Latest hash" value={tip ? tip.hashHex.slice(0, 16) : '…'} />
+    <main className="mx-auto max-w-6xl px-4 py-6 grid gap-6 md:grid-cols-3">
+      <section className="space-y-4" aria-label="chain info">
+        <h2 className="text-lg font-semibold">Chain info</h2>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
+          <StatCard label="Block height" value={tip?.height ?? '…'} />
+          <StatCard label="Difficulty bits" value={tip?.compactDifficultyBits ?? '…'} />
+          <StatCard label="Latest hash" value={tip ? tip.hashHex.slice(0, 16) : '…'} />
+        </div>
+      </section>
+      <div className="md:col-span-2">
+        <WalletView />
       </div>
-      <WalletView />
-      </main>
+    </main>
   );
 }

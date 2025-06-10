@@ -55,6 +55,11 @@ export default function App() {
 
   return (
     <>
+      <header className="bg-indigo-600 text-white shadow">
+        <div className="mx-auto max-w-6xl p-4">
+          <h1 className="text-2xl font-semibold">Simple Blockchain</h1>
+        </div>
+      </header>
       <Dashboard />
       <Toaster position="top-right" reverseOrder={false} />
     </>
