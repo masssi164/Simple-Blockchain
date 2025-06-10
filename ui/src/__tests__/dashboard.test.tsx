@@ -35,7 +35,11 @@ describe('<Dashboard />', () => {
   it('renders chain info cards', () => {
     render(<Dashboard />);
 
+    expect(screen.getByRole('heading', { name: /chain info/i })).toBeInTheDocument();
     expect(screen.getByText(/block height/i)).toBeInTheDocument();
+    expect(screen.getByText(/difficulty bits/i)).toBeInTheDocument();
+    expect(screen.getByText(/latest hash/i)).toBeInTheDocument();
     expect(screen.getByText('7')).toBeInTheDocument();
+    expect(screen.getByTestId('wallet-view')).toBeInTheDocument();
   });
 });

@@ -29,7 +29,7 @@ export default function WalletView() {
   return (
     <section className="grid gap-6 md:grid-cols-2">
       {/* Address / QR / Balances ------------------------------------------- */}
-      <div className="rounded-lg border p-4 shadow">
+      <div className="rounded-lg bg-white shadow p-6">
         <h2 className="mb-2 font-bold">Your address</h2>
         <code aria-label={data.address} className="block break-all">
           {data.address}
@@ -74,8 +74,10 @@ export default function WalletView() {
       </div>
 
       {/* Mining + Transfer -------------------------------------------------- */}
-      <MineArea />
-      <Transfer />
+      <div className="space-y-6">
+        <MineArea />
+        <Transfer />
+      </div>
     </section>
   );
 }
