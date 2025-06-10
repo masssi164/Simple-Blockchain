@@ -1,6 +1,6 @@
 # Simple-Blockchain (v0.1-SNAPSHOT)
 
-A lightweight Proof-of-Work blockchain node written in **Java 17** + **Spring Boot 3**.
+A lightweight Proof-of-Work blockchain node written in **Java 21** + **Spring Boot 3**.
 
 | Feature | Notes |
 |---------|-------|

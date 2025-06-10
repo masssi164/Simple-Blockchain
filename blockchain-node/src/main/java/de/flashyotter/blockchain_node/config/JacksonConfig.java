@@ -24,7 +24,6 @@ import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import blockchain.core.serialization.JsonUtils;
 
 import jakarta.annotation.PostConstruct;
-import lombok.RequiredArgsConstructor;
 
 /**
  * Registers custom Jackson modules for the node project and
@@ -32,11 +31,11 @@ import lombok.RequiredArgsConstructor;
  * {@link JsonUtils} so that core and node share the exact same
  * serialization settings.
  */
-@RequiredArgsConstructor
 @Configuration
 public class JacksonConfig {
 
-    private final ObjectMapper mapper;
+    @org.springframework.beans.factory.annotation.Autowired
+    private ObjectMapper mapper;
 
     
     /* ------------------------------------------------------------------ */

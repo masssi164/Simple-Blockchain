@@ -25,7 +25,8 @@ dependencies {
 }
 
 java {
-    toolchain { languageVersion = JavaLanguageVersion.of(17) }
+    // compile with JDK 21 to match the node module
+    toolchain { languageVersion = JavaLanguageVersion.of(21) }
 }
 
 tasks.named('test') {
