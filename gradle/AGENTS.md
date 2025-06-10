@@ -1,1 +1,4 @@
-Contains Gradle wrapper files and the version catalog `libs.versions.toml`. No source code here, only build tooling.
+Gradle wrapper files and the shared version catalog.
+
+- `wrapper/` – `gradle-wrapper.jar` and properties used to bootstrap Gradle.
+- `libs.versions.toml` – central place for dependency versions.

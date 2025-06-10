@@ -1,8 +1,11 @@
-The `ui` directory contains a Vite + React front-end used to interact with the blockchain node.
+The `ui` directory contains a Vite + React front-end used to interact with the node.
 
-Important files:
-- `index.html` – HTML page served during development and build
-- `src` – TypeScript source with React components and tests
-- `package.json` / `package-lock.json` – Node build configuration
+Key files:
+- `index.html` – main HTML page for development and production.
+- `package.json` / `package-lock.json` – Node dependencies and scripts.
+- `build.gradle` – helper tasks for running `npm` from Gradle.
+- `vite.config.ts` – Vite build configuration.
+- `src/` – TypeScript sources and tests.
+- `tsconfig*.json` – TypeScript compiler settings.
 
-Run `npm install` then `npm run dev` to launch the development server.
+Run `npm install` then `npm run dev` in this directory to start the dev server.
