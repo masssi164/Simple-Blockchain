@@ -1,5 +1,2 @@
-spring:
-  profiles:
-    active: test      
 node:
   wallet-password: test
