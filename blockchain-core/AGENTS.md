@@ -1,13 +1,14 @@
-`blockchain-core` is a standalone Java library that implements the core blockchain logic.
+`blockchain-core` is a standalone Java library implementing the fundamental
+blockchain data structures and algorithms.
 
-Directories:
-- `src/main/java/blockchain/core` contains all source packages:
-  - `model` – block, transaction and wallet classes
-  - `consensus` – chain data structure and difficulty retarget
-  - `crypto` – helpers for hashing and addresses
-  - `mempool` – in-memory transaction pool
-  - `serialization` – JSON utilities
-  - `exceptions` – domain-specific runtime exception
-- `src/test/java` provides unit tests for these packages.
+Packages under `src/main/java/blockchain/core`:
+- `consensus` – `Chain.java` manages the block DAG and difficulty, while
+  `ConsensusParams.java` defines PoW constants.
+- `crypto` – utilities like `AddressUtils`, `CryptoUtils` and `HashingUtils`.
+- `model` – `Block`, `Transaction`, `Wallet` and related classes.
+- `mempool` – simple in-memory `Mempool` for pending transactions.
+- `serialization` – JSON helpers (`JsonUtils`).
+- `exceptions` – custom runtime `BlockchainException`.
 
-Build settings live in `build.gradle` and the module can be built independently.
+Tests in `src/test/java` mirror these packages. Build logic resides in
+`build.gradle`.

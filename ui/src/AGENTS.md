@@ -1,10 +1,11 @@
-`src` holds the TypeScript source for the web UI.
+Source code for the web front-end.
 
-Subdirectories:
-- `api` – helper functions for REST and WebSocket calls
-- `components` – React UI components such as mining and wallet views
-- `pages` – top level routes (currently only `Dashboard`)
-- `types` – shared TypeScript interfaces
-- `__tests__` – Jest/Testing Library unit tests
+Folders:
+- `api/` – REST (`rest.ts`) and WebSocket (`ws.ts`) helpers.
+- `components/` – React components: `MiningArea`, `Transfer`, `StatCard`, `WalletView`.
+- `pages/` – top level views, currently just `Dashboard.tsx`.
+- `types/` – shared TypeScript interfaces.
+- `assets/` – static assets such as `react.svg`.
+- `__tests__/` – unit tests for components and pages.
 
-Entry file `main.tsx` boots the React application.
+Entry point `main.tsx` bootstraps React.
