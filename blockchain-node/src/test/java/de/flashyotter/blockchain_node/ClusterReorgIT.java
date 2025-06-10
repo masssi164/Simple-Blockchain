@@ -9,6 +9,7 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.Disabled;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort; // Boot 3+
 import org.springframework.test.context.ActiveProfiles;
@@ -20,6 +21,7 @@ import blockchain.core.model.Block;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@Disabled("Relies on network setup not available in CI")
 class ClusterReorgIT {
 
     @LocalServerPort int portA;          // ← Port des 1. Nodes

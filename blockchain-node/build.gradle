@@ -1,7 +1,8 @@
 plugins {
     id 'java'
     id 'jacoco'
-    id 'org.springframework.boot' version '3.5.0-SNAPSHOT'
+    // Use a released Spring Boot plugin to avoid snapshot repository issues
+    id 'org.springframework.boot' version '3.5.0'
     id 'io.spring.dependency-management' version '1.1.7'
 }
 
