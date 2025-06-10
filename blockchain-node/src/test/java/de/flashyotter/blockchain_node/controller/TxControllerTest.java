@@ -11,8 +11,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import blockchain.core.model.Transaction;
@@ -20,10 +21,11 @@ import de.flashyotter.blockchain_node.controler.TxController;
 import de.flashyotter.blockchain_node.service.NodeService;
 
 @WebMvcTest(TxController.class)
+@AutoConfigureMockMvc(addFilters = false)
 class TxControllerTest {
 
     @Autowired MockMvc mvc;
-    @MockitoBean NodeService nodeSvc;
+    @MockBean NodeService nodeSvc;
 
     @Test
     void submit() throws Exception {

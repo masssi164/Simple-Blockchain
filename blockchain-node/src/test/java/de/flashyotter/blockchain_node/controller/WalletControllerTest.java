@@ -11,17 +11,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.security.KeyFactory;
 import java.security.PublicKey;
-import java.security.spec.X509EncodedKeySpec;
 import java.util.Map;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -35,20 +34,20 @@ import de.flashyotter.blockchain_node.service.NodeService;
 import de.flashyotter.blockchain_node.wallet.WalletService;
 
 @WebMvcTest(WalletController.class)
+@AutoConfigureMockMvc(addFilters = false)
 class WalletControllerTest {
 
     @Autowired MockMvc mvc;
-    @MockitoBean WalletService walletSvc;
-    @MockitoBean NodeService   nodeSvc;
+    @MockBean WalletService walletSvc;
+    @MockBean NodeService   nodeSvc;
     @Autowired ObjectMapper    mapper;
 
     @Test @DisplayName("GET /api/wallet gives balance & address, using pending UTXO")
     void info() throws Exception {
         // prepare a fake public key and wallet
-        String pkBase64 = "MFYw…fake…==";
-        PublicKey pk = KeyFactory.getInstance("EC")
-                         .generatePublic(new X509EncodedKeySpec(pkBase64.getBytes()));
-        Wallet w = walletSvc.getLocalWallet();
+        // Use a generated wallet for key material
+        Wallet w = new Wallet();
+        PublicKey pk = w.getPublicKey();
         when(walletSvc.getLocalWallet()).thenReturn(w);
         when(nodeSvc.currentUtxoIncludingPending()).thenReturn(Map.of());
         when(walletSvc.balance(anyMap())).thenReturn(42.0);
