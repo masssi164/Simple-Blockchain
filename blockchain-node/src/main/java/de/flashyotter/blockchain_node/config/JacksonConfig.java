@@ -10,6 +10,7 @@ import java.util.Base64;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.beans.factory.InitializingBean;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
@@ -23,7 +24,6 @@ import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 
 import blockchain.core.serialization.JsonUtils;
 
-import jakarta.annotation.PostConstruct;
 
 /**
  * Registers custom Jackson modules for the node project and
@@ -34,10 +34,6 @@ import jakarta.annotation.PostConstruct;
 @Configuration
 public class JacksonConfig {
 
-    @org.springframework.beans.factory.annotation.Autowired
-    private ObjectMapper mapper;
-
-    
     /* ------------------------------------------------------------------ */
     /* 1) Custom module for (de)serialising java.security.PublicKey       */
     /* ------------------------------------------------------------------ */
@@ -76,8 +72,8 @@ public class JacksonConfig {
     /* ------------------------------------------------------------------ */
     /* 2) Hand Spring’s ObjectMapper over to core.JsonUtils               */
     /* ------------------------------------------------------------------ */
-    @PostConstruct
-    void init() {
-        JsonUtils.use(mapper);
+    @Bean
+    InitializingBean jsonUtilsInitializer(ObjectMapper mapper) {
+        return () -> JsonUtils.use(mapper);
     }
 }
