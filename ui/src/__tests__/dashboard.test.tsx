@@ -18,6 +18,10 @@ vi.mock('../components/WalletView', () => ({
   __esModule: true,
   default: () => <div data-testid="wallet-view" />,
 }));
+vi.mock('../components/BlockList', () => ({
+  __esModule: true,
+  default: () => <div data-testid="block-list" />,
+}));
 
 /* useSWR stubben, damit Chain-Info sofort im State ist -------------------- */
 vi.mock('swr', () => ({
@@ -41,5 +45,6 @@ describe('<Dashboard />', () => {
     expect(screen.getByText(/latest hash/i)).toBeInTheDocument();
     expect(screen.getByText('7')).toBeInTheDocument();
     expect(screen.getByTestId('wallet-view')).toBeInTheDocument();
+    expect(screen.getByTestId('block-list')).toBeInTheDocument();
   });
 });

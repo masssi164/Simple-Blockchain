@@ -3,6 +3,7 @@ import { get } from '../api/rest';
 import type { Block } from '../types/block';   // ❶ Type-only-Import
 import { StatCard } from '../components/StatCard';
 import WalletView from '../components/WalletView';
+import BlockList from '../components/BlockList';
 
 export default function Dashboard() {
   const { data: tip } = useSWR<Block>(
@@ -20,8 +21,9 @@ export default function Dashboard() {
           <StatCard label="Difficulty bits" value={tip?.compactDifficultyBits ?? '…'} />
           <StatCard label="Latest hash" value={tip ? tip.hashHex.slice(0, 16) : '…'} />
         </div>
+        <BlockList />
       </section>
-      <div className="md:col-span-2">
+      <div className="md:col-span-2 space-y-6">
         <WalletView />
       </div>
     </main>
