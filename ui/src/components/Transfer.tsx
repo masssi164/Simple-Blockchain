@@ -19,12 +19,11 @@ import {
 } from '@headlessui/react';
 import {
   ArrowRightCircleIcon,
-  CheckCircleIcon,
   ExclamationTriangleIcon,
   PaperAirplaneIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
-import toast from 'react-hot-toast';
+import { messageService } from '../services/messageService';
 import { Fragment, useCallback, useState } from 'react';
 import { mutate } from 'swr';
 import { post } from '../api/rest';
@@ -112,19 +111,8 @@ export function Transfer() {
         /* ------------------------------------------------------------------ */
         /* User feedback                                                      */
         /* ------------------------------------------------------------------ */
-        toast.custom(
-          t => (
-            <p
-              className={`${
-                t.visible ? 'animate-enter' : 'animate-leave'
-              } inline-flex items-center rounded-md bg-green-50 px-3 py-2 text-sm text-green-800 ring-1 ring-inset ring-green-600/20`}
-              role="status"
-            >
-              <CheckCircleIcon className="mr-2 h-5 w-5 text-green-600" aria-hidden="true" />
-              Sent {amount.toFixed(8)} coins to {recipient}
-            </p>
-          ),
-          { duration: 3000 },
+        messageService.success(
+          `Sent ${amount.toFixed(8)} coins to ${recipient}`,
         );
 
         /*       ✅ Alles ok – Formular zurücksetzen und Modal schließen      */
@@ -132,7 +120,7 @@ export function Transfer() {
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : 'Transaction failed';
         setErrorMsg(msg);
-        toast.error(msg);
+        messageService.error(msg);
       } finally {
         setSubmitting(false);
       }

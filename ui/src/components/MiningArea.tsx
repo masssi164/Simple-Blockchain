@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { CpuChipIcon } from '@heroicons/react/24/outline';
 import { post } from '../api/rest';
+import { messageService } from '../services/messageService';
 import type { Block } from '../types/block';
 
 // Subcomponent to render block details
@@ -21,17 +22,16 @@ function BlockDetails({ block }: { block: Block }) {
 export function MineArea() {
   const [block, setBlock] = useState<Block | null>(null);
   const [isMining, setIsMining] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const doMine = async () => {
     setIsMining(true);
-    setError(null);
     try {
       const newBlock = await post<Block>('/mining/mine');
       setBlock(newBlock);
+      messageService.success(`Mined block #${newBlock.height}`);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Unknown error';
-      setError(msg);
+      messageService.error(msg);
     } finally {
       setIsMining(false);
     }
@@ -49,12 +49,6 @@ export function MineArea() {
         <CpuChipIcon className={`h-6 w-6 mr-2 ${isMining ? 'animate-spin' : ''}`} aria-hidden="true" />
         <span>{isMining ? 'Mining...' : 'Start Mining'}</span>
       </button>
-
-      {error && (
-        <p className="mt-4 text-red-300" role="alert">
-          {error}
-        </p>
-      )}
 
       {block && <BlockDetails block={block} />}
     </section>

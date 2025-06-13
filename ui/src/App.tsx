@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { mutate } from 'swr';
-import toast, { Toaster } from 'react-hot-toast';
-import { CheckBadgeIcon } from '@heroicons/react/24/solid';
+import { Toaster } from 'react-hot-toast';
+import { messageService } from './services/messageService';
 import { wsSingleton } from './api/ws';
 import Dashboard from './pages/Dashboard';
 
@@ -29,26 +29,7 @@ export default function App() {
 
         mutate('/chain/latest');
         mutate('/wallet');
-
-        toast.custom(
-          t => (
-            <div
-              className={`${
-                t.visible ? 'animate-enter' : 'animate-leave'
-              } pointer-events-auto flex w-full max-w-sm rounded-lg bg-slate-800 p-4 shadow-lg ring-1 ring-black ring-opacity-5`}
-              role="status"
-            >
-              <CheckBadgeIcon
-                className="h-6 w-6 shrink-0 text-green-400"
-                aria-hidden="true"
-              />
-              <div className="ml-3 flex-1 text-sm text-white">
-                New block #{blk.height} accepted
-              </div>
-            </div>
-          ),
-          { duration: 4000 },
-        ); /* :contentReference[oaicite:0]{index=0} */
+        messageService.success(`New block #${blk.height} accepted`);
       }
     });
   }, []);
