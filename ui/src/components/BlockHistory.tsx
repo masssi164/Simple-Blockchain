@@ -5,8 +5,9 @@ import type { Block } from '../types/block';
 
 export default function BlockHistory() {
   const [page, setPage] = useState(0);
+  const [gap, setGap] = useState(5);
   const { data } = useSWR<Block[]>(
-    `/chain/page?page=${page}&size=5`,
+    `/chain/page?page=${page}&size=${gap}`,
     (path: string) => get<Block[]>(path),
   );
 
@@ -25,11 +26,18 @@ export default function BlockHistory() {
         </button>
         <button
           onClick={() => setPage(p => p + 1)}
-          disabled={data.length < 5}
+          disabled={data.length < gap}
           className="rounded bg-blue-600 px-2 py-1 text-white disabled:opacity-50"
         >
           Older
         </button>
+        <input
+          type="number"
+          className="w-16 rounded border px-1 py-0.5"
+          value={gap}
+          onChange={e => setGap(Number(e.target.value))}
+          min={1}
+        />
       </div>
       <ul className="space-y-1">
         {data

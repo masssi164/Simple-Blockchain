@@ -124,6 +124,32 @@ public class NodeService {
         return all.subList(start, end);
     }
 
+    /**
+     * Returns the most recent transactions involving the given address either
+     * as sender or recipient.
+     */
+    public List<Transaction> walletHistory(String address, int limit) {
+        List<Block> blocks = chain.getBlocks();
+        java.util.List<Transaction> result = new java.util.ArrayList<>();
+
+        outer:
+        for (int i = blocks.size() - 1; i >= 0; i--) {
+            for (Transaction tx : blocks.get(i).getTxList()) {
+                boolean isSender = tx.getInputs().stream()
+                    .anyMatch(in -> blockchain.core.crypto.AddressUtils
+                        .publicKeyToAddress(in.getSender()).equals(address));
+                boolean isRecipient = tx.getOutputs().stream()
+                    .anyMatch(out -> out.recipientAddress().equals(address));
+                if (isSender || isRecipient) {
+                    result.add(tx);
+                    if (result.size() >= limit) break outer;
+                }
+            }
+        }
+
+        return result;
+    }
+
     public Block latestBlock() {
         return chain.getLatest();
     }

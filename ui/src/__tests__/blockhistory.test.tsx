@@ -17,5 +17,6 @@ describe('<BlockHistory />', () => {
     render(<BlockHistory />);
     expect(screen.getByRole('heading', { name: /block history/i })).toBeInTheDocument();
     expect(screen.getByText('#2')).toBeInTheDocument();
+    expect(screen.getByRole('spinbutton')).toBeInTheDocument();
   });
 });
