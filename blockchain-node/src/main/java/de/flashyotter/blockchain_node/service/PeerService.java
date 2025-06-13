@@ -5,6 +5,7 @@ import de.flashyotter.blockchain_node.p2p.Peer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import jakarta.annotation.PostConstruct;          // ← switched to Jakarta namespace
+import de.flashyotter.blockchain_node.discovery.PeerDiscoveryService;
 
 /**
  * Boot-time peer connector; advertises peer list afterwards.
@@ -13,10 +14,11 @@ import jakarta.annotation.PostConstruct;          // ← switched to Jakarta nam
 @RequiredArgsConstructor
 public class PeerService {
 
-    private final NodeProperties      props;
-    private final SyncService         syncService;
-    private final PeerRegistry        registry;
-    private final P2PBroadcastService broadcaster;
+    private final NodeProperties       props;
+    private final SyncService          syncService;
+    private final PeerRegistry         registry;
+    private final P2PBroadcastService  broadcaster;
+    private final PeerDiscoveryService discovery;
 
     @PostConstruct
     public void init() {
@@ -29,5 +31,7 @@ public class PeerService {
                 .forEach(p -> syncService.followPeer(p.wsUrl()).subscribe());
 
         broadcaster.broadcastPeerList();
+        // trigger discovery after initial connections
+        registry.all().forEach(discovery::query);
     }
 }

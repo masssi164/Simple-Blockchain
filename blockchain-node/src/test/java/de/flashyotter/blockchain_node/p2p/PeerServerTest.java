@@ -30,6 +30,8 @@ import de.flashyotter.blockchain_node.dto.PeerListDto;
 import de.flashyotter.blockchain_node.service.NodeService;
 import de.flashyotter.blockchain_node.service.P2PBroadcastService;
 import de.flashyotter.blockchain_node.service.PeerRegistry;
+import de.flashyotter.blockchain_node.config.NodeProperties;
+import de.flashyotter.blockchain_node.discovery.PeerDiscoveryService;
 
 class PeerServerTest {
 
@@ -37,6 +39,8 @@ class PeerServerTest {
     @Mock NodeService nodeService;
     @Mock PeerRegistry registry;
     @Mock P2PBroadcastService broadcastService;
+    @Mock NodeProperties props;
+    @Mock PeerDiscoveryService discovery;
     @Mock WebSocketSession session;
 
     @Captor ArgumentCaptor<TextMessage> messageCaptor;
@@ -46,7 +50,7 @@ class PeerServerTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        peerServer = new PeerServer(mapper, nodeService, registry, broadcastService);
+        peerServer = new PeerServer(mapper, nodeService, registry, broadcastService, props, discovery);
     }
 
     @Test

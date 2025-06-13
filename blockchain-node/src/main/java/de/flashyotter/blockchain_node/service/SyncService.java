@@ -15,6 +15,7 @@ import de.flashyotter.blockchain_node.dto.HandshakeDto;
 import de.flashyotter.blockchain_node.dto.NewBlockDto;
 import de.flashyotter.blockchain_node.dto.NewTxDto;
 import de.flashyotter.blockchain_node.dto.P2PMessageDto;
+import de.flashyotter.blockchain_node.config.NodeProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +31,7 @@ public class SyncService {
     private final NodeService                 node;
     private final ObjectMapper                mapper;
     private final ReactorNettyWebSocketClient wsClient;
+    private final NodeProperties              props;
 
     /** Dauerhafte Block-Synchro mit automatischem Re-Connect */
     public Flux<Void> followPeer(String wsUrl) {
@@ -39,7 +41,7 @@ public class SyncService {
                                  s -> {
                                      // send our handshake first
                                      HandshakeDto hello = new HandshakeDto(
-                                             java.util.UUID.randomUUID().toString(),
+                                             props.getId(),
                                              "0.4.0");
                                      Mono<Void> snd = s.send(Mono.just(
                                              s.textMessage(toJson(hello))));
