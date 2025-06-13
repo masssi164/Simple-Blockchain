@@ -6,6 +6,8 @@ import de.flashyotter.blockchain_node.dto.*;
 import de.flashyotter.blockchain_node.service.NodeService;
 import de.flashyotter.blockchain_node.service.P2PBroadcastService;
 import de.flashyotter.blockchain_node.service.PeerRegistry;
+import de.flashyotter.blockchain_node.config.NodeProperties;
+import de.flashyotter.blockchain_node.discovery.PeerDiscoveryService;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +25,8 @@ public class PeerServer extends TextWebSocketHandler {
     private final NodeService         node;
     private final PeerRegistry        registry;
     private final P2PBroadcastService broadcast;
+    private final NodeProperties      props;
+    private final PeerDiscoveryService discovery;
 
     private static final String PROTOCOL_VER = "0.4.0";
 
@@ -30,8 +34,7 @@ public class PeerServer extends TextWebSocketHandler {
     @SneakyThrows
     public void afterConnectionEstablished(WebSocketSession session) {
         // send our handshake immediately
-        HandshakeDto hello = new HandshakeDto(
-                java.util.UUID.randomUUID().toString(), PROTOCOL_VER);
+        HandshakeDto hello = new HandshakeDto(props.getId(), PROTOCOL_VER);
         session.sendMessage(new TextMessage(mapper.writeValueAsString(hello)));
     }
 
@@ -49,7 +52,10 @@ public class PeerServer extends TextWebSocketHandler {
                 sess.close();
                 return;
             }
-            // send current peer-list after a successful handshake
+            // register the peer id and send our peer list
+            java.net.InetSocketAddress addr = (java.net.InetSocketAddress) sess.getRemoteAddress();
+            Peer remote = new Peer(addr.getHostString(), addr.getPort());
+            discovery.onMessage(hs, remote);
             broadcast.broadcastPeerList();
             return;                                     // nothing further
         }
@@ -89,9 +95,14 @@ public class PeerServer extends TextWebSocketHandler {
             registry.addAll(pl.peers().stream().map(Peer::fromString).toList());
             return;
         }
-        if (dto instanceof HandshakeDto hs) {
-            log.info("🤝  Handshake from {} (prot={})",
-                     hs.nodeId(), hs.protocolVersion());
+
+        // delegate discovery-related messages
+        if (dto instanceof de.flashyotter.blockchain_node.discovery.PingDto
+            || dto instanceof de.flashyotter.blockchain_node.discovery.PongDto
+            || dto instanceof de.flashyotter.blockchain_node.discovery.FindNodeDto
+            || dto instanceof de.flashyotter.blockchain_node.discovery.NodesDto) {
+            java.net.InetSocketAddress a = (java.net.InetSocketAddress) sess.getRemoteAddress();
+            discovery.onMessage(dto, new Peer(a.getHostString(), a.getPort()));
             return;
         }
     }

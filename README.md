@@ -29,8 +29,9 @@ First start creates:
 
 * `data/wallet.json`    ← local key-pair (Base64-encoded)
 * `data/blocks/`        ← LevelDB store for blocks
+* `data/nodeId`         ← persistent node identifier
 
-Peers in `application.yml → node.peers` are contacted automatically.
+Peers listed under `node.peers` act as bootstrap seeds for peer discovery.
 
 ---
 
@@ -62,9 +63,11 @@ curl -X POST http://localhost:8080/api/wallet/send \
 
 Message types (JSON with `type` discriminator):
 
-* `NEW_TX`, `NEW_BLOCK`        – gossip  
-* `GET_BLOCKS`, `BLOCKS`       – naïve range sync  
-* `PEER_LIST`                  – share known peers  
+* `NEW_TX`, `NEW_BLOCK`        – gossip
+* `GET_BLOCKS`, `BLOCKS`       – naïve range sync
+* `PEER_LIST`                  – share known peers
+* `PING`, `PONG`               – liveness check
+* `FIND_NODE`, `NODES`         – Kademlia peer discovery
 
 You can inspect traffic with any WS client:
 
@@ -81,7 +84,7 @@ ws://host:port/ws
 | 1 | `java -jar …jar --server.port=8080` |
 | 2 | `java -jar …jar --server.port=8081 --node.peers=localhost:8080` |
 
-*Nodes handshake, exchange chains, and stay in sync.*  
+*Nodes discover each other via the seed list and stay in sync.*
 Trigger mining on either node; both ledgers will converge.
 
 ---
