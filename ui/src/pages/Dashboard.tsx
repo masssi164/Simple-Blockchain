@@ -4,6 +4,7 @@ import type { Block } from '../types/block';   // ❶ Type-only-Import
 import { StatCard } from '../components/StatCard';
 import WalletView from '../components/WalletView';
 import BlockList from '../components/BlockList';
+import BlockHistory from '../components/BlockHistory';
 import RawTxSubmit from '../components/RawTxSubmit';
 
 export default function Dashboard() {
@@ -23,6 +24,7 @@ export default function Dashboard() {
           <StatCard label="Latest hash" value={tip ? tip.hashHex.slice(0, 16) : '…'} />
         </div>
         <BlockList />
+        <BlockHistory />
       </section>
       <div className="md:col-span-2 space-y-6">
         <WalletView />

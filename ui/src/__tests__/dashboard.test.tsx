@@ -22,6 +22,10 @@ vi.mock('../components/BlockList', () => ({
   __esModule: true,
   default: () => <div data-testid="block-list" />,
 }));
+vi.mock('../components/BlockHistory', () => ({
+  __esModule: true,
+  default: () => <div data-testid="block-history" />,
+}));
 vi.mock('../components/RawTxSubmit', () => ({
   __esModule: true,
   default: () => <div data-testid="rawtx" />,
@@ -50,5 +54,6 @@ describe('<Dashboard />', () => {
     expect(screen.getByText('7')).toBeInTheDocument();
     expect(screen.getByTestId('wallet-view')).toBeInTheDocument();
     expect(screen.getByTestId('block-list')).toBeInTheDocument();
+    expect(screen.getByTestId('block-history')).toBeInTheDocument();
   });
 });

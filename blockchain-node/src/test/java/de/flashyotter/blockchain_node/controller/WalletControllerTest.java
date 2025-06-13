@@ -32,6 +32,7 @@ import de.flashyotter.blockchain_node.controler.WalletController;
 import de.flashyotter.blockchain_node.dto.SendFundsDto;
 import de.flashyotter.blockchain_node.service.NodeService;
 import de.flashyotter.blockchain_node.wallet.WalletService;
+import java.util.List;
 
 @WebMvcTest(WalletController.class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -77,5 +78,19 @@ class WalletControllerTest {
            .andExpect(content().json(mapper.writeValueAsString(tx)));
 
         verify(nodeSvc).submitTx(tx);
+    }
+
+    @Test
+    void historyEndpoint() throws Exception {
+        Transaction tx = new Transaction();
+        when(nodeSvc.walletHistory("addr1", 5)).thenReturn(List.of(tx));
+
+        mvc.perform(get("/api/wallet/transactions")
+                .param("address", "addr1")
+                .param("limit", "5"))
+           .andExpect(status().isOk())
+           .andExpect(content().json(mapper.writeValueAsString(List.of(tx))));
+
+        verify(nodeSvc).walletHistory("addr1", 5);
     }
 }

@@ -59,4 +59,18 @@ class ChainControllerTest {
 
         verify(nodeSvc, times(1)).blocksFromHeight(5);
     }
+
+    @Test
+    void blockPage() throws Exception {
+        Block b0 = new Block(0, "0".repeat(64),
+            List.of(new blockchain.core.model.Transaction(new Wallet().getPublicKey(), 0)), 0);
+        List<Block> list = List.of(b0);
+        when(nodeSvc.blockPage(1, 5)).thenReturn(list);
+
+        mvc.perform(get("/api/chain/page").param("page", "1").param("size", "5"))
+           .andExpect(status().isOk())
+           .andExpect(content().json(mapper.writeValueAsString(list)));
+
+        verify(nodeSvc, times(1)).blockPage(1, 5);
+    }
 }

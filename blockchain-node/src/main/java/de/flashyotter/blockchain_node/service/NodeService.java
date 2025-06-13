@@ -109,6 +109,47 @@ public class NodeService {
                     .toList();
     }
 
+    /**
+     * Paginates blocks in descending order.
+     *
+     * @param page page index, 0 returns the most recent blocks
+     * @param size number of blocks per page
+     * @return list of blocks for the given page
+     */
+    public List<Block> blockPage(int page, int size) {
+        List<Block> all = chain.getBlocks();
+        int end   = all.size() - page * size;
+        if (end <= 0) return List.of();
+        int start = Math.max(0, end - size);
+        return all.subList(start, end);
+    }
+
+    /**
+     * Returns the most recent transactions involving the given address either
+     * as sender or recipient.
+     */
+    public List<Transaction> walletHistory(String address, int limit) {
+        List<Block> blocks = chain.getBlocks();
+        java.util.List<Transaction> result = new java.util.ArrayList<>();
+
+        outer:
+        for (int i = blocks.size() - 1; i >= 0; i--) {
+            for (Transaction tx : blocks.get(i).getTxList()) {
+                boolean isSender = tx.getInputs().stream()
+                    .anyMatch(in -> blockchain.core.crypto.AddressUtils
+                        .publicKeyToAddress(in.getSender()).equals(address));
+                boolean isRecipient = tx.getOutputs().stream()
+                    .anyMatch(out -> out.recipientAddress().equals(address));
+                if (isSender || isRecipient) {
+                    result.add(tx);
+                    if (result.size() >= limit) break outer;
+                }
+            }
+        }
+
+        return result;
+    }
+
     public Block latestBlock() {
         return chain.getLatest();
     }
