@@ -22,6 +22,10 @@ vi.mock('../components/BlockList', () => ({
   __esModule: true,
   default: () => <div data-testid="block-list" />,
 }));
+vi.mock('../components/RawTxSubmit', () => ({
+  __esModule: true,
+  default: () => <div data-testid="rawtx" />,
+}));
 
 /* useSWR stubben, damit Chain-Info sofort im State ist -------------------- */
 vi.mock('swr', () => ({

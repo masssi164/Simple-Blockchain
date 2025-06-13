@@ -9,6 +9,9 @@ vi.mock('../pages/Dashboard', () => ({
 vi.mock('./../api/ws', () => ({
   wsSingleton: { connect: vi.fn(), close: vi.fn(), on: vi.fn() },
 }));
+vi.mock('../services/messageService', () => ({
+  messageService: { success: vi.fn(), error: vi.fn() },
+}));
 
 it('renders app header', () => {
   render(<App />);

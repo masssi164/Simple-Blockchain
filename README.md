@@ -38,7 +38,7 @@ Peers in `application.yml → node.peers` are contacted automatically.
 
 | Method & Path | Payload | Description |
 |---------------|---------|-------------|
-| **GET** `/api/wallet/info` | – | Public key + confirmed balance |
+| **GET** `/api/wallet` | – | Public key + confirmed balance |
 | **POST** `/api/wallet/send` | `{ "recipient":"&lt;base64&gt;", "amount":1.23 }` | Builds + signs + broadcasts a TX |
 | **POST** `/api/tx` | raw `Transaction` JSON | Submit an already-signed TX |
 | **POST** `/api/mining/mine` | – | Mine one block immediately |
@@ -48,7 +48,7 @@ Example:
 
 ```bash
 # my wallet address & balance
-curl http://localhost:8080/api/wallet/info | jq
+curl http://localhost:8080/api/wallet | jq
 
 # pay 1.0 coin to recipientKey
 curl -X POST http://localhost:8080/api/wallet/send \

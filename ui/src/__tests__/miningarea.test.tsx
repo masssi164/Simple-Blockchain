@@ -2,6 +2,10 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MineArea } from '../components/MiningArea';
 
+vi.mock('../services/messageService', () => ({
+  messageService: { success: vi.fn(), error: vi.fn() },
+}));
+
 vi.mock('../api/rest', () => ({
   post: vi.fn(() =>
     Promise.resolve({
