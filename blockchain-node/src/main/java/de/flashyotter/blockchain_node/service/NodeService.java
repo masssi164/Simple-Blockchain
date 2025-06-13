@@ -109,6 +109,21 @@ public class NodeService {
                     .toList();
     }
 
+    /**
+     * Paginates blocks in descending order.
+     *
+     * @param page page index, 0 returns the most recent blocks
+     * @param size number of blocks per page
+     * @return list of blocks for the given page
+     */
+    public List<Block> blockPage(int page, int size) {
+        List<Block> all = chain.getBlocks();
+        int end   = all.size() - page * size;
+        if (end <= 0) return List.of();
+        int start = Math.max(0, end - size);
+        return all.subList(start, end);
+    }
+
     public Block latestBlock() {
         return chain.getLatest();
     }

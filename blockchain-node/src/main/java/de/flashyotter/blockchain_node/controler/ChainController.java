@@ -23,4 +23,14 @@ public class ChainController {
     public java.util.List<Block> blocks(@RequestParam(defaultValue = "0") int from) {
         return node.blocksFromHeight(from);
     }
+
+    /**
+     * Paginated list of blocks in descending order.
+     */
+    @GetMapping("/page")
+    public java.util.List<Block> page(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "5") int size) {
+        return node.blockPage(page, size);
+    }
 }
