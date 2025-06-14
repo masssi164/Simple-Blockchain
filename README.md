@@ -91,10 +91,12 @@ Trigger mining on either node; both ledgers will converge.
 
 ## 5  Road-map
 
-* Fee/priority mempool & eviction  
+* ~~Fee/priority mempool & eviction~~ (done)
 * Better fork-choice (total-work)  
 * gRPC / JSON-RPC facade for dApps  
 * CLI wallet utility  
 * Multi-threaded miner
+
+For Scrum user stories see [docs/scrum_user_stories.md](docs/scrum_user_stories.md).
 
 ---
