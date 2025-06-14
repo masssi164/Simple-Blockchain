@@ -1,10 +1,7 @@
 package blockchain.core.mempool;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 import blockchain.core.crypto.AddressUtils;
 import blockchain.core.exceptions.BlockchainException;
@@ -12,10 +9,20 @@ import blockchain.core.model.Transaction;
 import blockchain.core.model.TxInput;
 import blockchain.core.model.TxOutput;
 
-/** Very small, non-prioritised mem-pool suitable for demo nodes. */
+/** Priority mem-pool with simple fee-based eviction. */
 public class Mempool {
 
-    private final Map<String, Transaction> pool = new ConcurrentHashMap<>();
+    private static final int DEFAULT_MAX = 1000;
+
+    private final Map<String, Entry> pool = new ConcurrentHashMap<>();
+    private final PriorityQueue<Entry> byFee = new PriorityQueue<>(Comparator.comparingDouble(e -> e.fee));
+    private final int maxSize;
+
+    private record Entry(Transaction tx, double fee) {}
+
+    public Mempool() { this(DEFAULT_MAX); }
+
+    public Mempool(int maxSize) { this.maxSize = maxSize; }
 
     public void add(Transaction tx, Map<String, TxOutput> utxo) {
         if (tx.isCoinbase()) throw new BlockchainException("coinbase ➜ mempool");
@@ -36,20 +43,49 @@ public class Mempool {
             if (isSpent(in.getReferencedOutputId()))
                 throw new BlockchainException("double-spend in mempool");
         }
-        pool.put(tx.calcHashHex(), tx);
+        double fee = calcFee(tx, utxo);
+        Entry entry = new Entry(tx, fee);
+        String id = tx.calcHashHex();
+        synchronized (this) {
+            pool.put(id, entry);
+            byFee.add(entry);
+            if (pool.size() > maxSize) {
+                Entry evicted = byFee.poll();
+                pool.values().removeIf(e -> e.equals(evicted));
+            }
+        }
     }
 
     public List<Transaction> take(int max) {
-        return pool.values().stream().limit(max).collect(Collectors.toList());
+        return pool.values().stream()
+                   .sorted((a, b) -> Double.compare(b.fee, a.fee))
+                   .limit(max)
+                   .map(e -> e.tx)
+                   .toList();
     }
 
     public void removeAll(Collection<Transaction> confirmed) {
-        confirmed.forEach(tx -> pool.remove(tx.calcHashHex()));
+        synchronized (this) {
+            for (Transaction tx : confirmed) {
+                Entry e = pool.remove(tx.calcHashHex());
+                if (e != null) byFee.remove(e);
+            }
+        }
     }
 
     private boolean isSpent(String refId) {
         return pool.values().stream()
+                   .map(e -> e.tx)
                    .flatMap(t -> t.getInputs().stream())
                    .anyMatch(in -> in.getReferencedOutputId().equals(refId));
+    }
+
+    private double calcFee(Transaction tx, Map<String, TxOutput> utxo) {
+        double inSum = 0.0;
+        for (TxInput in : tx.getInputs()) {
+            inSum += utxo.get(in.getReferencedOutputId()).value();
+        }
+        double outSum = tx.getOutputs().stream().mapToDouble(TxOutput::value).sum();
+        return inSum - outSum;
     }
 }
