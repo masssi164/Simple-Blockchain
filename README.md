@@ -7,8 +7,10 @@ A lightweight Proof-of-Work blockchain node written in **Java 21** + **Spring Bo
 | **Full chain** | UTXO, PoW verification, difficulty retarget |
 | **Wallet** | Local ECDSA P-256 key-pair, auto-created on first run |
 | **P2P sync** | WebSocket (+ STOMP) gossip of blocks, txs & peers |
-| **CPU miner** | Single-thread demo miner |
+| **Mempool** | Fee-based priority queue with eviction |
+| **CPU miner** | Parallel CPU miner (configurable threads) |
 | **REST API** | Reactive (WebFlux) – works with `curl`, Postman, etc. |
+| **JSON-RPC** | Programmatic API for scripts and dApps |
 
 > **Status — Proof of Concept**  
 > Not production-ready (no hardening, no fork-choice, no fee market).
@@ -91,10 +93,23 @@ Trigger mining on either node; both ledgers will converge.
 
 ## 5  Road-map
 
-* Fee/priority mempool & eviction  
-* Better fork-choice (total-work)  
-* gRPC / JSON-RPC facade for dApps  
-* CLI wallet utility  
-* Multi-threaded miner
+The project will evolve towards a more stable blockchain prototype. Upcoming 
+milestones include:
+
+1. **Fork choice improvements** – adopt a total-work rule and handle 
+   reorganisations gracefully.
+2. **Fee market** – persist the priority mempool and mine transactions based on 
+   fee rate.
+3. **Mining robustness** – support multiple worker threads and allow remote
+   mining for pool-style coordination.
+4. **Secure P2P transport** – enable TLS for WebSocket connections and 
+   authenticate peers.
+5. **CLI wallet** – generate keys, sign transactions offline and query balances
+   via JSON‑RPC.
+6. **Extended JSON‑RPC API** – mirror Bitcoin/Ethereum style calls for dApp
+   compatibility.
+7. **Monitoring** – expose metrics and logs for node operations.
+8. **Scriptable transactions** – provide a small virtual machine to support
+   multisig and timelocked transfers.
 
 ---

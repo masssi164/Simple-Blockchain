@@ -24,6 +24,16 @@ public class NodeProperties {
      */
     private String walletPassword;
 
+    /**
+     * Number of worker threads used for Proof-of-Work mining.
+     */
+    private int miningThreads = Runtime.getRuntime().availableProcessors();
+
+    /**
+     * Maximum number of transactions kept in the mem-pool.
+     */
+    private int mempoolMaxSize = 5000;
+
     @PostConstruct
     private void initId() throws IOException {
         if (id != null && !id.isBlank()) return;

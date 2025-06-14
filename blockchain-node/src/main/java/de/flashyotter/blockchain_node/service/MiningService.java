@@ -1,6 +1,11 @@
 package de.flashyotter.blockchain_node.service;
 
+import java.time.Instant;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.springframework.stereotype.Service;
 
@@ -8,6 +13,7 @@ import blockchain.core.consensus.Chain;
 import blockchain.core.consensus.ConsensusParams;
 import blockchain.core.model.Block;
 import blockchain.core.model.Transaction;
+import de.flashyotter.blockchain_node.config.NodeProperties;
 import de.flashyotter.blockchain_node.wallet.WalletService;
 import lombok.RequiredArgsConstructor;
 
@@ -23,6 +29,7 @@ public class MiningService {
     private final Chain          chain;
     private final MempoolService mempool;
     private final WalletService  wallet;          // ➊ neu
+    private final NodeProperties props;
 
     public Block mine() {
 
@@ -44,8 +51,49 @@ public class MiningService {
         String prevHash = chain.getLatest().getHashHex();
         int    bits     = chain.nextCompactBits();
 
-        Block candidate = new Block(height, prevHash, txs, bits);
-        candidate.mineLocally();
-        return candidate;
+        return mineParallel(height, prevHash, txs, bits);
+    }
+
+    /**
+     * Searches for a valid nonce using multiple worker threads.
+     */
+    private Block mineParallel(int height, String prevHash,
+                               List<Transaction> txs, int bits) {
+        int threads = Math.max(1, props.getMiningThreads());
+        ExecutorService pool = Executors.newFixedThreadPool(threads);
+        AtomicReference<Block> result = new AtomicReference<>();
+        CountDownLatch latch = new CountDownLatch(threads);
+
+        long time = Instant.now().toEpochMilli();
+
+        for (int i = 0; i < threads; i++) {
+            final int start = i;
+            pool.execute(() -> {
+                try {
+                    int nonce = start;
+                    while (result.get() == null) {
+                        Block candidate = new Block(height, prevHash, txs,
+                                                     bits, time, nonce);
+                        if (candidate.isProofValid()) {
+                            result.compareAndSet(null, candidate);
+                            break;
+                        }
+                        nonce += threads;
+                    }
+                } finally {
+                    latch.countDown();
+                }
+            });
+        }
+
+        try {
+            latch.await();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } finally {
+            pool.shutdownNow();
+        }
+
+        return result.get();
     }
 }

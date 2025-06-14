@@ -12,7 +12,11 @@ server:
 
 node:
   # List of peer addresses (host:port)
-  peers: []  
+  peers: []
   wallet-password: changeMeSuperSecret
   jwt-secret: myTop$ecret            # HMAC-256 for PoC; can be RS-public later
+  # Maximum transactions kept in the mem-pool
+  mempool-max-size: 5000
+  # Number of worker threads used for mining
+  mining-threads: 4
 
