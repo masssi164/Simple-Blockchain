@@ -3,6 +3,10 @@ package de.flashyotter.blockchain_node.p2p;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.flashyotter.blockchain_node.dto.*;
+import de.flashyotter.blockchain_node.discovery.FindNodeDto;
+import de.flashyotter.blockchain_node.discovery.NodesDto;
+import de.flashyotter.blockchain_node.discovery.PingDto;
+import de.flashyotter.blockchain_node.discovery.PongDto;
 import de.flashyotter.blockchain_node.service.NodeService;
 import de.flashyotter.blockchain_node.service.P2PBroadcastService;
 import de.flashyotter.blockchain_node.service.PeerRegistry;
@@ -52,5 +56,23 @@ public class PeerServer extends TextWebSocketHandler {
         java.net.InetSocketAddress addr = (java.net.InetSocketAddress) sess.getRemoteAddress();
         Peer peer = new Peer(addr.getHostString(), addr.getPort());
         connectionManager.emitInbound(peer, dto);
+
+        if (dto instanceof HandshakeDto) {
+            registry.add(peer);
+            broadcast.broadcastPeerList();
+            discovery.onMessage(dto, peer);
+            return;
+        }
+
+        if (dto instanceof PeerListDto pl) {
+            List<Peer> peers = pl.peers().stream().map(Peer::fromString).toList();
+            registry.addAll(peers);
+            return;
+        }
+
+        if (dto instanceof PingDto || dto instanceof PongDto ||
+            dto instanceof FindNodeDto || dto instanceof NodesDto) {
+            discovery.onMessage(dto, peer);
+        }
     }
 }
