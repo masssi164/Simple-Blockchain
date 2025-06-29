@@ -28,7 +28,7 @@ class PeerClientTest {
     void setUp() {
         MockitoAnnotations.openMocks(this);
         sink = Sinks.many().unicast().onBackpressureBuffer();
-        when(manager.connectAndSink(any())).thenReturn(new ConnectionManager.Conn(sink, Flux.never()));
+        when(manager.connectAndSink(any())).thenReturn(new ConnectionManager.Conn(sink, Sinks.many().unicast().onBackpressureBuffer(), Flux.never()));
         client = new PeerClient(mapper, manager);
     }
 
