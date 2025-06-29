@@ -1,6 +1,6 @@
 package de.flashyotter.blockchain_node.p2p;
 
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -11,6 +11,7 @@ import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
 
 import de.flashyotter.blockchain_node.config.NodeProperties;
+import de.flashyotter.blockchain_node.p2p.Peer;
 import de.flashyotter.blockchain_node.service.P2PBroadcastService;
 import de.flashyotter.blockchain_node.service.PeerRegistry;
 import de.flashyotter.blockchain_node.service.PeerService;
@@ -47,7 +48,7 @@ class PeerServiceTest {
     @Test
     void initAddsAndSyncsAndBroadcasts() {
         // stub sync to return an empty flux
-        when(sync.followPeer(anyString())).thenReturn(Flux.empty());
+        when(sync.followPeer(any())).thenReturn(Flux.empty());
 
         svc.init();
 
@@ -55,9 +56,9 @@ class PeerServiceTest {
         verify(reg).add(new Peer("one", 100));
         verify(reg).add(new Peer("two", 200));
 
-        // followPeer called for each wsUrl
-        verify(sync).followPeer("ws://one:100/ws");
-        verify(sync).followPeer("ws://two:200/ws");
+        // followPeer called for each peer
+        verify(sync).followPeer(new Peer("one", 100));
+        verify(sync).followPeer(new Peer("two", 200));
 
         // broadcastPeerList at end
         verify(broad).broadcastPeerList();
