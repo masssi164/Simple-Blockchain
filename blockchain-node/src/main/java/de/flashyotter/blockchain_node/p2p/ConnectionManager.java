@@ -10,6 +10,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.socket.WebSocketMessage;
 import org.springframework.web.reactive.socket.client.ReactorNettyWebSocketClient;
+import org.springframework.web.socket.TextMessage;
+import org.springframework.web.socket.WebSocketSession;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
@@ -32,7 +34,9 @@ public class ConnectionManager {
     private final NodeProperties props;
 
     /** Holder object returned by {@link #connectAndSink(Peer)}. */
-    public record Conn(Sinks.Many<String> outbound, Flux<P2PMessageDto> inbound) {}
+    public record Conn(Sinks.Many<String> outbound,
+                       Sinks.Many<P2PMessageDto> inboundSink,
+                       Flux<P2PMessageDto> inbound) {}
 
     private final ConcurrentHashMap<Peer, Conn> connections = new ConcurrentHashMap<>();
 
@@ -41,18 +45,55 @@ public class ConnectionManager {
         return connections.computeIfAbsent(peer, this::createConnection);
     }
 
+    /** Register a server-side WebSocket session for the given peer. */
+    public Conn registerServerSession(Peer peer, WebSocketSession session) {
+        Conn conn = connections.computeIfAbsent(peer, p -> {
+            Sinks.Many<String> out = Sinks.many().multicast().onBackpressureBuffer();
+            Sinks.Many<P2PMessageDto> in = Sinks.many().multicast().onBackpressureBuffer();
+            return new Conn(out, in, in.asFlux());
+        });
+
+        // forward outbound messages to this session
+        conn.outbound().asFlux()
+                .takeWhile(v -> session.isOpen())
+                .subscribe(payload -> {
+                    try {
+                        session.sendMessage(new TextMessage(payload));
+                    } catch (Exception e) {
+                        log.warn("❌  send to {} failed: {}", peer, e.getMessage());
+                    }
+                });
+
+        // remove mapping once the session closes
+        new Thread(() -> {
+            while (session.isOpen()) {
+                try { Thread.sleep(200); } catch (InterruptedException ignored) {}
+            }
+            connections.remove(peer);
+        }, "ws-close-watch").start();
+
+        return conn;
+    }
+
+    /** Emit a message received from a server session into the connection's sink. */
+    public void emitInbound(Peer peer, P2PMessageDto dto) {
+        Conn c = connections.get(peer);
+        if (c != null) c.inboundSink().tryEmitNext(dto);
+    }
+
     /* --------------------------------------------------------------- */
     /* internal helpers                                                 */
     /* --------------------------------------------------------------- */
 
     private Conn createConnection(Peer peer) {
         Sinks.Many<String> out = Sinks.many().multicast().onBackpressureBuffer();
-        Flux<P2PMessageDto> inbound = maintainConnection(peer, out).share();
-        return new Conn(out, inbound);
+        Sinks.Many<P2PMessageDto> in = Sinks.many().multicast().onBackpressureBuffer();
+        Flux<P2PMessageDto> inbound = maintainConnection(peer, out, in).share();
+        return new Conn(out, in, inbound);
     }
 
-    private Flux<P2PMessageDto> maintainConnection(Peer peer, Sinks.Many<String> out) {
-        Sinks.Many<P2PMessageDto> inSink = Sinks.many().multicast().onBackpressureBuffer();
+    private Flux<P2PMessageDto> maintainConnection(Peer peer, Sinks.Many<String> out,
+                                                   Sinks.Many<P2PMessageDto> inSink) {
 
         Mono<Void> pipeline = Mono.defer(() ->
                 wsClient.execute(URI.create(peer.wsUrl()), session -> {
