@@ -64,13 +64,32 @@ public class ConnectionManager {
                     }
                 });
 
+        // subscribe to inbound messages if the session supports it
+        try {
+            java.lang.reflect.Method m = session.getClass().getMethod("receive");
+            @SuppressWarnings("unchecked")
+            Flux<WebSocketMessage> flux = (Flux<WebSocketMessage>) m.invoke(session);
+            flux.map(WebSocketMessage::getPayloadAsText)
+                .map(this::toDto)
+                .doOnNext(conn.inboundSink()::tryEmitNext)
+                .subscribe();
+        } catch (Exception ignored) {
+            // fallback: handleTextMessage will forward inbound events
+        }
+
         // remove mapping once the session closes
-        new Thread(() -> {
-            while (session.isOpen()) {
-                try { Thread.sleep(200); } catch (InterruptedException ignored) {}
-            }
-            connections.remove(peer);
-        }, "ws-close-watch").start();
+        try {
+            java.lang.reflect.Method cs = session.getClass().getMethod("closeStatus");
+            Mono<?> close = (Mono<?>) cs.invoke(session);
+            close.doFinally(sig -> connections.remove(peer)).subscribe();
+        } catch (Exception e) {
+            new Thread(() -> {
+                while (session.isOpen()) {
+                    try { Thread.sleep(200); } catch (InterruptedException ignored1) {}
+                }
+                connections.remove(peer);
+            }, "ws-close-watch").start();
+        }
 
         return conn;
     }
