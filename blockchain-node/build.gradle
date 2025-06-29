@@ -1,16 +1,16 @@
 plugins {
     id 'java'
     id 'jacoco'
-    // Use a released Spring Boot plugin to avoid snapshot repository issues
-    id 'org.springframework.boot' version '3.5.0'
+    id 'org.springframework.boot'      version '3.5.1'
     id 'io.spring.dependency-management' version '1.1.7'
+    id 'com.palantir.docker'           version '0.36.0'
 }
 
 group   = 'de.flashyotter'
 version = '0.0.1-SNAPSHOT'
 
 java {
-    toolchain { languageVersion = JavaLanguageVersion.of(21)}
+    toolchain { languageVersion = JavaLanguageVersion.of(21) }
 }
 
 configurations {
@@ -41,11 +41,12 @@ dependencies {
     implementation 'com.google.guava:guava'
     implementation 'org.iq80.leveldb:leveldb:0.12'
 
-    implementation "io.github.resilience4j:resilience4j-circuitbreaker:2.2.0"
-    implementation "io.github.resilience4j:resilience4j-reactor:2.2.0"
+    implementation 'io.github.resilience4j:resilience4j-circuitbreaker:2.2.0'
+    implementation 'io.github.resilience4j:resilience4j-reactor:2.2.0'
 
-compileOnly          'org.projectlombok:lombok:1.18.30'
+    compileOnly          'org.projectlombok:lombok:1.18.30'
     annotationProcessor  'org.projectlombok:lombok:1.18.30'
+
     testImplementation 'org.awaitility:awaitility:4.2.0'
     testImplementation 'org.springframework.security:spring-security-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
@@ -55,9 +56,23 @@ compileOnly          'org.projectlombok:lombok:1.18.30'
 
 tasks.named('test') {
     useJUnitPlatform()
-    finalizedBy jacocoTestReport
+    finalizedBy 'jacocoTestReport'
 }
 
 tasks.named('jacocoTestReport') {
-    dependsOn test
+    dependsOn 'test'
+}
+docker {
+    name       "blockchain-node:latest"
+    dockerfile file('Dockerfile')
+    files      "build/libs/${project.name}-${project.version}.jar"
+}
+
+// 1) sorg dafür, dass das JAR gebaut ist, bevor das Image gebaut wird
+tasks.named('docker') { dependsOn 'bootJar' }
+
+// 2) und stell hiermit sicher, dass auch der dockerPrepare-Task
+//    die JAR-Datei nicht vor ihrer Erzeugung kopiert
+tasks.named('dockerPrepare') {
+    dependsOn tasks.named('bootJar')
 }

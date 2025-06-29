@@ -1,18 +1,18 @@
 spring:
   main:
     banner-mode: off
+
 management:
   endpoints:
     web:
       exposure:
-        include: "health,metrics"
+        include: health,metrics
+
 server:
   address: 0.0.0.0
   port: 3333
 
 node:
-  # List of peer addresses (host:port)
-  peers: []  
-  wallet-password: changeMeSuperSecret
-  jwt-secret: myTop$ecret            # HMAC-256 for PoC; can be RS-public later
-
+  peers: []
+  wallet-password: ${NODE_WALLET_PASSWORD:changeMe}
+  jwt-secret:    ${NODE_JWT_SECRET:changeMeSuperSecret}

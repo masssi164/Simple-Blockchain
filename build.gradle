@@ -1,0 +1,17 @@
+plugins {
+    id 'com.avast.gradle.docker-compose' version '0.17.12'
+}
+
+version = '0.1.0-SNAPSHOT'
+
+dockerCompose {
+    useComposeFiles = ["${projectDir}/docker-compose.yml"]
+    projectName     = 'simple-blockchain'
+    // Wir bauen die Images vorab selbst – Compose soll sie nur starten
+    buildBeforeUp   = false
+}
+
+tasks.named('composeUp') {
+    // Images aus den Teilprojekten zuerst bauen
+    dependsOn ':blockchain-node:docker'
+}

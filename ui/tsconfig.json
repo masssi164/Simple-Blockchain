@@ -1,15 +1,26 @@
 {
   "compilerOptions": {
     "target": "ESNext",
-    "useDefineForClassFields": true,
     "module": "ESNext",
-    "moduleResolution": "Bundler",
+    "moduleResolution": "Node",
     "jsx": "react-jsx",
+    "useDefineForClassFields": true,
     "strict": true,
-    "verbatimModuleSyntax": true,   // => „type-only imports“ nötig
     "skipLibCheck": true,
     "noEmit": true,
-    "types": ["vitest/globals"],
+
+    // Damit React-Default-Imports und CommonJS-Typen sauber laufen:
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+
+    // Vitest-Globals und Vite-API:
+    "types": [
+      "vite/client",
+      "vitest/globals"
+    ]
   },
-  "include": ["src"]
+  "include": [
+    "src",
+    "vitest.config.ts"
+  ]
 }

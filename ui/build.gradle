@@ -1,13 +1,19 @@
 plugins {
-    id "com.github.node-gradle.node" version "7.1.0"
+    id 'com.github.node-gradle.node' version '7.1.0'
 }
 
 node {
-    // Node und npm auf dem PATH verwenden
-    download = false
+    download    = true
+    version     = '20.12.0'
+    npmVersion  = '10.8.0'
+    workDir     = file("$buildDir/nodejs")
+    npmWorkDir  = file("$buildDir/npm")
 }
 
-tasks.register("runApp", com.github.gradle.node.npm.task.NpmTask) {
-    dependsOn("npmInstall")       // Dependencies zuerst installieren
-    args = ["run", "dev"]         // entspricht: npm run dev
+def distDir = file("$projectDir/dist")
+
+tasks.register('buildFrontend', com.github.gradle.node.npm.task.NpmTask) {
+    dependsOn 'npmInstall'
+    args       = ['run', 'build']
+    outputs.dir distDir
 }

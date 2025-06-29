@@ -1,0 +1,8 @@
+node_modules
+dist
+
+# Git-Metadaten, Dockerfile selbst etc.
+.git
+.gitignore
+Dockerfile
+.dockerignore

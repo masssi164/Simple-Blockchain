@@ -17,22 +17,24 @@ public class SecurityConfig {
   @Bean
   SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
     http
-        // aktiviert CORS und greift auf das CorsConfigurationSource-Bean zu
-        .cors(Customizer.withDefaults())
-        .csrf(csrf -> csrf.disable())
-        .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+      // 1) CSRF ausschalten
+      .csrf(csrf -> csrf.disable())
+      // 2) CORS aktivieren und unsere Bean nutzen
+      .cors(Customizer.withDefaults())
+      // 3) alle Endpoints freigeben
+      .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+
     return http.build();
   }
 
-  /* --------------------------------------------------------------- */
-  /* Global CORS-Policy                                             */
-  /* --------------------------------------------------------------- */
   @Bean
-  CorsConfigurationSource corsConfigurationSource() {
+  public CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration cfg = new CorsConfiguration();
-    cfg.setAllowedOrigins(List.of("http://localhost:5173"));
-    cfg.setAllowedMethods(
-        List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+    // Erlaube wirklich **alle** localhost-Varianten:
+    cfg.setAllowedOriginPatterns(List.of("http://localhost:*"));
+    // oder ganz offen (wenn es Dir egal ist):
+    // cfg.setAllowedOrigins(List.of("*"));
+    cfg.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
     cfg.setAllowedHeaders(List.of("*"));
     cfg.setAllowCredentials(true);
 
