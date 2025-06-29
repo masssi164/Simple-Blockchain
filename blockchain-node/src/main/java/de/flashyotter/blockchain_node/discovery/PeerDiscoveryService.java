@@ -30,11 +30,10 @@ public class PeerDiscoveryService {
 
     @PostConstruct
     void bootstrap() {
+        // Seed the routing table with peers configured in application
         props.getPeers().forEach(addr -> {
             Peer p = Peer.fromString(addr);
-            registry.add(p);
             routing.putIfAbsent(p.toString(), p);
-            client.send(p, new FindNodeDto(props.getId()));
         });
     }
 
