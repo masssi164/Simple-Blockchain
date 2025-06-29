@@ -39,3 +39,7 @@ build
 !gradlew
 !gradlew.bat
 # -------------------------------------------------------------------
+
+# Ignore all agent*md files
+*agent*md
+**/*agent*md
