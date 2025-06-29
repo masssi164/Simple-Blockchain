@@ -10,6 +10,7 @@ import de.flashyotter.blockchain_node.discovery.PongDto;
 import de.flashyotter.blockchain_node.service.NodeService;
 import de.flashyotter.blockchain_node.service.P2PBroadcastService;
 import de.flashyotter.blockchain_node.service.PeerRegistry;
+import de.flashyotter.blockchain_node.service.SyncService;
 import de.flashyotter.blockchain_node.config.NodeProperties;
 import de.flashyotter.blockchain_node.discovery.PeerDiscoveryService;
 import de.flashyotter.blockchain_node.p2p.ConnectionManager;
@@ -33,6 +34,7 @@ public class PeerServer extends TextWebSocketHandler {
     private final NodeProperties      props;
     private final PeerDiscoveryService discovery;
     private final ConnectionManager   connectionManager;
+    private final SyncService         syncService;
 
     private static final String PROTOCOL_VER = "0.4.0";
 
@@ -58,9 +60,12 @@ public class PeerServer extends TextWebSocketHandler {
         connectionManager.emitInbound(peer, dto);
 
         if (dto instanceof HandshakeDto) {
-            registry.add(peer);
+            boolean fresh = registry.add(peer);
             broadcast.broadcastPeerList();
             discovery.onMessage(dto, peer);
+            if (fresh) {
+                syncService.followPeer(peer).subscribe();
+            }
             return;
         }
 

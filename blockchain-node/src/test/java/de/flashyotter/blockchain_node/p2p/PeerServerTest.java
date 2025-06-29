@@ -30,6 +30,7 @@ import de.flashyotter.blockchain_node.discovery.NodesDto;
 import de.flashyotter.blockchain_node.service.NodeService;
 import de.flashyotter.blockchain_node.service.P2PBroadcastService;
 import de.flashyotter.blockchain_node.service.PeerRegistry;
+import de.flashyotter.blockchain_node.service.SyncService;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
 
@@ -41,6 +42,7 @@ class PeerServerTest {
     @Mock P2PBroadcastService broadcastService;
     @Mock NodeProperties props;
     @Mock PeerDiscoveryService discovery;
+    @Mock SyncService syncService;
     @Mock WebSocketSession session;
     @Mock reactor.netty.http.client.HttpClient httpClient;
 
@@ -53,7 +55,7 @@ class PeerServerTest {
     @Test
     void afterConnectionEstablished_registersSession() throws Exception {
         ConnectionManager manager = org.mockito.Mockito.mock(ConnectionManager.class);
-        PeerServer peerServer = new PeerServer(mapper, nodeService, registry, broadcastService, props, discovery, manager);
+        PeerServer peerServer = new PeerServer(mapper, nodeService, registry, broadcastService, props, discovery, manager, syncService);
         when(props.getId()).thenReturn("n1");
         when(session.getRemoteAddress()).thenReturn(new InetSocketAddress("host", 1));
 
@@ -67,7 +69,7 @@ class PeerServerTest {
     void outboundMessagesAreSentThroughSession() throws Exception {
         var wsClient = org.mockito.Mockito.mock(org.springframework.web.reactive.socket.client.ReactorNettyWebSocketClient.class);
         ConnectionManager manager = new ConnectionManager(wsClient, mapper, props);
-        PeerServer peerServer = new PeerServer(mapper, nodeService, registry, broadcastService, props, discovery, manager);
+        PeerServer peerServer = new PeerServer(mapper, nodeService, registry, broadcastService, props, discovery, manager, syncService);
         when(props.getId()).thenReturn("n1");
         when(session.getRemoteAddress()).thenReturn(new InetSocketAddress("host", 2));
         when(session.isOpen()).thenReturn(true, false);
@@ -85,7 +87,7 @@ class PeerServerTest {
     void closingSessionRemovesConnection() throws Exception {
         var wsClient = org.mockito.Mockito.mock(org.springframework.web.reactive.socket.client.ReactorNettyWebSocketClient.class);
         ConnectionManager manager = new ConnectionManager(wsClient, mapper, props);
-        PeerServer peerServer = new PeerServer(mapper, nodeService, registry, broadcastService, props, discovery, manager);
+        PeerServer peerServer = new PeerServer(mapper, nodeService, registry, broadcastService, props, discovery, manager, syncService);
         when(props.getId()).thenReturn("n1");
         when(session.getRemoteAddress()).thenReturn(new InetSocketAddress("host", 3));
         when(session.isOpen()).thenReturn(true, false);
@@ -100,10 +102,12 @@ class PeerServerTest {
     @Test
     void handleHandshake_addsPeerAndBroadcasts() throws Exception {
         ConnectionManager manager = org.mockito.Mockito.mock(ConnectionManager.class);
-        PeerServer peerServer = new PeerServer(mapper, nodeService, registry, broadcastService, props, discovery, manager);
+        PeerServer peerServer = new PeerServer(mapper, nodeService, registry, broadcastService, props, discovery, manager, syncService);
         when(session.getRemoteAddress()).thenReturn(new InetSocketAddress("host", 9));
         HandshakeDto dto = new HandshakeDto("n2", "0.4.0");
         when(mapper.readValue("{}", P2PMessageDto.class)).thenReturn(dto);
+        when(registry.add(any())).thenReturn(true);
+        when(syncService.followPeer(any())).thenReturn(Flux.empty());
 
         peerServer.handleTextMessage(session, new TextMessage("{}"));
 
@@ -111,12 +115,13 @@ class PeerServerTest {
         verify(registry).add(peer);
         verify(broadcastService).broadcastPeerList();
         verify(discovery).onMessage(dto, peer);
+        verify(syncService).followPeer(peer);
     }
 
     @Test
     void handlePeerList_addsPeers() throws Exception {
         ConnectionManager manager = org.mockito.Mockito.mock(ConnectionManager.class);
-        PeerServer peerServer = new PeerServer(mapper, nodeService, registry, broadcastService, props, discovery, manager);
+        PeerServer peerServer = new PeerServer(mapper, nodeService, registry, broadcastService, props, discovery, manager, syncService);
         when(session.getRemoteAddress()).thenReturn(new InetSocketAddress("src", 4));
         PeerListDto dto = new PeerListDto(java.util.List.of("h1:1", "h2:2"));
         when(mapper.readValue("json", P2PMessageDto.class)).thenReturn(dto);
@@ -130,7 +135,7 @@ class PeerServerTest {
     @Test
     void handleDiscoveryMessages_delegateToService() throws Exception {
         ConnectionManager manager = org.mockito.Mockito.mock(ConnectionManager.class);
-        PeerServer peerServer = new PeerServer(mapper, nodeService, registry, broadcastService, props, discovery, manager);
+        PeerServer peerServer = new PeerServer(mapper, nodeService, registry, broadcastService, props, discovery, manager, syncService);
         when(session.getRemoteAddress()).thenReturn(new InetSocketAddress("h", 5));
         when(mapper.readValue(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.eq(P2PMessageDto.class)))
             .thenReturn(new PingDto("a"), new PongDto("b"), new FindNodeDto("c"), new NodesDto(java.util.List.of()));

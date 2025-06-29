@@ -19,9 +19,16 @@ public class PeerRegistry {
          return peers; 
     }
 
-    public void add(Peer p) { 
-        if (peers.add(p)) pending.add(p);          // mark for dial
-     }
+    /**
+     * Add a peer to the registry.
+     *
+     * @return {@code true} if the peer was not known yet
+     */
+    public boolean add(Peer p) {
+        boolean fresh = peers.add(p);
+        if (fresh) pending.add(p);          // mark for dial
+        return fresh;
+    }
 
     /* dial queue consumed by discovery loop */
     private final java.util.concurrent.BlockingQueue<Peer> pending =
