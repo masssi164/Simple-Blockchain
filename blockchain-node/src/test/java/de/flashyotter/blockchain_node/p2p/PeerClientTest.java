@@ -17,6 +17,7 @@ import org.springframework.web.reactive.socket.client.ReactorNettyWebSocketClien
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import de.flashyotter.blockchain_node.dto.NewTxDto;
+import de.flashyotter.blockchain_node.config.NodeProperties;
 import reactor.core.publisher.Mono;
 
 class PeerClientTest {
@@ -25,29 +26,29 @@ class PeerClientTest {
     @Mock ReactorNettyWebSocketClient wsClient;
 
     PeerClient client;
+    NodeProperties props;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        client = new PeerClient(mapper, wsClient);
+        props = new NodeProperties();
+        props.setId("me");
+        client = new PeerClient(mapper, wsClient, props);
     }
 
     @Test
-    void send_usesWebSocketClientWithCorrectUriAndPayload() throws Exception {
-        // arrange
+    void connectionReusedForMultipleSends() throws Exception {
         Peer peer = new Peer("localhost", 8080);
         NewTxDto msg = new NewTxDto("{\"foo\":\"bar\"}");
 
-        when(mapper.writeValueAsString(msg)).thenReturn("{\"type\":\"NewTxDto\",\"rawTxJson\":\"{\\\"foo\\\":\\\"bar\\\"}\"}");
-        // stub execute to return an empty Mono
+        when(mapper.writeValueAsString(any())).thenReturn("json");
         when(wsClient.execute(eq(URI.create("ws://localhost:8080/ws")), any()))
-            .thenReturn(Mono.empty());
+            .thenReturn(Mono.never());
 
-        // act
+        client.send(peer, msg);
         client.send(peer, msg);
 
-        // assert
-        verify(wsClient, timeout(1000)).execute(eq(URI.create("ws://localhost:8080/ws")), any());
-        verify(mapper).writeValueAsString(msg);
+        verify(wsClient, timeout(1000).times(1))
+            .execute(eq(URI.create("ws://localhost:8080/ws")), any());
     }
 }

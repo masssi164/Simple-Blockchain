@@ -34,6 +34,7 @@ public class PeerDiscoveryService {
             Peer p = Peer.fromString(addr);
             registry.add(p);
             routing.putIfAbsent(p.toString(), p);
+            client.connect(p);
             client.send(p, new FindNodeDto(props.getId()));
         });
     }
@@ -66,6 +67,7 @@ public class PeerDiscoveryService {
                     .forEach(p -> {
                         routing.putIfAbsent(p.toString(), p);
                         registry.add(p);
+                        client.connect(p);
                     });
         }
     }
