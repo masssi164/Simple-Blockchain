@@ -2,6 +2,7 @@ package de.flashyotter.blockchain_node.service;
 
 import de.flashyotter.blockchain_node.config.NodeProperties;
 import de.flashyotter.blockchain_node.p2p.Peer;
+import de.flashyotter.blockchain_node.p2p.PeerClient;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import jakarta.annotation.PostConstruct;          // ← switched to Jakarta namespace
@@ -19,12 +20,15 @@ public class PeerService {
     private final PeerRegistry         registry;
     private final P2PBroadcastService  broadcaster;
     private final PeerDiscoveryService discovery;
+    private final PeerClient           client;
 
     @PostConstruct
     public void init() {
         props.getPeers().forEach(addr -> {
             var sp = addr.split(":");
-            registry.add(new Peer(sp[0], Integer.parseInt(sp[1])));
+            Peer p = new Peer(sp[0], Integer.parseInt(sp[1]));
+            registry.add(p);
+            client.connect(p);
         });
 
         registry.all()
