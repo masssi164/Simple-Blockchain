@@ -15,6 +15,7 @@ import de.flashyotter.blockchain_node.service.P2PBroadcastService;
 import de.flashyotter.blockchain_node.service.PeerRegistry;
 import de.flashyotter.blockchain_node.service.PeerService;
 import de.flashyotter.blockchain_node.service.SyncService;
+import de.flashyotter.blockchain_node.p2p.PeerClient;
 import de.flashyotter.blockchain_node.discovery.PeerDiscoveryService;
 import reactor.core.publisher.Flux;
 
@@ -32,6 +33,9 @@ class PeerServiceTest {
     @Mock
     private PeerDiscoveryService discovery;
 
+    @Mock
+    private PeerClient client;
+
     private PeerService svc;
     private NodeProperties props;
 
@@ -41,7 +45,7 @@ class PeerServiceTest {
         props = new NodeProperties();
         // set two peers
         props.setPeers(java.util.List.of("one:100", "two:200"));
-        svc = new PeerService(props, sync, reg, broad, discovery);
+        svc = new PeerService(props, sync, reg, broad, discovery, client);
     }
 
     @Test
@@ -54,6 +58,10 @@ class PeerServiceTest {
         // registry.add for each peer string
         verify(reg).add(new Peer("one", 100));
         verify(reg).add(new Peer("two", 200));
+
+        // connect called for each peer
+        verify(client).connect(new Peer("one", 100));
+        verify(client).connect(new Peer("two", 200));
 
         // followPeer called for each wsUrl
         verify(sync).followPeer("ws://one:100/ws");

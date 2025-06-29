@@ -26,5 +26,6 @@ class PeerDiscoveryServiceTest {
 
         assertTrue(registry.all().contains(new Peer("host1",1111)), "peer added");
         assertEquals(1, registry.pending().size(), "pending queue populated");
+        verify(client).connect(new Peer("host1", 1111));
     }
 }
