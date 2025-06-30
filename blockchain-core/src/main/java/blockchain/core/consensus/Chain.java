@@ -256,4 +256,32 @@ public class Chain {
         currentBits = HashingUtils.targetToCompact(newTarget);
         return currentBits;
     }
+
+    /**
+     * Removes old blocks from the internal DAG maps while keeping the active
+     * chain untouched. Returns the removed blocks so callers can persist them
+     * via a {@code BlockStore} if desired.
+     *
+     * @param keep how many recent blocks (by height) to retain for forks
+     * @return list of pruned blocks
+     */
+    public synchronized List<Block> pruneOldBlocks(int keep) {
+        int cutoff = Math.max(0, getLatest().getHeight() - keep);
+
+        // Build set of hashes on the active chain so those are never removed
+        Set<String> active = new HashSet<>();
+        for (Block b : activeChain) active.add(b.getHashHex());
+
+        List<Block> removed = new ArrayList<>();
+        for (var entry : new ArrayList<>(allBlocks.entrySet())) {
+            Block blk = entry.getValue();
+            if (blk.getHeight() <= cutoff && !active.contains(entry.getKey())) {
+                removed.add(blk);
+                allBlocks.remove(entry.getKey());
+                cumulativeWork.remove(entry.getKey());
+                parent.remove(entry.getKey());
+            }
+        }
+        return removed;
+    }
 }
