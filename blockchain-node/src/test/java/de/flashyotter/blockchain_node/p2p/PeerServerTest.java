@@ -24,6 +24,8 @@ import de.flashyotter.blockchain_node.config.NodeProperties;
 import de.flashyotter.blockchain_node.dto.HandshakeDto;
 import de.flashyotter.blockchain_node.dto.P2PMessageDto;
 import de.flashyotter.blockchain_node.dto.PeerListDto;
+import de.flashyotter.blockchain_node.dto.BlocksDto;
+import de.flashyotter.blockchain_node.dto.GetBlocksDto;
 import de.flashyotter.blockchain_node.discovery.FindNodeDto;
 import de.flashyotter.blockchain_node.discovery.PeerDiscoveryService;
 import de.flashyotter.blockchain_node.discovery.PingDto;
@@ -37,6 +39,7 @@ import de.flashyotter.blockchain_node.p2p.ConnectionManager;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
 import reactor.core.publisher.Mono;
+import blockchain.core.model.Block;
 
 class PeerServerTest {
 
@@ -76,7 +79,6 @@ class PeerServerTest {
         peerServer.handle(session).subscribe();
 
         verify(manager).registerServerSession(new Peer("host", 1), session);
-        verify(session).send(org.mockito.ArgumentMatchers.any());
     }
 
     @Test
@@ -92,7 +94,7 @@ class PeerServerTest {
         c.outbound().tryEmitNext("{\"hello\":1}");
 
         Awaitility.await().untilAsserted(() ->
-            verify(session, times(2)).send(org.mockito.ArgumentMatchers.any())
+            verify(session, times(1)).send(org.mockito.ArgumentMatchers.any())
         );
     }
 
@@ -165,5 +167,55 @@ class PeerServerTest {
         Awaitility.await().untilAsserted(() ->
             verify(discovery, times(4)).onMessage(any(), org.mockito.ArgumentMatchers.eq(peer))
         );
+    }
+
+    @Test
+    void handleGetBlocks_repliesWithBlocks() throws Exception {
+        var wsClient = org.mockito.Mockito.mock(org.springframework.web.reactive.socket.client.ReactorNettyWebSocketClient.class);
+        ConnectionManager manager = new ConnectionManager(wsClient, mapper, props);
+        PeerServer peerServer = new PeerServer(mapper, nodeService, registry, broadcastService, props, discovery, manager, syncService);
+        when(props.getId()).thenReturn("n1");
+        when(info.getRemoteAddress()).thenReturn(new InetSocketAddress("b", 6));
+
+        Block blk = new Block(0, "0", java.util.List.of(new blockchain.core.model.Transaction()), 0);
+        when(nodeService.blocksFromHeight(7)).thenReturn(java.util.List.of(blk));
+        when(mapper.writeValueAsString(blk)).thenReturn("raw");
+        when(mapper.writeValueAsString(any(BlocksDto.class))).thenAnswer(inv -> "send-" + ((BlocksDto)inv.getArgument(0)).rawBlocks());
+
+        peerServer.handle(session).subscribe();
+        Peer peer = new Peer("b", 6);
+        ConnectionManager.Conn conn = manager.connectAndSink(peer);
+        java.util.List<String> sent = new java.util.concurrent.CopyOnWriteArrayList<>();
+        conn.outbound().asFlux().subscribe(sent::add);
+
+        manager.emitInbound(peer, new GetBlocksDto(7));
+
+        Awaitility.await().until(() -> sent.size() >= 2);
+        verify(nodeService).blocksFromHeight(7);
+        org.junit.jupiter.api.Assertions.assertEquals("{}", sent.get(0));
+        org.junit.jupiter.api.Assertions.assertEquals("send-[raw]", sent.get(1));
+    }
+
+    @Test
+    void handleBlocksDto_forwardsBlocksToNode() throws Exception {
+        var wsClient = org.mockito.Mockito.mock(org.springframework.web.reactive.socket.client.ReactorNettyWebSocketClient.class);
+        ConnectionManager manager = new ConnectionManager(wsClient, mapper, props);
+        PeerServer peerServer = new PeerServer(mapper, nodeService, registry, broadcastService, props, discovery, manager, syncService);
+        when(props.getId()).thenReturn("n1");
+        when(info.getRemoteAddress()).thenReturn(new InetSocketAddress("c", 7));
+
+        Block b1 = new Block(1, "0", java.util.List.of(new blockchain.core.model.Transaction()), 0);
+        Block b2 = new Block(2, "0", java.util.List.of(new blockchain.core.model.Transaction()), 0);
+        when(mapper.readValue("r1", Block.class)).thenReturn(b1);
+        when(mapper.readValue("r2", Block.class)).thenReturn(b2);
+
+        peerServer.handle(session).subscribe();
+        Peer peer = new Peer("c", 7);
+        manager.emitInbound(peer, new BlocksDto(java.util.List.of("r1", "r2")));
+
+        Awaitility.await().untilAsserted(() -> {
+            verify(nodeService).acceptExternalBlock(b1);
+            verify(nodeService).acceptExternalBlock(b2);
+        });
     }
 }
