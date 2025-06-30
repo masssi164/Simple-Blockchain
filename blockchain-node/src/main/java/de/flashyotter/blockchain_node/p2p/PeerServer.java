@@ -56,7 +56,6 @@ public class PeerServer implements WebSocketHandler {
             if (dto instanceof HandshakeDto hs) {
                 Peer real = new Peer(host, hs.listenPort());
                 actual.set(real);
-                connectionManager.remap(peer, real);
                 boolean fresh = registry.add(real);
                 broadcast.broadcastPeerList();
                 discovery.onMessage(hs, real);

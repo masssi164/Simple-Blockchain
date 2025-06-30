@@ -10,7 +10,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.socket.WebSocketMessage;
 import org.springframework.web.reactive.socket.client.ReactorNettyWebSocketClient;
-import org.springframework.web.reactive.socket.WebSocketMessage;
 import org.springframework.web.reactive.socket.WebSocketSession;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -47,42 +46,51 @@ public class ConnectionManager {
 
     /** Register a server-side WebSocket session for the given peer. */
     public Conn registerServerSession(Peer peer, WebSocketSession session) {
-        Conn conn = connections.computeIfAbsent(peer, p -> {
-            Sinks.Many<String> out = Sinks.many().multicast().onBackpressureBuffer();
-            Sinks.Many<P2PMessageDto> in = Sinks.many().multicast().onBackpressureBuffer();
-            return new Conn(out, in, in.asFlux());
-        });
+        Sinks.Many<String> out = Sinks.many().multicast().onBackpressureBuffer();
+        Sinks.Many<P2PMessageDto> inSink = Sinks.many().multicast().onBackpressureBuffer();
+        Conn conn = new Conn(out, inSink, inSink.asFlux());
+
+        java.util.concurrent.atomic.AtomicReference<Peer> actual = new java.util.concurrent.atomic.AtomicReference<>();
+        java.util.Queue<P2PMessageDto> preHandshake = new java.util.concurrent.ConcurrentLinkedQueue<>();
 
         // forward outbound messages to this session
-        session.send(conn.outbound().asFlux().map(session::textMessage))
+        session.send(out.asFlux().map(session::textMessage))
                .doOnError(e -> log.warn("❌  send to {} failed: {}", peer, e.getMessage()))
                .subscribe();
 
-        // forward inbound messages from the session
+        // forward inbound messages from the session, buffering until handshake
         session.receive()
                 .map(WebSocketMessage::getPayloadAsText)
                 .map(this::toDto)
-                .doOnNext(conn.inboundSink()::tryEmitNext)
+                .doOnNext(dto -> {
+                    Peer a = actual.get();
+                    if (a == null) {
+                        preHandshake.add(dto);
+                        if (dto instanceof HandshakeDto hs) {
+                            Peer real = new Peer(peer.getHost(), hs.listenPort());
+                            if (connections.putIfAbsent(real, conn) == null) {
+                                actual.set(real);
+                            } else {
+                                actual.set(real);
+                            }
+                            preHandshake.forEach(inSink::tryEmitNext);
+                            preHandshake.clear();
+                        }
+                    } else {
+                        inSink.tryEmitNext(dto);
+                    }
+                })
                 .subscribe();
 
         // remove mapping once the session closes
         session.closeStatus()
-                .doFinally(sig -> connections.remove(peer))
+                .doFinally(sig -> {
+                    Peer a = actual.get();
+                    if (a != null) connections.remove(a);
+                })
                 .subscribe();
 
         return conn;
-    }
-
-    /**
-     * Replace an existing temporary mapping with a new peer key while
-     * reusing the same {@link Conn} instance. Used once the remote side
-     * sends its {@link HandshakeDto} containing the real listening port.
-     */
-    public void remap(Peer temporary, Peer actual) {
-        Conn conn = connections.remove(temporary);
-        if (conn != null) {
-            connections.putIfAbsent(actual, conn);
-        }
     }
 
     /** Emit a message received from a server session into the connection's sink. */
