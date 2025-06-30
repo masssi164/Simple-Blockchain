@@ -16,7 +16,7 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_NODE_URL: http://localhost:${BACKEND_PORT}/api
-        VITE_NODE_WS: http://localhost:${BACKEND_PORT}/ws
+        VITE_NODE_WS: ws://localhost:${BACKEND_PORT}/ws
     ports:
       - "${FRONTEND_PORT}:80"
     depends_on:
