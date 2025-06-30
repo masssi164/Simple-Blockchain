@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.time.Duration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -44,6 +45,7 @@ class ConnectionManagerServerSessionTest {
         when(session.getHandshakeInfo()).thenReturn(info);
         when(session.send(any())).thenReturn(Mono.empty());
         when(session.closeStatus()).thenReturn(Mono.never());
+        when(session.close()).thenReturn(Mono.empty());
         when(session.textMessage(any())).thenReturn(Mockito.mock(WebSocketMessage.class));
     }
 
@@ -84,5 +86,21 @@ class ConnectionManagerServerSessionTest {
         assertEquals(List.of(before, hs, after), got);
         assertSame(conn, manager.connectAndSink(actual));
         assertNotSame(conn, manager.connectAndSink(temp));
+    }
+
+    @Test
+    void closesIfNoHandshake() {
+        when(info.getRemoteAddress()).thenReturn(new InetSocketAddress("h", 7));
+
+        when(session.receive()).thenReturn(Flux.never());
+
+        Peer peer = new Peer("h", 7);
+        ConnectionManager.Conn conn = manager.registerServerSession(peer, session);
+
+        Awaitility.await().atMost(Duration.ofSeconds(6))
+                  .untilAsserted(() -> Mockito.verify(session).close());
+
+        ConnectionManager.Conn newer = manager.connectAndSink(peer);
+        assertNotSame(conn, newer);
     }
 }
