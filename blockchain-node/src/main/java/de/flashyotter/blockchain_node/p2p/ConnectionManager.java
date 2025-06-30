@@ -14,6 +14,8 @@ import org.springframework.web.reactive.socket.WebSocketSession;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
+import reactor.core.Disposable;
+import reactor.core.scheduler.Schedulers;
 import reactor.util.retry.Retry;
 
 import java.net.URI;
@@ -53,6 +55,13 @@ public class ConnectionManager {
         java.util.concurrent.atomic.AtomicReference<Peer> actual = new java.util.concurrent.atomic.AtomicReference<>();
         java.util.Queue<P2PMessageDto> preHandshake = new java.util.concurrent.ConcurrentLinkedQueue<>();
 
+        Disposable timeout = Schedulers.single().schedule(() -> {
+            if (actual.get() == null) {
+                preHandshake.clear();
+                session.close().subscribe();
+            }
+        }, 5, java.util.concurrent.TimeUnit.SECONDS);
+
         // forward outbound messages to this session
         session.send(out.asFlux().map(session::textMessage))
                .doOnError(e -> log.warn("❌  send to {} failed: {}", peer, e.getMessage()))
@@ -75,6 +84,7 @@ public class ConnectionManager {
                             }
                             preHandshake.forEach(inSink::tryEmitNext);
                             preHandshake.clear();
+                            timeout.dispose();
                         }
                     } else {
                         inSink.tryEmitNext(dto);
