@@ -16,3 +16,6 @@ node:
   peers: []
   wallet-password: ${NODE_WALLET_PASSWORD:changeMe}
   jwt-secret:    ${NODE_JWT_SECRET:changeMeSuperSecret}
+
+mempool:
+  maxSize: 1000
