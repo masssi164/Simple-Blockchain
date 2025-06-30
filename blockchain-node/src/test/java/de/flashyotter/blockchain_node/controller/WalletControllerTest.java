@@ -28,7 +28,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import blockchain.core.crypto.AddressUtils;
 import blockchain.core.model.Transaction;
 import blockchain.core.model.Wallet;
-import de.flashyotter.blockchain_node.controler.WalletController;
+import de.flashyotter.blockchain_node.controller.WalletController;
 import de.flashyotter.blockchain_node.dto.SendFundsDto;
 import de.flashyotter.blockchain_node.service.NodeService;
 import de.flashyotter.blockchain_node.wallet.WalletService;

@@ -17,7 +17,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
 import blockchain.core.model.Block;
-import de.flashyotter.blockchain_node.controler.MiningController;
+import de.flashyotter.blockchain_node.controller.MiningController;
 import de.flashyotter.blockchain_node.service.NodeService;
 import reactor.core.publisher.Mono;
 

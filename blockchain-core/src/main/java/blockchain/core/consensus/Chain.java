@@ -5,17 +5,27 @@ import java.math.BigInteger;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import java.security.GeneralSecurityException;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.SecureRandom;
+import java.security.spec.ECGenParameterSpec;
+
+import blockchain.core.crypto.AddressUtils;
 import blockchain.core.crypto.HashingUtils;
 import blockchain.core.exceptions.BlockchainException;
 import blockchain.core.model.Block;
 import blockchain.core.model.Transaction;
 import blockchain.core.model.TxOutput;
 import blockchain.core.model.Wallet;
+import blockchain.core.consensus.ConsensusParams;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -36,11 +46,19 @@ public class Chain {
     private volatile String bestTipHash;
     private int             currentBits = 0x1f0fffff;   // easy PoW für Demos
 
+    /* ──────────────────────── Genesis Block ───────────────────────── */
+    private static final Block  GENESIS;
+    private static final String GENESIS_HASH;
+
+    static {
+        GENESIS = createGenesis();
+        GENESIS_HASH = GENESIS.getHashHex();
+    }
+
     /* ───────────────────────── Konstruktor ────────────────────────── */
     public Chain() {
-        Block g = genesisBlock();
-        indexBlock(g);
-        switchActiveChain(g.getHashHex());   // füllt UTXO
+        indexBlock(GENESIS);
+        switchActiveChain(GENESIS_HASH);   // füllt UTXO
     }
 
     /* ───────────────────────── Read-only API ──────────────────────── */
@@ -73,21 +91,60 @@ public class Chain {
     }
 
     /* ─────────────────────── Genesis & Helpers ────────────────────── */
-    private Block genesisBlock() {
-        Wallet miner = new Wallet();
+    private static Block createGenesis() {
+        Wallet miner = deterministicWallet();
         Transaction cb = new Transaction(miner.getPublicKey(),
                                          ConsensusParams.blockReward(0));
         return new Block(0, "0".repeat(64),
-                         List.of(cb), currentBits,
-                         Instant.now().toEpochMilli(), 0);
+                         List.of(cb), 0x1f0fffff,
+                         1_694_303_200_000L, 0);
+    }
+
+    private static Wallet deterministicWallet() {
+        try {
+            java.security.Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
+            KeyPairGenerator kpg = KeyPairGenerator.getInstance("EC", "BC");
+            SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
+            sr.setSeed("simple-chain-genesis".getBytes());
+            kpg.initialize(new ECGenParameterSpec("secp256k1"), sr);
+            KeyPair kp = kpg.generateKeyPair();
+            return new Wallet(kp.getPrivate(), kp.getPublic());
+        } catch (GeneralSecurityException e) {
+            throw new BlockchainException("genesis key", e);
+        }
     }
 
     private void validateTxs(Block b) {
         if (b.getTxList().isEmpty())            throw new BlockchainException("empty block");
-        if (!b.getTxList().get(0).isCoinbase()) throw new BlockchainException("first tx must be coinbase");
-        b.getTxList().stream().skip(1).forEach(tx -> {
-            if (!tx.verifySignatures()) throw new BlockchainException("bad signature");
-        });
+
+        Transaction coinbase = b.getTxList().get(0);
+        if (!coinbase.isCoinbase()) throw new BlockchainException("first tx must be coinbase");
+
+        double reward = coinbase.getOutputs().stream().mapToDouble(TxOutput::value).sum();
+        if (reward > ConsensusParams.blockReward(b.getHeight()))
+            throw new BlockchainException("excessive coinbase");
+
+        Set<String> spent = new HashSet<>();
+
+        for (Transaction tx : b.getTxList().subList(1, b.getTxList().size())) {
+            if (!tx.verifySignatures())
+                throw new BlockchainException("bad signature");
+
+            for (var in : tx.getInputs()) {
+                String ref = in.getReferencedOutputId();
+                if (spent.contains(ref))
+                    throw new BlockchainException("double-spend in block");
+                if (!utxo.containsKey(ref))
+                    throw new BlockchainException("UTXO not found");
+
+                TxOutput out = utxo.get(ref);
+                String sender = AddressUtils.publicKeyToAddress(in.getSender());
+                if (!sender.equals(out.recipientAddress()))
+                    throw new BlockchainException("pub-key mismatch");
+
+                spent.add(ref);
+            }
+        }
     }
 
     /* ────────── Index in globale DAG ────────── */

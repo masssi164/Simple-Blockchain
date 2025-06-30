@@ -1,4 +1,4 @@
-package de.flashyotter.blockchain_node.controler;
+package de.flashyotter.blockchain_node.controller;
 
 import blockchain.core.exceptions.BlockchainException;
 import org.springframework.http.HttpStatus;
