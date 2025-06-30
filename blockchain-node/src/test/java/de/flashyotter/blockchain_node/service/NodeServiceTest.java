@@ -44,6 +44,8 @@ class NodeServiceTest {
         broadcaster = mock(P2PBroadcastService.class);
         store       = mock(BlockStore.class);
 
+        when(chain.getBlocks()).thenReturn(List.of());
+
         svc = new NodeService(chain, mempool, mining, broadcaster, store);
     }
 
@@ -102,5 +104,26 @@ class NodeServiceTest {
         verify(chain,   times(1)).addBlock(b);
         verify(store,   times(1)).save(b);
         verify(mempool, times(1)).purge(b.getTxList());
+    }
+
+    @Test
+    void reorgRestoresOrphanedTransactions() {
+        Transaction orphanTx = mock(Transaction.class);
+        Block oldBlock = mock(Block.class);
+        when(oldBlock.getTxList()).thenReturn(List.of(mock(Transaction.class), orphanTx));
+        when(oldBlock.getHashHex()).thenReturn("old");
+
+        Block newBlock = mock(Block.class);
+        when(newBlock.getTxList()).thenReturn(List.of());
+        when(newBlock.getHashHex()).thenReturn("new");
+
+        when(chain.getBlocks()).thenReturn(List.of(oldBlock), List.of(newBlock));
+        Map<String, TxOutput> utxo = Map.of();
+        when(chain.getUtxoSnapshot()).thenReturn(utxo);
+
+        svc.acceptExternalBlock(oldBlock); // populate snapshot
+        svc.acceptExternalBlock(newBlock); // triggers reorg
+
+        verify(mempool, times(1)).submit(eq(orphanTx), eq(utxo));
     }
 }
