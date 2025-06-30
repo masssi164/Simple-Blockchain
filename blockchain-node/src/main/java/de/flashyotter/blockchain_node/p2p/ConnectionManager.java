@@ -73,6 +73,18 @@ public class ConnectionManager {
         return conn;
     }
 
+    /**
+     * Replace an existing temporary mapping with a new peer key while
+     * reusing the same {@link Conn} instance. Used once the remote side
+     * sends its {@link HandshakeDto} containing the real listening port.
+     */
+    public void remap(Peer temporary, Peer actual) {
+        Conn conn = connections.remove(temporary);
+        if (conn != null) {
+            connections.putIfAbsent(actual, conn);
+        }
+    }
+
     /** Emit a message received from a server session into the connection's sink. */
     public void emitInbound(Peer peer, P2PMessageDto dto) {
         Conn c = connections.get(peer);
