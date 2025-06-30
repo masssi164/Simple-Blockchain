@@ -11,12 +11,23 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.nio.charset.StandardCharsets;
 
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.SecureRandom;
 import java.security.spec.ECGenParameterSpec;
+import java.security.PublicKey;
+import java.io.IOException;
+import java.util.Base64;
+
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 
 import blockchain.core.crypto.AddressUtils;
 import blockchain.core.crypto.HashingUtils;
@@ -46,6 +57,24 @@ public class Chain {
 
     private volatile String bestTipHash;
     private int             currentBits = 0x1f0fffff;   // easy PoW für Demos
+
+    private static final ObjectMapper LENGTH_MAPPER;
+
+    static {
+        SimpleModule pk = new SimpleModule();
+        pk.addSerializer(PublicKey.class, new StdSerializer<>(PublicKey.class) {
+            @Override
+            public void serialize(PublicKey value, JsonGenerator gen,
+                                   SerializerProvider serializers) throws IOException {
+                gen.writeString(Base64.getEncoder().encodeToString(value.getEncoded()));
+            }
+        });
+
+        LENGTH_MAPPER = new ObjectMapper()
+                .findAndRegisterModules()
+                .registerModule(pk)
+                .disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
+    }
 
     /* ──────────────────────── Genesis Block ───────────────────────── */
     private static final Block  GENESIS;
@@ -79,6 +108,17 @@ public class Chain {
 
         if (!b.isProofValid())
             throw new BlockchainException("invalid PoW");
+
+        int blockBytes;
+        try {
+            String json = LENGTH_MAPPER.writeValueAsString(b);
+            blockBytes = json.getBytes(StandardCharsets.UTF_8).length;
+        } catch (Exception e) {
+            throw new BlockchainException("oversized block", e);
+        }
+        if (blockBytes > ConsensusParams.MAX_BLOCK_SIZE_BYTES
+            || b.getTxList().size() > ConsensusParams.MAX_BLOCK_SIZE_BYTES)
+            throw new BlockchainException("oversized block");
 
         indexBlock(b);
 
