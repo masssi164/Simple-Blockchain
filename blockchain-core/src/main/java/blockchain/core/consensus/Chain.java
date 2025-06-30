@@ -69,7 +69,7 @@ public class Chain {
     public BigInteger            getTotalWork()     { return cumulativeWork.get(bestTipHash); }
 
     /* ───────────────────────── Block-Append ───────────────────────── */
-    public void addBlock(Block b) {
+    public synchronized void addBlock(Block b) {
 
         if (!"0".repeat(64).equals(b.getPreviousHashHex())
             && !allBlocks.containsKey(b.getPreviousHashHex()))
