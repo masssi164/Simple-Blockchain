@@ -17,7 +17,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import blockchain.core.model.Transaction;
-import de.flashyotter.blockchain_node.controler.TxController;
+import de.flashyotter.blockchain_node.controller.TxController;
 import de.flashyotter.blockchain_node.service.NodeService;
 
 @WebMvcTest(TxController.class)

@@ -1,4 +1,4 @@
-package de.flashyotter.blockchain_node.controler;
+package de.flashyotter.blockchain_node.controller;
 
 import blockchain.core.crypto.AddressUtils;
 import blockchain.core.model.Transaction;

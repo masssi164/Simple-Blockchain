@@ -20,7 +20,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import blockchain.core.model.Block;
-import de.flashyotter.blockchain_node.controler.ChainController;
+import de.flashyotter.blockchain_node.controller.ChainController;
 import de.flashyotter.blockchain_node.service.NodeService;
 
 @WebMvcTest(ChainController.class)
