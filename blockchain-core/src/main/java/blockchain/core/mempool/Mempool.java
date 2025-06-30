@@ -18,7 +18,7 @@ public class Mempool {
     private final PriorityQueue<Entry> byFee = new PriorityQueue<>(Comparator.comparingDouble(e -> e.fee));
     private final int maxSize;
 
-    private record Entry(Transaction tx, double fee) {}
+    private record Entry(String txHash, Transaction tx, double fee) {}
 
     public Mempool() { this(DEFAULT_MAX); }
 
@@ -44,14 +44,14 @@ public class Mempool {
                 throw new BlockchainException("double-spend in mempool");
         }
         double fee = calcFee(tx, utxo);
-        Entry entry = new Entry(tx, fee);
         String id = tx.calcHashHex();
+        Entry entry = new Entry(id, tx, fee);
         synchronized (this) {
             pool.put(id, entry);
             byFee.add(entry);
             if (pool.size() > maxSize) {
                 Entry evicted = byFee.poll();
-                pool.values().removeIf(e -> e.equals(evicted));
+                pool.remove(evicted.tx().calcHashHex());
             }
         }
     }
