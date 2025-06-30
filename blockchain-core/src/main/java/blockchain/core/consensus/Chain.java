@@ -42,6 +42,7 @@ public class Chain {
     private final Map<String, String>           parent         = new ConcurrentHashMap<>();
     private final CopyOnWriteArrayList<Block>   activeChain    = new CopyOnWriteArrayList<>();
     private final Map<String, TxOutput>         utxo           = new ConcurrentHashMap<>();
+    private final Map<String, Integer>          coinbaseHeight = new ConcurrentHashMap<>();
 
     private volatile String bestTipHash;
     private int             currentBits = 0x1f0fffff;   // easy PoW für Demos
@@ -127,10 +128,14 @@ public class Chain {
 
         /* 1) Alle neuen Outputs der Block-Transaktionen sammeln -------- */
         Map<String, TxOutput> newOutputs = new ConcurrentHashMap<>();
+        Set<String> newCoinbase = new HashSet<>();
         for (Transaction tx : b.getTxList()) {
             int idx = 0;
-            for (TxOutput out : tx.getOutputs())
-                newOutputs.put(out.id(tx.calcHashHex(), idx++), out);
+            for (TxOutput out : tx.getOutputs()) {
+                String id = out.id(tx.calcHashHex(), idx++);
+                newOutputs.put(id, out);
+                if (tx.isCoinbase()) newCoinbase.add(id);
+            }
         }
 
         /* 2) Inputs validieren, inkl. Ausgänge aus diesem Block --------- */
@@ -146,9 +151,16 @@ public class Chain {
                     throw new BlockchainException("double-spend in block");
 
                 TxOutput out = utxo.get(ref);
-                if (out == null) out = newOutputs.get(ref);
+                Integer created = coinbaseHeight.get(ref);
+                if (out == null) {
+                    out = newOutputs.get(ref);
+                    if (newCoinbase.contains(ref)) created = b.getHeight();
+                }
                 if (out == null)
                     throw new BlockchainException("UTXO not found");
+
+                if (created != null && b.getHeight() - created < ConsensusParams.COINBASE_MATURITY)
+                    throw new BlockchainException("coinbase immature");
 
                 String sender = AddressUtils.publicKeyToAddress(in.getSender());
                 if (!sender.equals(out.recipientAddress()))
@@ -185,6 +197,7 @@ public class Chain {
 
         /* 2) UTXO neu aufbauen (Inputs abziehen, Outputs hinzufügen) */
         utxo.clear();
+        coinbaseHeight.clear();
         branchRev.forEach(this::updateUtxo);
 
         /* 3) Aktive Kette austauschen */
@@ -204,14 +217,18 @@ public class Chain {
 
             /* zuerst: alle referenzierten Ausgänge “verbrauchen” */
             if (!tx.isCoinbase()) {
-                tx.getInputs()
-                  .forEach(in -> utxo.remove(in.getReferencedOutputId()));
+                tx.getInputs().forEach(in -> {
+                    utxo.remove(in.getReferencedOutputId());
+                    coinbaseHeight.remove(in.getReferencedOutputId());
+                });
             }
 
             /* danach: neue Outputs verfügbar machen */
             int idx = 0;
             for (TxOutput out : tx.getOutputs()) {
-                utxo.put(out.id(tx.calcHashHex(), idx++), out);
+                String id = out.id(tx.calcHashHex(), idx++);
+                utxo.put(id, out);
+                if (tx.isCoinbase()) coinbaseHeight.put(id, b.getHeight());
             }
         }
     }
