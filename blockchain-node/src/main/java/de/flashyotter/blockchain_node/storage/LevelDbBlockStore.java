@@ -49,14 +49,17 @@ public class LevelDbBlockStore implements BlockStore {
 
         // lazy pre-load tip for fast bootstrapping of the Chain
         try (var it = db.iterator()) {
-            it.seekToLast();
-            if (it.hasNext()) {
-                var entry = it.next();
-                Block tip = mapper.readValue(entry.getValue(), Block.class);
+            it.seekToFirst();
+            java.util.Map.Entry<byte[], byte[]> last = null;
+            while (it.hasNext()) {
+                last = it.next();
+            }
+            if (last != null) {
+                Block tip = mapper.readValue(last.getValue(), Block.class);
                 cache.put(tip.getHashHex(), tip);
             }
-        } catch (IOException ignore) { 
-            // ignoring IO exceptions on pre-load 
+        } catch (IOException ignore) {
+            // ignoring IO exceptions on pre-load
         }
     }
 
@@ -85,6 +88,20 @@ public class LevelDbBlockStore implements BlockStore {
         } catch (IOException e) {
             throw new RuntimeException("LevelDB read failed", e);
         }
+    }
+
+    @Override
+    public Iterable<Block> loadAll() {
+        java.util.List<Block> list = new java.util.ArrayList<>();
+        try (var it = db.iterator()) {
+            for (it.seekToFirst(); it.hasNext(); ) {
+                var entry = it.next();
+                list.add(mapper.readValue(entry.getValue(), Block.class));
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("LevelDB iteration failed", e);
+        }
+        return list;
     }
 
     @PreDestroy

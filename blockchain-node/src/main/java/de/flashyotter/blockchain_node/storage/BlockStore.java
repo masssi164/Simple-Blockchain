@@ -8,4 +8,6 @@ import blockchain.core.model.Block;
 public interface BlockStore {
     void save(Block b);
     Block findByHash(String hash);
+    /** Returns all stored blocks in arbitrary order. */
+    Iterable<Block> loadAll();
 }

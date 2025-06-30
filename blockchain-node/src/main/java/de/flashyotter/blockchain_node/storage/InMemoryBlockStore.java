@@ -12,9 +12,12 @@ public class InMemoryBlockStore implements BlockStore {
 
     private final Map<String, Block> db = new ConcurrentHashMap<>();
 
-    @Override 
+    @Override
     public void save(Block b) {
-         db.put(b.getHashHex(), b); 
+         db.put(b.getHashHex(), b);
         }
     @Override public Block findByHash(String hash) { return db.get(hash); }
+
+    @Override
+    public Iterable<Block> loadAll() { return db.values(); }
 }
