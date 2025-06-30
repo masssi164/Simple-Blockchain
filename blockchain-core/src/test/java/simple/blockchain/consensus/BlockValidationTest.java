@@ -2,6 +2,7 @@ package simple.blockchain.consensus;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 
@@ -57,5 +58,34 @@ class BlockValidationTest {
 
         BlockchainException ex = assertThrows(BlockchainException.class, () -> chain.addBlock(b));
         assertEquals("excessive coinbase", ex.getMessage());
+    }
+
+    @Test
+    @DisplayName("Outputs from the same block can be spent")
+    void spendOutputsWithinBlock() {
+        Chain chain = new Chain();
+        Block prev  = chain.getLatest();
+
+        Wallet alice = new Wallet();
+        Wallet bob   = new Wallet();
+
+        Transaction coinbase = new Transaction(alice.getPublicKey(),
+                                               ConsensusParams.blockReward(1),
+                                               "1");
+        String cbOutId = coinbase.getOutputs().get(0)
+                                  .id(coinbase.calcHashHex(), 0);
+
+        Transaction spend = new Transaction();
+        spend.getInputs().add(new TxInput(cbOutId, new byte[0], alice.getPublicKey()));
+        spend.getOutputs().add(new TxOutput(ConsensusParams.blockReward(1), bob.getPublicKey()));
+        spend.signInputs(alice.getPrivateKey());
+
+        Block b = new Block(1, prev.getHashHex(), List.of(coinbase, spend), prev.getCompactDifficultyBits());
+        b.mineLocally();
+
+        chain.addBlock(b);
+
+        String spendId = spend.getOutputs().get(0).id(spend.calcHashHex(), 0);
+        assertTrue(chain.getUtxoSnapshot().containsKey(spendId), "spend output in UTXO");
     }
 }
