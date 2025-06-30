@@ -125,6 +125,16 @@ public class ConnectionManager {
 
         Mono<Void> pipeline = Mono.defer(() ->
                 wsClient.execute(URI.create(peer.wsUrl()), session -> {
+                    java.util.Queue<P2PMessageDto> preHandshake = new java.util.concurrent.ConcurrentLinkedQueue<>();
+                    java.util.concurrent.atomic.AtomicBoolean done = new java.util.concurrent.atomic.AtomicBoolean(false);
+
+                    Disposable timeout = Schedulers.single().schedule(() -> {
+                        if (!done.get()) {
+                            preHandshake.clear();
+                            session.close().subscribe();
+                        }
+                    }, 5, java.util.concurrent.TimeUnit.SECONDS);
+
                     String hello = toJson(new HandshakeDto(props.getId(), "0.4.0", props.getPort()));
                     Flux<WebSocketMessage> sendFlux = Flux.concat(
                             Mono.just(hello),
@@ -135,7 +145,19 @@ public class ConnectionManager {
                     Mono<Void> recv = session.receive()
                             .map(WebSocketMessage::getPayloadAsText)
                             .map(this::toDto)
-                            .doOnNext(inSink::tryEmitNext)
+                            .doOnNext(dto -> {
+                                if (!done.get()) {
+                                    preHandshake.add(dto);
+                                    if (dto instanceof HandshakeDto) {
+                                        done.set(true);
+                                        preHandshake.forEach(inSink::tryEmitNext);
+                                        preHandshake.clear();
+                                        timeout.dispose();
+                                    }
+                                } else {
+                                    inSink.tryEmitNext(dto);
+                                }
+                            })
                             .then();
                     return send.then(recv);
                 })
