@@ -5,8 +5,9 @@ import static org.iq80.leveldb.impl.Iq80DBFactory.factory;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.iq80.leveldb.DB;
 import org.iq80.leveldb.Options;
@@ -15,6 +16,7 @@ import org.springframework.context.annotation.Primary;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import blockchain.core.model.Block;
+import blockchain.core.model.Transaction;
 import jakarta.annotation.PreDestroy;
 
 /**
@@ -25,7 +27,21 @@ public class LevelDbBlockStore implements BlockStore {
 
     private final ObjectMapper mapper;
     private final DB db;
-    private final Map<String, Block> cache = new ConcurrentHashMap<>();
+    private static final int CACHE_LIMIT = 256;
+    private final Map<String, Block> cache = Collections.synchronizedMap(
+            new LinkedHashMap<>(CACHE_LIMIT, 0.75f, true) {
+                @Override
+                protected boolean removeEldestEntry(Map.Entry<String, Block> eldest) {
+                    return size() > CACHE_LIMIT;
+                }
+            }
+    );
+
+    /* DTOs for stable JSON serialization */
+    private record HeaderDto(int height, String previousHashHex,
+                             String merkleRootHex, int compactDifficultyBits,
+                             long timeMillis, int nonce) {}
+    private record BlockDto(HeaderDto header, java.util.List<Transaction> txList) {}
 
     /** Standard constructor, uses fixed path "data/blocks" */
     public LevelDbBlockStore(ObjectMapper mapper) {
@@ -55,7 +71,10 @@ public class LevelDbBlockStore implements BlockStore {
                 last = it.next();
             }
             if (last != null) {
-                Block tip = mapper.readValue(last.getValue(), Block.class);
+                BlockDto dto = mapper.readValue(last.getValue(), BlockDto.class);
+                HeaderDto h = dto.header();
+                Block tip = new Block(h.height(), h.previousHashHex(), dto.txList(),
+                                      h.compactDifficultyBits(), h.timeMillis(), h.nonce());
                 cache.put(tip.getHashHex(), tip);
             }
         } catch (IOException ignore) {
@@ -67,9 +86,13 @@ public class LevelDbBlockStore implements BlockStore {
     public void save(Block b) {
         cache.put(b.getHashHex(), b);
         try {
+            HeaderDto h = new HeaderDto(b.getHeight(), b.getPreviousHashHex(),
+                    b.getMerkleRootHex(), b.getCompactDifficultyBits(),
+                    b.getTimeMillis(), b.getNonce());
+            BlockDto dto = new BlockDto(h, b.getTxList());
             db.put(
                 b.getHashHex().getBytes(StandardCharsets.UTF_8),
-                mapper.writeValueAsBytes(b)
+                mapper.writeValueAsBytes(dto)
             );
         } catch (IOException e) {
             throw new RuntimeException("LevelDB save failed", e);
@@ -84,7 +107,13 @@ public class LevelDbBlockStore implements BlockStore {
         }
         try {
             byte[] bytes = db.get(hash.getBytes(StandardCharsets.UTF_8));
-            return (bytes == null) ? null : mapper.readValue(bytes, Block.class);
+            if (bytes == null) return null;
+            BlockDto dto = mapper.readValue(bytes, BlockDto.class);
+            HeaderDto h = dto.header();
+            Block b = new Block(h.height(), h.previousHashHex(), dto.txList(),
+                                h.compactDifficultyBits(), h.timeMillis(), h.nonce());
+            cache.put(hash, b);
+            return b;
         } catch (IOException e) {
             throw new RuntimeException("LevelDB read failed", e);
         }
@@ -96,7 +125,10 @@ public class LevelDbBlockStore implements BlockStore {
         try (var it = db.iterator()) {
             for (it.seekToFirst(); it.hasNext(); ) {
                 var entry = it.next();
-                list.add(mapper.readValue(entry.getValue(), Block.class));
+                BlockDto dto = mapper.readValue(entry.getValue(), BlockDto.class);
+                HeaderDto h = dto.header();
+                list.add(new Block(h.height(), h.previousHashHex(), dto.txList(),
+                                   h.compactDifficultyBits(), h.timeMillis(), h.nonce()));
             }
         } catch (IOException e) {
             throw new RuntimeException("LevelDB iteration failed", e);

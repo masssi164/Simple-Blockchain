@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.junit.jupiter.api.Disabled;
+
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -17,7 +17,6 @@ import blockchain.core.consensus.Chain;
 import blockchain.core.model.Block;
 
 @SpringBootTest
-@Disabled("Requires LevelDB native library; disable in CI")
 class LevelDbBlockStoreTest {
 
     @Autowired
@@ -40,5 +39,19 @@ class LevelDbBlockStoreTest {
     void missingReturnsNull() {
         LevelDbBlockStore store = new LevelDbBlockStore(mapper, new File("no-such-dir"));
         assertNull(store.findByHash("does-not-exist"));
+    }
+
+    @Test
+    void persistsBlocksAcrossRestarts(@TempDir Path tmp) {
+        File dir = tmp.resolve("data").toFile();
+
+        LevelDbBlockStore store = new LevelDbBlockStore(mapper, dir);
+        Block genesis = new Chain().getLatest();
+        store.save(genesis);
+        store.close();
+
+        LevelDbBlockStore reopened = new LevelDbBlockStore(mapper, dir);
+        Block loaded = reopened.findByHash(genesis.getHashHex());
+        assertNotNull(loaded);
     }
 }
