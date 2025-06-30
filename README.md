@@ -82,6 +82,14 @@ You can inspect traffic with any WS client:
 ws://host:port/ws
 ```
 
+### Frontend WebSocket Flow
+
+The React UI connects to the node via `VITE_NODE_WS` (e.g. `ws://localhost:3333/ws`).
+On connect it sends a `HandshakeDto` and automatically reconnects with
+exponential backoff if the socket closes. Only `NewBlockDto` and `NewTxDto`
+messages are forwarded to the app.
+
+
 ---
 
 ## Run a Private Network
