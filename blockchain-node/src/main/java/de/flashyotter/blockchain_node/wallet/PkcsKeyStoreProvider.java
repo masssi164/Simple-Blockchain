@@ -9,6 +9,7 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
@@ -29,7 +30,6 @@ import java.util.Optional;
 @Slf4j
 public class PkcsKeyStoreProvider implements KeyStoreProvider {
 
-    private static final String STORE_FILENAME = ".simple-chain/wallet.p12";
     private final char[] password;
     private final Path storePath;
 
@@ -37,12 +37,13 @@ public class PkcsKeyStoreProvider implements KeyStoreProvider {
         Security.addProvider(new BouncyCastleProvider());
     }
 
-    public PkcsKeyStoreProvider(NodeProperties props) {
+    public PkcsKeyStoreProvider(NodeProperties props,
+                               @Value("${wallet.store-path}") String storePath) {
         if (props.getWalletPassword() == null || props.getWalletPassword().isBlank()) {
             throw new IllegalArgumentException("node.walletPassword must be set");
         }
         this.password  = props.getWalletPassword().toCharArray();
-        this.storePath = Paths.get(System.getProperty("user.home"), STORE_FILENAME);
+        this.storePath = Paths.get(System.getProperty("user.home"), storePath);
     }
 
     @Override
