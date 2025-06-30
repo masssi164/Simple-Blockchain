@@ -1,13 +1,14 @@
 // blockchain-node/src/main/java/de/flashyotter/blockchain_node/config/WebSocketConfig.java
 package de.flashyotter.blockchain_node.config;
 
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
-import org.springframework.web.socket.config.annotation.EnableWebSocket;
+import org.springframework.web.reactive.handler.SimpleUrlHandlerMapping;
+import org.springframework.web.reactive.socket.WebSocketHandler;
+import org.springframework.web.reactive.socket.server.support.WebSocketHandlerAdapter;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
-import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
-import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 
 import de.flashyotter.blockchain_node.p2p.PeerServer;
@@ -27,10 +28,8 @@ import lombok.RequiredArgsConstructor;
  */
 @Configuration
 @EnableWebSocketMessageBroker   // für STOMP/SockJS
-@EnableWebSocket                // für raw WebSocketHandler
 @RequiredArgsConstructor
-public class WebSocketConfig 
-     implements WebSocketMessageBrokerConfigurer, WebSocketConfigurer {
+public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private final PeerServer peerServer;
 
@@ -45,9 +44,18 @@ public class WebSocketConfig
         reg.setApplicationDestinationPrefixes("/app");
     }
 
-    @Override
-    public void registerWebSocketHandlers(WebSocketHandlerRegistry reg) {
-        reg.addHandler(peerServer, "/ws")
-           .setAllowedOriginPatterns("*");
+    @Bean
+    public SimpleUrlHandlerMapping wsHandlerMapping() {
+        java.util.Map<String, WebSocketHandler> map = new java.util.HashMap<>();
+        map.put("/ws", peerServer);
+        SimpleUrlHandlerMapping mapping = new SimpleUrlHandlerMapping();
+        mapping.setUrlMap(map);
+        mapping.setOrder(-1);
+        return mapping;
+    }
+
+    @Bean
+    public WebSocketHandlerAdapter wsAdapter() {
+        return new WebSocketHandlerAdapter();
     }
 }

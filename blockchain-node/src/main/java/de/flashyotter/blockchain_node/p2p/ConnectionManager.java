@@ -10,8 +10,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.socket.WebSocketMessage;
 import org.springframework.web.reactive.socket.client.ReactorNettyWebSocketClient;
-import org.springframework.web.socket.TextMessage;
-import org.springframework.web.socket.WebSocketSession;
+import org.springframework.web.reactive.socket.WebSocketMessage;
+import org.springframework.web.reactive.socket.WebSocketSession;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
@@ -54,42 +54,21 @@ public class ConnectionManager {
         });
 
         // forward outbound messages to this session
-        conn.outbound().asFlux()
-                .takeWhile(v -> session.isOpen())
-                .subscribe(payload -> {
-                    try {
-                        session.sendMessage(new TextMessage(payload));
-                    } catch (Exception e) {
-                        log.warn("❌  send to {} failed: {}", peer, e.getMessage());
-                    }
-                });
+        session.send(conn.outbound().asFlux().map(session::textMessage))
+               .doOnError(e -> log.warn("❌  send to {} failed: {}", peer, e.getMessage()))
+               .subscribe();
 
-        // subscribe to inbound messages if the session supports it
-        try {
-            java.lang.reflect.Method m = session.getClass().getMethod("receive");
-            @SuppressWarnings("unchecked")
-            Flux<WebSocketMessage> flux = (Flux<WebSocketMessage>) m.invoke(session);
-            flux.map(WebSocketMessage::getPayloadAsText)
+        // forward inbound messages from the session
+        session.receive()
+                .map(WebSocketMessage::getPayloadAsText)
                 .map(this::toDto)
                 .doOnNext(conn.inboundSink()::tryEmitNext)
                 .subscribe();
-        } catch (Exception ignored) {
-            // fallback: handleTextMessage will forward inbound events
-        }
 
         // remove mapping once the session closes
-        try {
-            java.lang.reflect.Method cs = session.getClass().getMethod("closeStatus");
-            Mono<?> close = (Mono<?>) cs.invoke(session);
-            close.doFinally(sig -> connections.remove(peer)).subscribe();
-        } catch (Exception e) {
-            new Thread(() -> {
-                while (session.isOpen()) {
-                    try { Thread.sleep(200); } catch (InterruptedException ignored1) {}
-                }
-                connections.remove(peer);
-            }, "ws-close-watch").start();
-        }
+        session.closeStatus()
+                .doFinally(sig -> connections.remove(peer))
+                .subscribe();
 
         return conn;
     }
