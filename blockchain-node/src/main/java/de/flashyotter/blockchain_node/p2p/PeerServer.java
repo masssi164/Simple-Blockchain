@@ -43,20 +43,24 @@ public class PeerServer implements WebSocketHandler {
     @Override
     @SneakyThrows
     public Mono<Void> handle(WebSocketSession session) {
-        HandshakeDto hello = new HandshakeDto(props.getId(), PROTOCOL_VER);
+        HandshakeDto hello = new HandshakeDto(props.getId(), PROTOCOL_VER, props.getPort());
         InetSocketAddress addr = session.getHandshakeInfo().getRemoteAddress();
-        Peer peer = new Peer(addr.getHostString(), addr.getPort());
+        String host = addr.getHostString();
+        Peer peer = new Peer(host, addr.getPort());
+        java.util.concurrent.atomic.AtomicReference<Peer> actual = new java.util.concurrent.atomic.AtomicReference<>(peer);
 
         ConnectionManager.Conn conn = connectionManager.registerServerSession(peer, session);
         conn.outbound().tryEmitNext(mapper.writeValueAsString(hello));
 
         conn.inbound().subscribe(dto -> {
-            if (dto instanceof HandshakeDto) {
-                boolean fresh = registry.add(peer);
+            if (dto instanceof HandshakeDto hs) {
+                Peer real = new Peer(host, hs.listenPort());
+                actual.set(real);
+                boolean fresh = registry.add(real);
                 broadcast.broadcastPeerList();
-                discovery.onMessage(dto, peer);
+                discovery.onMessage(hs, real);
                 if (fresh) {
-                    syncService.followPeer(peer).subscribe();
+                    syncService.followPeer(real).subscribe();
                 }
                 return;
             }
@@ -97,7 +101,7 @@ public class PeerServer implements WebSocketHandler {
 
             if (dto instanceof PingDto || dto instanceof PongDto ||
                 dto instanceof FindNodeDto || dto instanceof NodesDto) {
-                discovery.onMessage(dto, peer);
+                discovery.onMessage(dto, actual.get());
             }
         });
 

@@ -95,7 +95,7 @@ public class ConnectionManager {
 
         Mono<Void> pipeline = Mono.defer(() ->
                 wsClient.execute(URI.create(peer.wsUrl()), session -> {
-                    String hello = toJson(new HandshakeDto(props.getId(), "0.4.0"));
+                    String hello = toJson(new HandshakeDto(props.getId(), "0.4.0", props.getPort()));
                     Flux<WebSocketMessage> sendFlux = Flux.concat(
                             Mono.just(hello),
                             out.asFlux()

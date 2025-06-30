@@ -60,7 +60,7 @@ class SyncServiceTest {
         out.asFlux().subscribe(sent::add);
         svc.followPeer(peer).subscribe();
 
-        inSink.tryEmitNext(new HandshakeDto("a","0"));
+        inSink.tryEmitNext(new HandshakeDto("a","0", 1));
 
         Awaitility.await().until(() -> !sent.isEmpty());
         assertEquals("get-5", sent.get(0));
@@ -85,7 +85,7 @@ class SyncServiceTest {
         out.asFlux().subscribe(sent::add);
         svc.followPeer(peer).subscribe();
 
-        inSink.tryEmitNext(new HandshakeDto("a","0"));
+        inSink.tryEmitNext(new HandshakeDto("a","0", 1));
         Awaitility.await().until(() -> !sent.isEmpty());
         inSink.tryEmitNext(new BlocksDto(List.of("b1","b2")));
 

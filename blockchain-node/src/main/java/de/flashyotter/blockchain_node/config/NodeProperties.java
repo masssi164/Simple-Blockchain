@@ -1,6 +1,7 @@
 package de.flashyotter.blockchain_node.config;
 
 import lombok.Data;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
@@ -15,6 +16,10 @@ import java.util.List;
 @ConfigurationProperties(prefix = "node")
 public class NodeProperties {
     private List<String> peers = List.of();
+
+    /** HTTP/WebSocket server port */
+    @Value("${server.port:0}")
+    private int port;
 
     /** Stable node identifier persisted in data/nodeId */
     private String id;
