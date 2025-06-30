@@ -8,6 +8,7 @@ import blockchain.core.model.TxOutput;
 import de.flashyotter.blockchain_node.dto.NewBlockDto;
 import de.flashyotter.blockchain_node.dto.NewTxDto;
 import lombok.RequiredArgsConstructor;
+import blockchain.core.exceptions.BlockchainException;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -29,6 +30,9 @@ public class NodeService {
     private final P2PBroadcastService          broadcaster;
     private final de.flashyotter.blockchain_node.storage.BlockStore store;
 
+    /** Snapshot of the currently active chain to detect re-orgs. */
+    private java.util.List<Block> chainSnapshot = new java.util.ArrayList<>();
+
     /* ---------- mining ---------- */
 
     public Mono<Block> mineNow() {
@@ -38,9 +42,13 @@ public class NodeService {
     }
 
     private void onLocalBlockMined(Block b) {
+        java.util.List<Block> prev = new java.util.ArrayList<>(chainSnapshot);
+
         chain.addBlock(b);
         store.save(b);
         mempool.purge(b.getTxList());
+        handleReorg(prev, chain.getBlocks());
+
         broadcaster.broadcastBlock(new NewBlockDto(
             blockchain.core.serialization.JsonUtils.toJson(b)
         ), null);
@@ -63,9 +71,12 @@ public class NodeService {
     /* ---------- blocks from peers ---------- */
 
     public void acceptExternalBlock(Block blk) {
+        java.util.List<Block> prev = new java.util.ArrayList<>(chainSnapshot);
+
         chain.addBlock(blk);
         store.save(blk);
         mempool.purge(blk.getTxList());
+        handleReorg(prev, chain.getBlocks());
     }
 
     /* ---------- simple getters ---------- */
@@ -152,5 +163,30 @@ public class NodeService {
 
     public Block latestBlock() {
         return chain.getLatest();
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Re-org handling                                                    */
+    /* ------------------------------------------------------------------ */
+
+    private void handleReorg(List<Block> previous, List<Block> current) {
+        int idx = 0;
+        while (idx < previous.size() &&
+               idx < current.size() &&
+               previous.get(idx).getHashHex().equals(current.get(idx).getHashHex())) {
+            idx++;
+        }
+
+        for (Block removed : previous.subList(idx, previous.size())) {
+            removed.getTxList().stream().skip(1).forEach(tx -> {
+                try {
+                    mempool.submit(tx, currentUtxo());
+                } catch (BlockchainException ignored) {
+                    // invalid on new chain; drop silently
+                }
+            });
+        }
+
+        chainSnapshot = new java.util.ArrayList<>(current);
     }
 }
