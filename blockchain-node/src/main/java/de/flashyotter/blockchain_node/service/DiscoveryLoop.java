@@ -20,7 +20,7 @@ public class DiscoveryLoop {
             while (true) {
                 try {
                     Peer p = reg.pending().take();
-                    sync.followPeer(p.wsUrl()).subscribe();
+                    sync.followPeer(p).subscribe();
                 } catch (InterruptedException ignored) { }
             }
         });

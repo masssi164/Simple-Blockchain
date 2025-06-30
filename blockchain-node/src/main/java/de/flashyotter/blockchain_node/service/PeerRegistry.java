@@ -29,6 +29,6 @@ public class PeerRegistry {
     public java.util.concurrent.BlockingQueue<Peer> pending() { return pending; }
 
     public void addAll(Iterable<Peer> newPeers) {
-         newPeers.forEach(peers::add); 
-        }
+        newPeers.forEach(this::add);
+    }
 }

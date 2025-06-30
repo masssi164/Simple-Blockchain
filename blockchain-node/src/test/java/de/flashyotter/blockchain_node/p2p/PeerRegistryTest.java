@@ -26,5 +26,6 @@ class PeerRegistryTest {
         var list = java.util.List.of(new Peer("x", 9), new Peer("y", 8));
         reg.addAll(list);
         assertEquals(2, reg.all().size());
+        assertEquals(2, reg.pending().size());
     }
 }
