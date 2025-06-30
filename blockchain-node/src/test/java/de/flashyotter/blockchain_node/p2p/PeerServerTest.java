@@ -27,6 +27,7 @@ import de.flashyotter.blockchain_node.dto.NewBlockDto;
 import de.flashyotter.blockchain_node.dto.NewTxDto;
 import de.flashyotter.blockchain_node.dto.P2PMessageDto;
 import de.flashyotter.blockchain_node.dto.PeerListDto;
+import de.flashyotter.blockchain_node.dto.HandshakeDto;
 import de.flashyotter.blockchain_node.service.NodeService;
 import de.flashyotter.blockchain_node.service.P2PBroadcastService;
 import de.flashyotter.blockchain_node.service.PeerRegistry;
@@ -130,5 +131,23 @@ class PeerServerTest {
         verify(registry).addAll(argThat(iter -> {
             return ((java.util.Collection<?>) iter).size() == 2;
        }));
+    }
+
+    @Test
+    void handleHandshake_registersPeerAndBroadcasts() throws Exception {
+        HandshakeDto dto = new HandshakeDto("id","0.4.0");
+
+        when(mapper.readValue(anyString(), eq(P2PMessageDto.class))).thenReturn(dto);
+        java.net.InetSocketAddress addr = new java.net.InetSocketAddress("h", 1);
+        when(session.getRemoteAddress()).thenReturn(addr);
+
+        peerServer.handleTextMessage(
+            session,
+            new TextMessage("{\"type\":\"HandshakeDto\",\"nodeId\":\"id\",\"protocolVersion\":\"0.4.0\"}")
+        );
+
+        verify(registry).add(new Peer("h",1));
+        verify(discovery).onMessage(dto, new Peer("h",1));
+        verify(broadcastService).broadcastPeerList();
     }
 }

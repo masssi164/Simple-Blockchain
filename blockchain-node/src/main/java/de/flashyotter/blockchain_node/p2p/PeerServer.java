@@ -55,6 +55,7 @@ public class PeerServer extends TextWebSocketHandler {
             // register the peer id and send our peer list
             java.net.InetSocketAddress addr = (java.net.InetSocketAddress) sess.getRemoteAddress();
             Peer remote = new Peer(addr.getHostString(), addr.getPort());
+            registry.add(remote);
             discovery.onMessage(hs, remote);
             broadcast.broadcastPeerList();
             return;                                     // nothing further

@@ -28,7 +28,7 @@ public class PeerService {
         });
 
         registry.all()
-                .forEach(p -> syncService.followPeer(p.wsUrl()).subscribe());
+                .forEach(p -> syncService.followPeer(p).subscribe());
 
         broadcaster.broadcastPeerList();
         // trigger discovery after initial connections
