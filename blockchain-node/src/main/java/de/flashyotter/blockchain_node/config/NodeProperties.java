@@ -17,6 +17,10 @@ import java.util.List;
 public class NodeProperties {
     private List<String> peers = List.of();
 
+    /** Maximum number of transactions kept in the mempool */
+    @Value("${mempool.maxSize:1000}")
+    private int mempoolMaxSize = 1000;
+
     /** HTTP/WebSocket server port */
     @Value("${server.port:0}")
     private int port;

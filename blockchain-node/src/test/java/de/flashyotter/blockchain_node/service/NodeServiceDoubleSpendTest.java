@@ -9,6 +9,7 @@ import blockchain.core.model.Transaction;
 import blockchain.core.model.TxInput;
 import blockchain.core.model.TxOutput;
 import blockchain.core.model.Wallet;
+import de.flashyotter.blockchain_node.config.NodeProperties;
 import de.flashyotter.blockchain_node.storage.InMemoryBlockStore;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -33,7 +34,8 @@ class NodeServiceDoubleSpendTest {
         blk.mineLocally();
         chain.addBlock(blk);
 
-        MempoolService mempool = new MempoolService();
+        NodeProperties props = new NodeProperties();
+        MempoolService mempool = new MempoolService(props);
         NodeService svc = new NodeService(
                 chain,
                 mempool,
