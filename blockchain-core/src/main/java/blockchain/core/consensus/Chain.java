@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicReference;
 import java.nio.charset.StandardCharsets;
 
 import java.security.GeneralSecurityException;
@@ -52,8 +53,10 @@ public class Chain {
     private final Map<String, BigInteger>       cumulativeWork = new ConcurrentHashMap<>();
     private final Map<String, String>           parent         = new ConcurrentHashMap<>();
     private final CopyOnWriteArrayList<Block>   activeChain    = new CopyOnWriteArrayList<>();
-    private final Map<String, TxOutput>         utxo           = new ConcurrentHashMap<>();
-    private final Map<String, Integer>          coinbaseHeight = new ConcurrentHashMap<>();
+    private final AtomicReference<Map<String, TxOutput>>
+            utxo = new AtomicReference<>(new ConcurrentHashMap<>());
+    private final AtomicReference<Map<String, Integer>>
+            coinbaseHeight = new AtomicReference<>(new ConcurrentHashMap<>());
 
     private volatile String bestTipHash;
     private int             currentBits = 0x1f0fffff;   // easy PoW für Demos
@@ -94,7 +97,7 @@ public class Chain {
     /* ───────────────────────── Read-only API ──────────────────────── */
     public Block                 getLatest()        { return activeChain.get(activeChain.size() - 1); }
     public List<Block>           getBlocks()        { return List.copyOf(activeChain); }
-    public Map<String, TxOutput> getUtxoSnapshot()  { return Map.copyOf(utxo); }
+    public Map<String, TxOutput> getUtxoSnapshot()  { return Map.copyOf(utxo.get()); }
     public BigInteger            getTotalWork()     { return cumulativeWork.get(bestTipHash); }
 
     /* ───────────────────────── Block-Append ───────────────────────── */
@@ -190,8 +193,8 @@ public class Chain {
                 if (spent.contains(ref))
                     throw new BlockchainException("double-spend in block");
 
-                TxOutput out = utxo.get(ref);
-                Integer created = coinbaseHeight.get(ref);
+                TxOutput out = utxo.get().get(ref);
+                Integer created = coinbaseHeight.get().get(ref);
                 if (out == null) {
                     out = newOutputs.get(ref);
                     if (newCoinbase.contains(ref)) created = b.getHeight();
@@ -236,9 +239,11 @@ public class Chain {
         Collections.reverse(branchRev); // genesis … newTip
 
         /* 2) UTXO neu aufbauen (Inputs abziehen, Outputs hinzufügen) */
-        utxo.clear();
-        coinbaseHeight.clear();
-        branchRev.forEach(this::updateUtxo);
+        Map<String, TxOutput>  newUtxo    = new ConcurrentHashMap<>();
+        Map<String, Integer>   newHeights = new ConcurrentHashMap<>();
+        branchRev.forEach(b -> updateUtxo(newUtxo, newHeights, b));
+        utxo.set(Collections.unmodifiableMap(newUtxo));
+        coinbaseHeight.set(Collections.unmodifiableMap(newHeights));
 
         /* 3) Aktive Kette austauschen */
         activeChain.clear();
@@ -252,14 +257,16 @@ public class Chain {
      * Inputs verbrauchten UTXOs – dadurch bleiben nur ungenutzte Ausgänge
      * übrig (klassisches UTXO-Modell).
      */
-    private void updateUtxo(Block b) {
+    private void updateUtxo(Map<String, TxOutput> utxoMap,
+                            Map<String, Integer> coinbaseMap,
+                            Block b) {
         for (Transaction tx : b.getTxList()) {
 
             /* zuerst: alle referenzierten Ausgänge “verbrauchen” */
             if (!tx.isCoinbase()) {
                 tx.getInputs().forEach(in -> {
-                    utxo.remove(in.getReferencedOutputId());
-                    coinbaseHeight.remove(in.getReferencedOutputId());
+                    utxoMap.remove(in.getReferencedOutputId());
+                    coinbaseMap.remove(in.getReferencedOutputId());
                 });
             }
 
@@ -267,8 +274,8 @@ public class Chain {
             int idx = 0;
             for (TxOutput out : tx.getOutputs()) {
                 String id = out.id(tx.calcHashHex(), idx++);
-                utxo.put(id, out);
-                if (tx.isCoinbase()) coinbaseHeight.put(id, b.getHeight());
+                utxoMap.put(id, out);
+                if (tx.isCoinbase()) coinbaseMap.put(id, b.getHeight());
             }
         }
     }
