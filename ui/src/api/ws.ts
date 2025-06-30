@@ -5,7 +5,7 @@ class NodeWs {
   private listeners: Listener[] = [];
 
   connect() {
-    this.ws = new WebSocket(`${import.meta.env.VITE_NODE_WS}/ws`);
+    this.ws = new WebSocket(import.meta.env.VITE_NODE_WS);
     this.ws.onmessage = ev => {
       let data: unknown;
       try {
