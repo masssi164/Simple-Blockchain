@@ -33,7 +33,9 @@ public class MiningService {
         int height   = chain.getLatest().getHeight() + 1;
         double reward = ConsensusParams.blockReward(height);
         Transaction coinbase = new Transaction(
-                wallet.getLocalWallet().getPublicKey(), reward);
+                wallet.getLocalWallet().getPublicKey(),
+                reward,
+                String.valueOf(height));
 
         /* 3) Liste zusammenstellen  (coinbase immer an Position 0) ------ */
         List<Transaction> txs = new java.util.ArrayList<>(1 + memTx.size());

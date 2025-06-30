@@ -30,7 +30,7 @@ class NodeServiceUtxoRebuildIT {
         Chain   chain   = new Chain();
         Wallet  miner   = new Wallet();
 
-        Transaction coinbase = new Transaction(miner.getPublicKey(), 50.0);
+        Transaction coinbase = new Transaction(miner.getPublicKey(), 50.0, "1");
         Block b1 = new Block(
                 1,
                 chain.getLatest().getHashHex(),

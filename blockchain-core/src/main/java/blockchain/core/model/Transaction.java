@@ -14,6 +14,7 @@ public class Transaction {
     private final List<TxInput>  inputs  = new ArrayList<>();
     private final List<TxOutput> outputs = new ArrayList<>();
     private String txHashHex;                      // lazily computed
+    private String coinbaseNonce;                  // for deterministic hashing
 
     /* ------------------------------------------------------------------ */
     /* ctors                                                              */
@@ -60,10 +61,16 @@ public class Transaction {
     }
 
     // coin-base convenience ctor
-public Transaction(PublicKey recipient, double reward) {
-    outputs.add(new TxOutput(reward, recipient));   // ⇐ now uses the new ctor above
-    // no inputs
-}
+    public Transaction(PublicKey recipient, double reward) {
+        this(recipient, reward, null);
+    }
+
+    /** Coinbase constructor allowing an explicit nonce/height value. */
+    public Transaction(PublicKey recipient, double reward, String coinbaseNonce) {
+        outputs.add(new TxOutput(reward, recipient));
+        this.coinbaseNonce = coinbaseNonce;
+        // no inputs
+    }
 
 /* -------- internal -------- */
 private String computeTxHashHex() {
@@ -72,7 +79,7 @@ private String computeTxHashHex() {
     // NOTE: recipientAddress(), not recipient()
     outputs.forEach(o -> sb.append(o.recipientAddress()).append(o.value()));
     if (isCoinbase()) {
-        sb.append(System.identityHashCode(this));   // oder height, timestamp, …
+        if (coinbaseNonce != null) sb.append(coinbaseNonce);
     }
     return HashingUtils.computeSha256Hex(sb.toString());
 }

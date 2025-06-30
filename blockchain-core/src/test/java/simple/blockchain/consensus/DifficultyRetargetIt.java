@@ -33,7 +33,8 @@ class DifficultyRetargetIT {
 
         for (int h = 1; h <= ConsensusParams.RETARGET_SPAN; h++) {
             Transaction coinbase = new Transaction(miner.getPublicKey(),
-                                                   ConsensusParams.blockReward(h));
+                                                   ConsensusParams.blockReward(h),
+                                                   String.valueOf(h));
             Block b = new Block(
                     h,
                     prev.getHashHex(),

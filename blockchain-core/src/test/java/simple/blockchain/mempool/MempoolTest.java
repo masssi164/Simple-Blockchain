@@ -23,7 +23,7 @@ class MempoolTest {
     @DisplayName("Coinbase transactions are rejected by the mem-pool")
     void rejectCoinbase() {
         Wallet miner = new Wallet();
-        Transaction coinbase = new Transaction(miner.getPublicKey(), 50.0);
+        Transaction coinbase = new Transaction(miner.getPublicKey(), 50.0, "0");
 
         Mempool mp = new Mempool();
         assertThrows(BlockchainException.class,

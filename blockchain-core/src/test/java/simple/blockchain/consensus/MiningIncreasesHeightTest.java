@@ -19,7 +19,7 @@ class MiningIncreasesHeightTest {
         Block g     = c.getLatest();
         Wallet miner = new Wallet();
 
-        Transaction cb = new Transaction(miner.getPublicKey(), 50.0);
+        Transaction cb = new Transaction(miner.getPublicKey(), 50.0, "1");
         Block b = new Block(
                 1, g.getHashHex(), List.of(cb), g.getCompactDifficultyBits());
         b.mineLocally();

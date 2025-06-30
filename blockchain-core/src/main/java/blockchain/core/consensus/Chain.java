@@ -94,7 +94,8 @@ public class Chain {
     private static Block createGenesis() {
         Wallet miner = deterministicWallet();
         Transaction cb = new Transaction(miner.getPublicKey(),
-                                         ConsensusParams.blockReward(0));
+                                         ConsensusParams.blockReward(0),
+                                         "GENESIS");
         return new Block(0, "0".repeat(64),
                          List.of(cb), 0x1f0fffff,
                          1_694_303_200_000L, 0);

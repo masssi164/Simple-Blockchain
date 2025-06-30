@@ -44,7 +44,8 @@ class ChainTest {
         // craft coinbase & candidate block
         Wallet miner     = new Wallet();
         Transaction cb   = new Transaction(miner.getPublicKey(),
-                                           ConsensusParams.blockReward(1));
+                                           ConsensusParams.blockReward(1),
+                                           "1");
         Block candidate  = new Block(
                 1, prev.getHashHex(), List.of(cb), prev.getCompactDifficultyBits());
 
@@ -72,7 +73,8 @@ class ChainTest {
 
         Wallet miner = new Wallet();
         Transaction cb = new Transaction(miner.getPublicKey(),
-                                         ConsensusParams.blockReward(1));
+                                         ConsensusParams.blockReward(1),
+                                         "1");
 
         Block bogus = new Block(
                 1, "deadbeef".repeat(8), List.of(cb),
