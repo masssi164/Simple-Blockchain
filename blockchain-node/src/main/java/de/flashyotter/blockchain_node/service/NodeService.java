@@ -57,7 +57,7 @@ public class NodeService {
     /* ---------- transactions ---------- */
 
     public void submitTx(Transaction tx) {
-        mempool.submit(tx, currentUtxo());
+        mempool.submit(tx, currentUtxoIncludingPending());
         broadcaster.broadcastTx(
             new NewTxDto(blockchain.core.serialization.JsonUtils.toJson(tx)),
             null
@@ -65,7 +65,7 @@ public class NodeService {
     }
 
     public void acceptExternalTx(Transaction tx) {
-        mempool.submit(tx, currentUtxo());
+        mempool.submit(tx, currentUtxoIncludingPending());
     }
 
     /* ---------- blocks from peers ---------- */

@@ -24,15 +24,20 @@ public class Mempool {
 
     public Mempool(int maxSize) { this.maxSize = maxSize; }
 
-    public void add(Transaction tx, Map<String, TxOutput> utxo) {
+    /**
+     * Adds a transaction after validating it against the provided UTXO view.
+     * The map should reflect the confirmed outputs plus all spends already
+     * present in this mempool to avoid accepting double spends.
+     */
+    public void add(Transaction tx, Map<String, TxOutput> effectiveUtxo) {
         if (tx.isCoinbase()) throw new BlockchainException("coinbase ➜ mempool");
         if (!tx.verifySignatures()) throw new BlockchainException("invalid signatures");
 
         for (TxInput in : tx.getInputs()) {
             /* 1 – must reference an existing UTXO */
-            if (!utxo.containsKey(in.getReferencedOutputId()))
+            if (!effectiveUtxo.containsKey(in.getReferencedOutputId()))
                 throw new BlockchainException("UTXO not found");
-            TxOutput referenced = utxo.get(in.getReferencedOutputId());
+            TxOutput referenced = effectiveUtxo.get(in.getReferencedOutputId());
 
             /* 2 – public key must match the address in UTXO */
             String senderAddr = AddressUtils.publicKeyToAddress(in.getSender());
@@ -43,7 +48,7 @@ public class Mempool {
             if (isSpent(in.getReferencedOutputId()))
                 throw new BlockchainException("double-spend in mempool");
         }
-        double fee = calcFee(tx, utxo);
+        double fee = calcFee(tx, effectiveUtxo);
         String id = tx.calcHashHex();
         Entry entry = new Entry(id, tx, fee);
         synchronized (this) {

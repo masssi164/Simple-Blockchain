@@ -45,6 +45,7 @@ class NodeServiceTest {
         store       = mock(BlockStore.class);
 
         when(chain.getBlocks()).thenReturn(List.of());
+        when(mempool.take(Integer.MAX_VALUE)).thenReturn(List.of());
 
         svc = new NodeService(chain, mempool, mining, broadcaster, store);
     }
