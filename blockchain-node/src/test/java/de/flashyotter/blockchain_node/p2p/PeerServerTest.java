@@ -119,7 +119,9 @@ class PeerServerTest {
 
     @Test
     void handleHandshake_addsPeerAndBroadcasts() {
-        ConnectionManager manager = new ConnectionManager(org.mockito.Mockito.mock(org.springframework.web.reactive.socket.client.ReactorNettyWebSocketClient.class), mapper, props);
+        ConnectionManager manager = new ConnectionManager(
+                org.mockito.Mockito.mock(org.springframework.web.reactive.socket.client.ReactorNettyWebSocketClient.class),
+                mapper, props);
         PeerServer peerServer = new PeerServer(mapper, nodeService, registry, broadcastService, props, discovery, manager, syncService);
         when(info.getRemoteAddress()).thenReturn(new InetSocketAddress("host", 9));
         HandshakeDto dto = new HandshakeDto("n2", "0.4.0", 42);
@@ -127,8 +129,9 @@ class PeerServerTest {
         when(syncService.followPeer(any())).thenReturn(Flux.empty());
 
         peerServer.handle(session).subscribe();
-        Peer peer = new Peer("host", 9);
-        manager.emitInbound(peer, dto);
+        Peer temp = new Peer("host", 9);
+        ConnectionManager.Conn first = manager.connectAndSink(temp);
+        manager.emitInbound(temp, dto);
 
         Awaitility.await().untilAsserted(() -> {
             Peer expected = new Peer("host", 42);
@@ -136,6 +139,7 @@ class PeerServerTest {
             verify(broadcastService).broadcastPeerList();
             verify(discovery).onMessage(dto, expected);
             verify(syncService).followPeer(expected);
+            org.junit.jupiter.api.Assertions.assertSame(first, manager.connectAndSink(expected));
         });
     }
 
