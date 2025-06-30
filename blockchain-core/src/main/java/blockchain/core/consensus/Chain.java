@@ -125,6 +125,15 @@ public class Chain {
         if (reward > ConsensusParams.blockReward(b.getHeight()))
             throw new BlockchainException("excessive coinbase");
 
+        /* 1) Alle neuen Outputs der Block-Transaktionen sammeln -------- */
+        Map<String, TxOutput> newOutputs = new ConcurrentHashMap<>();
+        for (Transaction tx : b.getTxList()) {
+            int idx = 0;
+            for (TxOutput out : tx.getOutputs())
+                newOutputs.put(out.id(tx.calcHashHex(), idx++), out);
+        }
+
+        /* 2) Inputs validieren, inkl. Ausgänge aus diesem Block --------- */
         Set<String> spent = new HashSet<>();
 
         for (Transaction tx : b.getTxList().subList(1, b.getTxList().size())) {
@@ -135,10 +144,12 @@ public class Chain {
                 String ref = in.getReferencedOutputId();
                 if (spent.contains(ref))
                     throw new BlockchainException("double-spend in block");
-                if (!utxo.containsKey(ref))
-                    throw new BlockchainException("UTXO not found");
 
                 TxOutput out = utxo.get(ref);
+                if (out == null) out = newOutputs.get(ref);
+                if (out == null)
+                    throw new BlockchainException("UTXO not found");
+
                 String sender = AddressUtils.publicKeyToAddress(in.getSender());
                 if (!sender.equals(out.recipientAddress()))
                     throw new BlockchainException("pub-key mismatch");
