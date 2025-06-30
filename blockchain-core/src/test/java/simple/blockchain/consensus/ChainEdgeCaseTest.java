@@ -66,7 +66,8 @@ class ChainEdgeCaseTest {
         Wallet miner = new Wallet();
 
         Transaction cb = new Transaction(miner.getPublicKey(),
-                                         ConsensusParams.blockReward(1));
+                                         ConsensusParams.blockReward(1),
+                                         "1");
         int bits = chain.getLatest().getCompactDifficultyBits();
 
         Block candidate = new Block(1, "deadbeef".repeat(8), List.of(cb), bits);
@@ -87,7 +88,8 @@ class ChainEdgeCaseTest {
 
         /* ---------- Branch A (2 Blöcke) ------------------------------ */
         Transaction cb1 = new Transaction(miner.getPublicKey(),
-                                          ConsensusParams.blockReward(1));
+                                          ConsensusParams.blockReward(1),
+                                          "1");
         Block a1 = new Block(1, g.getHashHex(), List.of(cb1),
                              g.getCompactDifficultyBits());
         a1.mineLocally();
@@ -95,14 +97,16 @@ class ChainEdgeCaseTest {
 
         /* ---------- konkurrierende Branch B (3 Blöcke, mehr Arbeit) -- */
         Transaction cb2 = new Transaction(miner.getPublicKey(),
-                                          ConsensusParams.blockReward(1));
+                                          ConsensusParams.blockReward(1),
+                                          "1");
         Block b1 = new Block(1, g.getHashHex(), List.of(cb2),
                              g.getCompactDifficultyBits());
         b1.mineLocally();
         c.addBlock(b1);
 
         Transaction cb3 = new Transaction(miner.getPublicKey(),
-                                          ConsensusParams.blockReward(2));
+                                          ConsensusParams.blockReward(2),
+                                          "2");
         Block b2 = new Block(2, b1.getHashHex(), List.of(cb3),
                              g.getCompactDifficultyBits());
         b2.mineLocally();

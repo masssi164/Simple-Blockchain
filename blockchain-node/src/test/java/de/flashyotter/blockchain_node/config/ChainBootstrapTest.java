@@ -30,7 +30,9 @@ class ChainBootstrapTest {
     }
 
     private Block mineBlock(int height, String prevHash, int bits, Wallet miner) {
-        Transaction cb = new Transaction(miner.getPublicKey(), ConsensusParams.blockReward(height));
+        Transaction cb = new Transaction(miner.getPublicKey(),
+                                         ConsensusParams.blockReward(height),
+                                         String.valueOf(height));
         Block b = new Block(height, prevHash, List.of(cb), bits);
         b.mineLocally();
         return b;

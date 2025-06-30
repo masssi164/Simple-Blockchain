@@ -28,7 +28,8 @@ class BlockValidationTest {
         Wallet miner = new Wallet();
 
         Transaction coinbase = new Transaction(miner.getPublicKey(),
-                                               ConsensusParams.blockReward(1));
+                                               ConsensusParams.blockReward(1),
+                                               "1");
         Transaction tx = new Transaction();
         tx.getInputs().add(new TxInput("doesnt:exist", new byte[0], miner.getPublicKey()));
         tx.getOutputs().add(new TxOutput(1.0, miner.getPublicKey()));
@@ -49,7 +50,8 @@ class BlockValidationTest {
         Wallet miner = new Wallet();
 
         Transaction coinbase = new Transaction(miner.getPublicKey(),
-                                               ConsensusParams.blockReward(1) * 2);
+                                               ConsensusParams.blockReward(1) * 2,
+                                               "1");
         Block b = new Block(1, prev.getHashHex(), List.of(coinbase), prev.getCompactDifficultyBits());
         b.mineLocally();
 
