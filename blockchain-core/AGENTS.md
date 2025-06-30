@@ -1,5 +1,4 @@
-`blockchain-core` is a standalone Java library implementing the fundamental
-blockchain data structures and algorithms.
+`blockchain-core` is a standalone Java library implementing the fundamental blockchain data structures and algorithms. It maintains a DAG of all seen blocks and automatically re-organises to the branch with the most cumulative work. The module builds a library JAR consumed by `blockchain-node`.
 
 Packages under `src/main/java/blockchain/core`:
 - `consensus` – `Chain.java` manages the block DAG and difficulty, while
