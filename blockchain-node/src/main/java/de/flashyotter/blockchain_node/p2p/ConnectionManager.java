@@ -14,6 +14,7 @@ import org.springframework.web.reactive.socket.WebSocketSession;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
+import reactor.core.publisher.Sinks.EmitResult;
 import reactor.core.Disposable;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.retry.Retry;
@@ -48,8 +49,8 @@ public class ConnectionManager {
 
     /** Register a server-side WebSocket session for the given peer. */
     public Conn registerServerSession(Peer peer, WebSocketSession session) {
-        Sinks.Many<String> out = Sinks.many().multicast().onBackpressureBuffer();
-        Sinks.Many<P2PMessageDto> inSink = Sinks.many().multicast().onBackpressureBuffer();
+        Sinks.Many<String> out = Sinks.many().multicast().onBackpressureBuffer(100);
+        Sinks.Many<P2PMessageDto> inSink = Sinks.many().multicast().onBackpressureBuffer(100);
         Conn conn = new Conn(out, inSink, inSink.asFlux());
 
         java.util.concurrent.atomic.AtomicReference<Peer> actual = new java.util.concurrent.atomic.AtomicReference<>();
@@ -82,12 +83,12 @@ public class ConnectionManager {
                             } else {
                                 actual.set(real);
                             }
-                            preHandshake.forEach(inSink::tryEmitNext);
+                            preHandshake.forEach(msg -> emitChecked(inSink, msg, peer, session));
                             preHandshake.clear();
                             timeout.dispose();
                         }
                     } else {
-                        inSink.tryEmitNext(dto);
+                        emitChecked(inSink, dto, peer, session);
                     }
                 })
                 .subscribe();
@@ -106,7 +107,7 @@ public class ConnectionManager {
     /** Emit a message received from a server session into the connection's sink. */
     public void emitInbound(Peer peer, P2PMessageDto dto) {
         Conn c = connections.get(peer);
-        if (c != null) c.inboundSink().tryEmitNext(dto);
+        if (c != null) emitChecked(c.inboundSink(), dto, peer, null);
     }
 
     /* --------------------------------------------------------------- */
@@ -114,8 +115,8 @@ public class ConnectionManager {
     /* --------------------------------------------------------------- */
 
     private Conn createConnection(Peer peer) {
-        Sinks.Many<String> out = Sinks.many().multicast().onBackpressureBuffer();
-        Sinks.Many<P2PMessageDto> in = Sinks.many().multicast().onBackpressureBuffer();
+        Sinks.Many<String> out = Sinks.many().multicast().onBackpressureBuffer(100);
+        Sinks.Many<P2PMessageDto> in = Sinks.many().multicast().onBackpressureBuffer(100);
         Flux<P2PMessageDto> inbound = maintainConnection(peer, out, in).share();
         return new Conn(out, in, inbound);
     }
@@ -150,12 +151,12 @@ public class ConnectionManager {
                                     preHandshake.add(dto);
                                     if (dto instanceof HandshakeDto) {
                                         done.set(true);
-                                        preHandshake.forEach(inSink::tryEmitNext);
+                                        preHandshake.forEach(msg -> emitChecked(inSink, msg, peer, session));
                                         preHandshake.clear();
                                         timeout.dispose();
                                     }
                                 } else {
-                                    inSink.tryEmitNext(dto);
+                                    emitChecked(inSink, dto, peer, session);
                                 }
                             })
                             .then();
@@ -174,4 +175,15 @@ public class ConnectionManager {
     private String toJson(Object o) { return mapper.writeValueAsString(o); }
     @SneakyThrows
     private P2PMessageDto toDto(String j) { return mapper.readValue(j, P2PMessageDto.class); }
+
+    /** Emit to a sink and close the session on overflow. */
+    private <T> void emitChecked(Sinks.Many<T> sink, T msg, Peer peer, WebSocketSession session) {
+        EmitResult result = sink.tryEmitNext(msg);
+        if (result == EmitResult.FAIL_OVERFLOW) {
+            log.warn("❌  buffer overflow for {}", peer);
+            if (session != null) {
+                session.close().subscribe();
+            }
+        }
+    }
 }
