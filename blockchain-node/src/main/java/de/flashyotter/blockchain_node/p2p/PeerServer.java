@@ -12,6 +12,7 @@ import de.flashyotter.blockchain_node.service.NodeService;
 import de.flashyotter.blockchain_node.service.P2PBroadcastService;
 import de.flashyotter.blockchain_node.service.PeerRegistry;
 import de.flashyotter.blockchain_node.service.SyncService;
+import blockchain.core.model.Block;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -47,6 +48,7 @@ public class PeerServer implements WebSocketHandler {
         Peer peer = new Peer(addr.getHostString(), addr.getPort());
 
         ConnectionManager.Conn conn = connectionManager.registerServerSession(peer, session);
+        conn.outbound().tryEmitNext(mapper.writeValueAsString(hello));
 
         conn.inbound().subscribe(dto -> {
             if (dto instanceof HandshakeDto) {
@@ -65,14 +67,40 @@ public class PeerServer implements WebSocketHandler {
                 return;
             }
 
+            if (dto instanceof GetBlocksDto req) {
+                List<String> raws = node.blocksFromHeight(req.fromHeight()).stream()
+                                     .map(b -> {
+                                         try { return mapper.writeValueAsString(b); }
+                                         catch (Exception e) { throw new RuntimeException(e); }
+                                     })
+                                     .toList();
+                try {
+                    String json = mapper.writeValueAsString(new BlocksDto(raws));
+                    conn.outbound().tryEmitNext(json);
+                } catch (Exception e) {
+                    log.warn("❌  failed to send blocks: {}", e.getMessage());
+                }
+                return;
+            }
+
+            if (dto instanceof BlocksDto blks) {
+                blks.rawBlocks().forEach(raw -> {
+                    try {
+                        Block b = mapper.readValue(raw, Block.class);
+                        node.acceptExternalBlock(b);
+                    } catch (Exception e) {
+                        log.warn("❌  failed to process block: {}", e.getMessage());
+                    }
+                });
+                return;
+            }
+
             if (dto instanceof PingDto || dto instanceof PongDto ||
                 dto instanceof FindNodeDto || dto instanceof NodesDto) {
                 discovery.onMessage(dto, peer);
             }
         });
 
-        return session.send(Mono.just(session.textMessage(mapper.writeValueAsString(hello))))
-                      .then(session.closeStatus())
-                      .then();
+        return session.closeStatus().then();
     }
 }
