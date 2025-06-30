@@ -101,6 +101,25 @@ class PeerServerTest {
     }
 
     @Test
+    void handshakeWithWrongVersionClosesSession() {
+        ConnectionManager manager = new ConnectionManager(
+                org.mockito.Mockito.mock(org.springframework.web.reactive.socket.client.ReactorNettyWebSocketClient.class),
+                mapper, props);
+        PeerServer peerServer = new PeerServer(mapper, nodeService, registry, broadcastService, props, discovery, manager, syncService);
+        when(info.getRemoteAddress()).thenReturn(new InetSocketAddress("host", 20));
+        when(session.close()).thenReturn(Mono.empty());
+
+        peerServer.handle(session).subscribe();
+        Peer temp = new Peer("host", 20);
+        manager.connectAndSink(temp); // establish connection
+
+        HandshakeDto bad = new HandshakeDto("n2", "9.9.9", 99);
+        manager.emitInbound(temp, bad);
+
+        Awaitility.await().untilAsserted(() -> verify(session).close());
+    }
+
+    @Test
     @Disabled("needs update for new handshake flow")
     void closingSessionRemovesConnection() {
         var wsClient = org.mockito.Mockito.mock(org.springframework.web.reactive.socket.client.ReactorNettyWebSocketClient.class);

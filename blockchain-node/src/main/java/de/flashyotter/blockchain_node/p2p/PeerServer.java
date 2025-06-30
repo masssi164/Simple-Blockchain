@@ -54,6 +54,13 @@ public class PeerServer implements WebSocketHandler {
 
         conn.inbound().subscribe(dto -> {
             if (dto instanceof HandshakeDto hs) {
+                if (!PROTOCOL_VER.equals(hs.protocolVersion())) {
+                    log.warn("\u274c  incompatible peer {}: {} != {}",
+                             host, hs.protocolVersion(), PROTOCOL_VER);
+                    session.close().subscribe();
+                    return;
+                }
+
                 Peer real = new Peer(host, hs.listenPort());
                 actual.set(real);
                 boolean fresh = registry.add(real);
