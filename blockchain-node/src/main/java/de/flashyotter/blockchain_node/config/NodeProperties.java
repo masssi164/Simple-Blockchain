@@ -17,6 +17,9 @@ import java.util.List;
 public class NodeProperties {
     private List<String> peers = List.of();
 
+    /** Base directory for node data like the ID file. */
+    private String dataPath = "data";
+
     /** Maximum number of transactions kept in the mempool */
     @Value("${mempool.maxSize:1000}")
     private int mempoolMaxSize = 1000;
@@ -25,7 +28,7 @@ public class NodeProperties {
     @Value("${server.port:0}")
     private int port;
 
-    /** Stable node identifier persisted in data/nodeId */
+    /** Stable node identifier persisted in dataPath/nodeId */
     private String id;
     
     /**
@@ -36,7 +39,7 @@ public class NodeProperties {
     @PostConstruct
     private void initId() throws IOException {
         if (id != null && !id.isBlank()) return;
-        Path path = Path.of("data", "nodeId");
+        Path path = Path.of(dataPath, "nodeId");
         if (Files.exists(path)) {
             id = Files.readString(path).trim();
         } else {

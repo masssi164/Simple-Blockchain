@@ -14,8 +14,12 @@ server:
 
 node:
   peers: []
+  data-path: data
   wallet-password: ${NODE_WALLET_PASSWORD:changeMe}
   jwt-secret:    ${NODE_JWT_SECRET:changeMeSuperSecret}
+
+wallet:
+  store-path: .simple-chain/wallet.p12
 
 mempool:
   maxSize: 1000

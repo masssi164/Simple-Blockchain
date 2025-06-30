@@ -1,2 +1,6 @@
 node:
   wallet-password: test
+  data-path: data
+
+wallet:
+  store-path: .simple-chain/wallet.p12
