@@ -5,7 +5,6 @@ import { StatCard } from '../components/StatCard';
 import WalletView from '../components/WalletView';
 import BlockList from '../components/BlockList';
 import BlockHistory from '../components/BlockHistory';
-import RawTxSubmit from '../components/RawTxSubmit';
 
 export default function Dashboard() {
   const { data: tip } = useSWR<Block>(
@@ -28,7 +27,6 @@ export default function Dashboard() {
       </section>
       <div className="md:col-span-2 space-y-6">
         <WalletView />
-        <RawTxSubmit />
       </div>
     </main>
   );
