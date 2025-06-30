@@ -63,6 +63,7 @@ class PeerServerTest {
         when(session.send(org.mockito.ArgumentMatchers.any())).thenReturn(Mono.empty());
         when(session.closeStatus()).thenReturn(Mono.never());
         when(session.textMessage(org.mockito.ArgumentMatchers.anyString())).thenReturn(org.mockito.Mockito.mock(WebSocketMessage.class));
+        when(props.getPort()).thenReturn(3333);
     }
 
     @Test
@@ -121,7 +122,7 @@ class PeerServerTest {
         ConnectionManager manager = new ConnectionManager(org.mockito.Mockito.mock(org.springframework.web.reactive.socket.client.ReactorNettyWebSocketClient.class), mapper, props);
         PeerServer peerServer = new PeerServer(mapper, nodeService, registry, broadcastService, props, discovery, manager, syncService);
         when(info.getRemoteAddress()).thenReturn(new InetSocketAddress("host", 9));
-        HandshakeDto dto = new HandshakeDto("n2", "0.4.0");
+        HandshakeDto dto = new HandshakeDto("n2", "0.4.0", 42);
         when(registry.add(any())).thenReturn(true);
         when(syncService.followPeer(any())).thenReturn(Flux.empty());
 
@@ -130,10 +131,11 @@ class PeerServerTest {
         manager.emitInbound(peer, dto);
 
         Awaitility.await().untilAsserted(() -> {
-            verify(registry).add(peer);
+            Peer expected = new Peer("host", 42);
+            verify(registry).add(expected);
             verify(broadcastService).broadcastPeerList();
-            verify(discovery).onMessage(dto, peer);
-            verify(syncService).followPeer(peer);
+            verify(discovery).onMessage(dto, expected);
+            verify(syncService).followPeer(expected);
         });
     }
 
