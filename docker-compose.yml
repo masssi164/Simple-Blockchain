@@ -1,6 +1,10 @@
 services:
   backend:
-    image: blockchain-node:latest
+    build:
+      context: .
+      dockerfile: blockchain-node/Dockerfile
+      args:
+        SERVER_PORT: "${BACKEND_PORT}"
     env_file: .env
     environment:
       NODE_WALLET_PASSWORD: "${NODE_WALLET_PASSWORD}"
