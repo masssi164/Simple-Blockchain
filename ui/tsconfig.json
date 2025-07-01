@@ -15,6 +15,7 @@
 
     // Vitest-Globals und Vite-API:
     "types": [
+      "node",
       "vite/client",
       "vitest/globals"
     ]
