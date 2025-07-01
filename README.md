@@ -45,6 +45,24 @@ A lightweight Proof-of-Work blockchain node written in **Java 21** + **Spring Bo
    ./gradlew dockerComposeDown
    ```
 
+### Zertifikat hinterlegen
+
+Setze die Variable `BUILD_CA_CERT` auf den absoluten Pfad zu deinem
+Zscaler-Root-Zertifikat **in Unix-Schreibweise**:
+
+Unix / Linux
+```bash
+export BUILD_CA_CERT=/opt/certs/zscaler.crt
+```
+
+Windows (PowerShell)
+```powershell
+setx BUILD_CA_CERT "C:/Users/maierm/zscaler/zscalerwsl.crt"
+```
+
+Wichtig: Vorwärtsschrägstriche (/) funktionieren auch unter Windows,
+weil `keytool` diese akzeptiert.
+
 ---
 
 ## REST API
