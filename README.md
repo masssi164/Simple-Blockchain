@@ -29,6 +29,8 @@ A lightweight Proof-of-Work blockchain node written in **Java 21** + **Spring Bo
      BACKEND_PORT=1002
      FRONTEND_PORT=8892
      ```
+   `docker-compose` passes `BACKEND_PORT` to the backend container as `SERVER_PORT`.
+   The Docker image exposes this port and defaults to `3333` if not overridden.
 2. **Start the stack:**
    ```bash
    ./gradlew dockerComposeUp
