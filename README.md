@@ -28,7 +28,10 @@ A lightweight Proof-of-Work blockchain node written in **Java 21** + **Spring Bo
      ```env
      BACKEND_PORT=1002
      FRONTEND_PORT=8892
-     ```
+     # Optionally trust an additional CA certificate during the Docker build
+    BUILD_CA_CERT=./zscaler.crt
+    ```
+   If `BUILD_CA_CERT` is empty or the file can't be found, the image is built without adding a certificate.
    `docker-compose` passes `BACKEND_PORT` to the backend container as `SERVER_PORT`.
    The Docker image exposes this port and defaults to `3333` if not overridden.
 2. **Start the stack:**

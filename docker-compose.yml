@@ -5,6 +5,7 @@ services:
       dockerfile: blockchain-node/Dockerfile
       args:
         SERVER_PORT: "${BACKEND_PORT}"
+        BUILD_CA_CERT: "${BUILD_CA_CERT}"
     env_file: .env
     environment:
       NODE_WALLET_PASSWORD: "${NODE_WALLET_PASSWORD}"
