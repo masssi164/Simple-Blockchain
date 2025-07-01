@@ -66,6 +66,10 @@ Hinweise:
 - Verwende absolute Pfade in **Unix-Schreibweise**, z. B. `C:/Users/maierm/zscaler/zscaler.crt`.
 - Ist `BUILD_CA_CERT` leer, wird nichts importiert.
 - Docker BuildKit (`DOCKER_BUILDKIT=1`) muss aktiviert sein.
+- Beim Docker-Build wird das Zertifikat zuerst mit
+  `keytool -cacerts` in die Standard-Trust-Store importiert. Schlägt das fehl,
+  legt der Build einen beschreibbaren Truststore unter
+  `/etc/ssl/certs/java/cacerts` an und importiert das Zertifikat dort.
 
 ---
 

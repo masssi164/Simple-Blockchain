@@ -13,12 +13,17 @@ RUN --mount=type=secret,id=zscaler_cert,required=false \
     if [ -s /run/secrets/zscaler_cert ]; then \
         cp /run/secrets/zscaler_cert /usr/local/share/ca-certificates/zscaler.crt && \
         update-ca-certificates && \
-        keytool -importcert \
-                -alias zscaler \
-                -file /run/secrets/zscaler_cert \
-                -keystore "$JAVA_HOME/lib/security/cacerts" \
-                -storepass changeit -trustcacerts -noprompt && \
-        ln -sf /etc/ssl/certs/java/cacerts "$JAVA_HOME/lib/security/cacerts"; \
+        if keytool -importcert -alias zscaler -file /run/secrets/zscaler_cert \
+                -cacerts -storepass changeit -trustcacerts -noprompt; then \
+            echo "→ Zertifikat in Standard-cacerts importiert"; \
+        else \
+            echo "→ keytool -cacerts fehlgeschlagen, erstelle beschreibbaren Truststore"; \
+            mkdir -p /etc/ssl/certs/java && \
+            cp "$JAVA_HOME/lib/security/cacerts" /etc/ssl/certs/java/cacerts && \
+            ln -sf /etc/ssl/certs/java/cacerts "$JAVA_HOME/lib/security/cacerts" && \
+            keytool -importcert -alias zscaler -file /run/secrets/zscaler_cert \
+                -keystore /etc/ssl/certs/java/cacerts -storepass changeit -trustcacerts -noprompt; \
+        fi; \
     else \
         echo "→ Kein Zertifikat gefunden – Import übersprungen"; \
     fi
