@@ -28,6 +28,7 @@
     "@testing-library/user-event": "^14.6.1",
     "@types/react": "^19.1.2",
     "@types/react-dom": "^19.1.2",
+    "@types/node": "^20.0.0",
     "@vitejs/plugin-react": "^4.4.1",
     "@vitest/ui": "^3.2.2",
     "c8": "^10.1.3",
