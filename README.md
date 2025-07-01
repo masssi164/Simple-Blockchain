@@ -56,10 +56,10 @@ Example:
 
 ```bash
 # my wallet address & balance
-curl http://localhost:1002/api/wallet | jq
+curl http://localhost:$BACKEND_PORT/api/wallet | jq
 
 # pay 1.0 coin to recipientKey
-curl -X POST http://localhost:1002/api/wallet/send \
+curl -X POST http://localhost:$BACKEND_PORT/api/wallet/send \
      -H "Content-Type: application/json" \
      -d '{ "recipient":"MIGbMBAGByqG...", "amount":1.0 }'
 ```
@@ -84,7 +84,7 @@ ws://host:port/ws
 
 ### Frontend WebSocket Flow
 
-The React UI connects to the node via `VITE_NODE_WS` (e.g. `ws://localhost:3333/ws`).
+The React UI connects to the node via `VITE_NODE_WS` (e.g. `ws://localhost:$BACKEND_PORT/ws`).
 On connect it sends a `HandshakeDto` and automatically reconnects with
 exponential backoff if the socket closes. Only `NewBlockDto` and `NewTxDto`
 messages are forwarded to the app.

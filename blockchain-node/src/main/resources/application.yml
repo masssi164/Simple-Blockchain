@@ -10,7 +10,7 @@ management:
 
 server:
   address: 0.0.0.0
-  port: 3333
+  port: ${SERVER_PORT:3333}
 
 node:
   peers: []
