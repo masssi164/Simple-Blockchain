@@ -3,7 +3,6 @@ plugins {
     id 'jacoco'
     id 'org.springframework.boot'      version '3.5.1'
     id 'io.spring.dependency-management' version '1.1.7'
-    id 'com.palantir.docker'           version '0.36.0'
 }
 
 group   = 'de.flashyotter'
@@ -61,18 +60,4 @@ tasks.named('test') {
 
 tasks.named('jacocoTestReport') {
     dependsOn 'test'
-}
-docker {
-    name       "blockchain-node:latest"
-    dockerfile file('Dockerfile')
-    files      "build/libs/${project.name}-${project.version}.jar"
-}
-
-// 1) sorg dafür, dass das JAR gebaut ist, bevor das Image gebaut wird
-tasks.named('docker') { dependsOn 'bootJar' }
-
-// 2) und stell hiermit sicher, dass auch der dockerPrepare-Task
-//    die JAR-Datei nicht vor ihrer Erzeugung kopiert
-tasks.named('dockerPrepare') {
-    dependsOn tasks.named('bootJar')
 }
