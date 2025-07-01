@@ -1,11 +1,15 @@
+secrets:
+  zscaler_cert:
+    file: ${BUILD_CA_CERT:-/dev/null}
+
 services:
   backend:
     build:
       context: .
       dockerfile: blockchain-node/Dockerfile
+      secrets: [zscaler_cert]
       args:
         SERVER_PORT: "${BACKEND_PORT}"
-        BUILD_CA_CERT: "${BUILD_CA_CERT}"
     env_file: .env
     environment:
       NODE_WALLET_PASSWORD: "${NODE_WALLET_PASSWORD}"
@@ -16,6 +20,7 @@ services:
     ports:
       - "${BACKEND_PORT}:${BACKEND_PORT}"
     restart: unless-stopped
+    secrets: [zscaler_cert]
 
   frontend:
     build:
