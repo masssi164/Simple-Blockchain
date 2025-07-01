@@ -17,6 +17,19 @@ RUN if [ -n "$BUILD_CA_CERT" ] && [ -f "$BUILD_CA_CERT" ]; then \
       update-ca-certificates; \
     fi
 
+# --- Zertifikat ebenfalls in den JVM-Truststore legen --------------
+RUN if [ -n "$BUILD_CA_CERT" ] && [ -f "$BUILD_CA_CERT" ]; then \
+      keytool -importcert \
+              -alias zscaler \
+              -file "$BUILD_CA_CERT" \
+              -keystore "$JAVA_HOME/lib/security/cacerts" \
+              -storepass changeit \
+              -noprompt \
+              -trustcacerts && \
+      # Symlink, damit Linux-Store und JVM-Store identisch bleiben
+      ln -sf /etc/ssl/certs/java/cacerts "$JAVA_HOME/lib/security/cacerts"; \
+    fi
+
 # Build only the node module
 RUN gradle :blockchain-node:bootJar --no-daemon
 
