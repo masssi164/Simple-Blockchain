@@ -42,6 +42,8 @@ Runtime data (blocks, wallet keys) lives in `data/`. Compose reads configuration
    BACKEND_PORT=1002
    FRONTEND_PORT=8892
    ```
+   The backend automatically queries `api.ipify.org` to advertise its public IP
+   to peers.
 2. **Start** – build artifacts and run both services:
    ```bash
    ./gradlew composeUp
@@ -132,6 +134,7 @@ Use different ports and specify peers when launching multiple nodes:
 | 2 | `BACKEND_PORT=1003 NODE_PEERS=localhost:1002 ./gradlew composeUp` |
 
 Start mining on either node and watch both chains converge.
+Each node detects its public host automatically via `api.ipify.org`.
 
 ## Roadmap
 

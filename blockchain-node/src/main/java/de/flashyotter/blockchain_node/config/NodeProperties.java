@@ -1,6 +1,7 @@
 package de.flashyotter.blockchain_node.config;
 
 import lombok.Data;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
@@ -18,11 +19,18 @@ public class NodeProperties {
 
     /** Stable node identifier persisted in data/nodeId */
     private String id;
+
+    /** Publicly reachable host (detected automatically). */
+    private String publicHost;
     
     /**
      * Password for encrypting/decrypting the PKCS12 keystore.
      */
     private String walletPassword;
+
+    /** Optional helper for auto-detecting the public IP. */
+    @Autowired(required = false)
+    private de.flashyotter.blockchain_node.service.PublicIpService ipService;
 
     @PostConstruct
     private void initId() throws IOException {
@@ -34,6 +42,19 @@ public class NodeProperties {
             Files.createDirectories(path.getParent());
             id = java.util.UUID.randomUUID().toString();
             Files.writeString(path, id);
+        }
+    }
+
+    /**
+     * Determine the node's outward-facing address on startup.
+     */
+    @PostConstruct
+    void initAddress() {
+        if (ipService != null) {
+            String ip = ipService.fetchPublicIp();
+            if (ip != null && !ip.isBlank()) {
+                publicHost = ip;
+            }
         }
     }
 }
