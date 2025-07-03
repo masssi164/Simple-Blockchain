@@ -18,6 +18,7 @@ configurations {
 
 repositories {
     mavenCentral()
+    maven { url 'https://dl.cloudsmith.io/public/libp2p/jvm-libp2p/maven/' }
     maven { url 'https://repo.spring.io/milestone' }
     maven { url 'https://repo.spring.io/snapshot' }
 }
