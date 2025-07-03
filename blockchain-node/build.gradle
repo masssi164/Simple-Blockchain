@@ -19,6 +19,8 @@ configurations {
 repositories {
     mavenCentral()
     maven { url 'https://dl.cloudsmith.io/public/libp2p/jvm-libp2p/maven/' }
+    maven { url 'https://jitpack.io' }
+    maven { url 'https://artifacts.consensys.net/public/maven/maven/' }
     maven { url 'https://repo.spring.io/milestone' }
     maven { url 'https://repo.spring.io/snapshot' }
 }
@@ -43,6 +45,12 @@ dependencies {
 
     implementation 'io.github.resilience4j:resilience4j-circuitbreaker:2.2.0'
     implementation 'io.github.resilience4j:resilience4j-reactor:2.2.0'
+
+    // Networking and concurrency
+    implementation platform("io.netty:netty-bom:4.1.117.Final")
+    implementation "io.libp2p:jvm-libp2p:1.2.2-RELEASE"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.25"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2"
 
     compileOnly          'org.projectlombok:lombok:1.18.30'
     annotationProcessor  'org.projectlombok:lombok:1.18.30'
