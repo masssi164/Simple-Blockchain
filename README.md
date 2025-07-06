@@ -28,8 +28,9 @@ A lightweight Proof-of-Work blockchain node written in **Java 21** + **Spring Bo
      ```env
      BACKEND_PORT=1002
      FRONTEND_PORT=8892
-      # Optional certificate to trust during the Docker build
-      BUILD_CA_CERT=./zscaler.crt
+     NODE_LIBP2P_PORT=4001
+     # Optional certificate to trust during the Docker build
+     BUILD_CA_CERT=./zscaler.crt
       ```
     If `BUILD_CA_CERT` is empty or the file can't be found, nothing is imported.
     Docker BuildKit (`DOCKER_BUILDKIT=1`) must be enabled for the secret mount.
