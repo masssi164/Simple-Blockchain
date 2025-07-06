@@ -1,12 +1,12 @@
 `blockchain-node` contains the Spring Boot application built on `blockchain-core`.
 
 Important paths under `src/main/java/de/flashyotter/blockchain_node`:
-- `BlockchainNodeApplication.java` – entry point starting the HTTP & WebSocket server.
+- `BlockchainNodeApplication.java` – entry point starting the HTTP server and libp2p host.
 - `bootstrap/StartupInitializer.java` – tasks executed at startup.
-- `config/` – Spring configuration classes (`SecurityConfig`, `WebSocketConfig`, ...).
+- `config/` – Spring configuration classes (`SecurityConfig`, `P2PConfig`, ...).
 - `controller/` – REST controllers for chain, mining, transactions and wallet.
 - `service/` – business logic (`NodeService`, `MiningService`, etc.).
-- `p2p/` – `Peer`, `PeerClient` and `PeerServer` for WebSocket networking.
+- `p2p/` – `Peer`, `PeerClient` and `PeerServer` for libp2p networking.
 - `storage/` – `BlockStore` with LevelDB and in-memory implementations.
 - `wallet/` – wallet and keystore utilities.
 

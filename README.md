@@ -6,7 +6,7 @@ A lightweight Proof-of-Work blockchain node written in **Java 21** + **Spring Bo
 |---------|-------|
 | **Full chain** | UTXO, PoW verification, difficulty retarget |
 | **Wallet** | Local ECDSA P-256 key-pair, auto-created on first run |
-| **P2P sync** | WebSocket (+ STOMP) gossip of blocks, txs & peers |
+| **P2P sync** | libp2p gossip via Kademlia DHT |
 | **CPU miner** | Single-thread demo miner |
 | **REST API** | Reactive (WebFlux) – works with `curl`, Postman, etc. |
 
@@ -39,6 +39,7 @@ A lightweight Proof-of-Work blockchain node written in **Java 21** + **Spring Bo
    Docker BuildKit (`DOCKER_BUILDKIT=1`) must be enabled for the secret mount.
    `docker-compose` passes `BACKEND_PORT` to the backend container as `SERVER_PORT`.
    The Docker image exposes this port and defaults to `3333` if not overridden.
+   The libp2p layer listens on `NODE_LIBP2P_PORT` and bootstraps peers from `NODE_PEERS`.
 2. **Start the stack:**
    ```bash
    ./gradlew dockerComposeUp
@@ -101,25 +102,20 @@ curl -X POST http://localhost:$BACKEND_PORT/api/wallet/send \
 
 ---
 
-## P2P Protocol (WebSocket `/ws`)
+## P2P Protocol (libp2p + Kademlia)
 
-Message types (JSON with `type` discriminator):
+The node runs a libp2p host with a Kademlia DHT for peer discovery and message routing.
+All P2P messages are protobuf encoded and exchanged on the `/blocks/1.0.0` gossipsub topic.
+
+Message types:
 
 * `NEW_TX`, `NEW_BLOCK`        – gossip
 * `GET_BLOCKS`, `BLOCKS`       – naïve range sync
 * `PEER_LIST`                  – share known peers
 * `PING`, `PONG`               – liveness check
-* `FIND_NODE`, `NODES`         – request/answer closest peers (Kademlia)
+* `FIND_NODE`, `NODES`         – request/answer closest peers
 
-Nodes keep a Kademlia routing table. Each new connection triggers a
-`FIND_NODE` query for our own ID and any `NODES` reply is merged into the
-table and peer registry.
-
-You can inspect traffic with any WS client:
-
-```
-ws://host:port/ws
-```
+Set `NODE_LIBP2P_PORT` to choose the listening port and provide comma separated seed peers via `NODE_PEERS`. Each new connection triggers a `FIND_NODE` request for our own ID and any `NODES` reply is merged into the routing table.
 
 ### Frontend WebSocket Flow
 
