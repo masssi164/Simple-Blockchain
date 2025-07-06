@@ -21,7 +21,6 @@ import de.flashyotter.blockchain_node.service.PeerRegistry;
 class P2PBroadcastServiceTest {
 
     @Mock PeerRegistry registry;
-    @Mock PeerClient   client;
     @Mock de.flashyotter.blockchain_node.p2p.libp2p.Libp2pService libp2p;
 
     P2PBroadcastService svc;
@@ -29,7 +28,7 @@ class P2PBroadcastServiceTest {
     @BeforeEach
     void init() {
         MockitoAnnotations.openMocks(this);
-        svc = new P2PBroadcastService(registry, client, libp2p);
+        svc = new P2PBroadcastService(registry, libp2p);
     }
 
     @Test
@@ -40,8 +39,8 @@ class P2PBroadcastServiceTest {
         NewTxDto dto = new NewTxDto("json");
         svc.broadcastTx(dto, p1);
         // p1 origin should be skipped, only p2
-        verify(client).send(eq(p2), eq(dto));
-        verify(client, never()).send(eq(p1), any());
+        verify(libp2p).sendTx(eq(p2), eq(dto));
+        verify(libp2p, never()).sendTx(eq(p1), any());
     }
 
     @Test
@@ -50,7 +49,7 @@ class P2PBroadcastServiceTest {
         when(registry.all()).thenReturn(java.util.Set.of(p1));
         NewBlockDto dto = new NewBlockDto("jb");
         svc.broadcastBlock(dto, null);
-        verify(client).send(eq(p1), eq(dto));
+        verify(libp2p).sendBlock(eq(p1), eq(dto));
     }
 
     @Test
@@ -60,6 +59,6 @@ class P2PBroadcastServiceTest {
         when(registry.all()).thenReturn(java.util.Set.of(p1,p2));
         svc.broadcastPeerList();
         // building a PeerListDto internally, so just verify send called twice
-        verify(client, times(2)).send(any(Peer.class), any(PeerListDto.class));
+        verify(libp2p, times(2)).send(any(Peer.class), any(PeerListDto.class));
     }
 }
