@@ -67,6 +67,38 @@ public class Libp2pService {
         peers.forEach(p -> sendTx(p, dto));
     }
 
+    /** Request a batch of blocks from {@code peer} starting at {@code req.fromHeight()}. */
+    public BlocksDto requestBlocks(Peer peer, GetBlocksDto req) {
+        java.util.concurrent.CompletableFuture<BlocksDto> fut = new java.util.concurrent.CompletableFuture<>();
+        try {
+            String json = mapper.writeValueAsString(req);
+            io.libp2p.core.multiformats.Multiaddr addr =
+                    new io.libp2p.core.multiformats.Multiaddr(peer.multiAddr());
+            host.getNetwork().connect(addr)
+                .thenCompose(conn -> host.newStream(PROTOCOL, conn).getStream())
+                .thenAccept(stream -> {
+                    stream.pushHandler(new SimpleClientHandler() {
+                        @Override
+                        public void messageReceived(ChannelHandlerContext ctx, ByteBuf msg) {
+                            try {
+                                String body = msg.toString(java.nio.charset.StandardCharsets.UTF_8);
+                                BlocksDto bd = mapper.readValue(body, BlocksDto.class);
+                                fut.complete(bd);
+                                stream.close();
+                            } catch (Exception e) {
+                                fut.completeExceptionally(e);
+                            }
+                        }
+                    });
+                    stream.writeAndFlush(json);
+                }).join();
+            return fut.get(5, java.util.concurrent.TimeUnit.SECONDS);
+        } catch (Exception e) {
+            log.warn("libp2p request failed: {}", e.getMessage());
+            return new BlocksDto(java.util.List.of());
+        }
+    }
+
     /** Handles peer discovery messages (FIND_NODE/NODES). */
     class ControlHandler extends SimpleClientHandler {
         @Override
@@ -84,6 +116,18 @@ public class Libp2pService {
                     kademlia.merge(nodes);
                 } else if (dto instanceof PeerListDto pl) {
                     kademlia.merge(new NodesDto(pl.peers()));
+                } else if (dto instanceof GetBlocksDto gb) {
+                    var blocks = node.blocksFromHeight(gb.fromHeight());
+                    var list = blocks.stream()
+                            .map(blockchain.core.serialization.JsonUtils::toJson)
+                            .toList();
+                    String reply = mapper.writeValueAsString(new BlocksDto(list));
+                    ctx.writeAndFlush(io.netty.buffer.Unpooled.copiedBuffer(reply, java.nio.charset.StandardCharsets.UTF_8));
+                } else if (dto instanceof BlocksDto bd) {
+                    for (String raw : bd.rawBlocks()) {
+                        blockchain.core.model.Block blk = mapper.readValue(raw, blockchain.core.model.Block.class);
+                        node.acceptExternalBlock(blk);
+                    }
                 }
             } catch (Exception e) {
                 log.warn("libp2p inbound failed: {}", e.getMessage());
