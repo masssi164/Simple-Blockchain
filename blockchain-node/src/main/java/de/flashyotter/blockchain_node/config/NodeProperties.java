@@ -49,6 +49,9 @@ public class NodeProperties {
      */
     private String walletPassword;
 
+    /** Shared secret used to sign and verify JWT tokens. */
+    private String jwtSecret = "changeMeSuperSecret";
+
     /** Number of worker threads used for mining */
     private int miningThreads = Runtime.getRuntime().availableProcessors();
 

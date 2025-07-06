@@ -6,7 +6,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -15,14 +17,21 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 public class SecurityConfig {
 
   @Bean
-  SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+  JwtAuthFilter jwtAuthFilter(NodeProperties props) {
+    return new JwtAuthFilter(props);
+  }
+
+  @Bean
+  SecurityFilterChain filterChain(HttpSecurity http, JwtAuthFilter jwtFilter) throws Exception {
     http
-      // 1) CSRF ausschalten
       .csrf(csrf -> csrf.disable())
-      // 2) CORS aktivieren und unsere Bean nutzen
       .cors(Customizer.withDefaults())
-      // 3) alle Endpoints freigeben
-      .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+      .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+      .authorizeHttpRequests(auth -> auth
+        .requestMatchers("/actuator/health").permitAll()
+        .requestMatchers("/api/**").authenticated()
+        .anyRequest().permitAll())
+      .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
     return http.build();
   }
