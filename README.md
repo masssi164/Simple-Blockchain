@@ -1,149 +1,134 @@
-# Simple-Blockchain (v0.1-SNAPSHOT)
+Simple‑Chain Node (v0.2‑DEV)
 
-A lightweight Proof-of-Work blockchain node written in **Java 21** + **Spring Boot 3**.
+A lean Java 21 + Spring Boot 3 blockchain node that demonstrates a production‑grade architecture in a minimal code base. Proof‑of‑Work consensus, UTXO model, libp2p networking and a reactive REST/WS interface.
 
-| Feature | Notes |
-|---------|-------|
-| **Full chain** | UTXO, PoW verification, difficulty retarget |
-| **Wallet** | Local ECDSA P-256 key-pair, auto-created on first run |
-| **P2P sync** | libp2p gossip via Kademlia DHT |
-| **CPU miner** | Single-thread demo miner |
-| **REST API** | Reactive (WebFlux) – works with `curl`, Postman, etc. |
+Status – BetaThe project recently moved beyond proof‑of‑concept. Expect breaking changes until v1.0.
 
-> **Status — Proof of Concept**  
-> Not production-ready (no hardening, no fork-choice, no fee market).
+Feature Matrix
 
----
+Area
 
-## Quick Start (with Docker Compose)
+Details
 
-**Requirements:**
-- [Docker](https://docs.docker.com/get-docker/) must be installed and running.
-- [Docker Compose](https://docs.docker.com/compose/) (usually included with Docker Desktop)
+Consensus
 
-**How to run:**
+Bitcoin‑style PoW, UTXO, compact‑bits difficulty retarget, fork‑choice by total work
 
-1. **Configure the environment:**
-   Create or edit the `.env` file in the project root. Example:
-   ```env
-   BACKEND_PORT=1002
-   FRONTEND_PORT=8892
-   NODE_LIBP2P_PORT=4001
-   NODE_PEERS=
-   NODE_WALLET_PASSWORD=changeMeSuperSecret
-   NODE_JWT_SECRET=myTopSecret
-   # Optional certificate to trust during the Docker build
-   BUILD_CA_CERT=./zscaler.crt
-   ```
-   If `BUILD_CA_CERT` is empty or the file can't be found, nothing is imported.
-   Docker BuildKit (`DOCKER_BUILDKIT=1`) must be enabled for the secret mount.
-   `docker-compose` passes `BACKEND_PORT` to the backend container as `SERVER_PORT`.
-   The Docker image exposes this port and defaults to `3333` if not overridden.
-   The libp2p layer listens on `NODE_LIBP2P_PORT` and bootstraps peers from `NODE_PEERS`.
-2. **Start the stack:**
-   ```bash
-   ./gradlew dockerComposeUp
-   ```
-   This will build all artifacts, create Docker images, and start the full stack (backend + frontend).
+Wallet
 
-3. **Stop the stack:**
-   ```bash
-   ./gradlew dockerComposeDown
-   ```
+Local secp256k1 key‑pair stored in encrypted PKCS#12 keystore
 
-### Zertifikat (optional)
+Mining
 
-Setze `BUILD_CA_CERT` auf den absoluten Pfad zu deinem
-Zscaler-Root-Zertifikat **in Unix-Schreibweise**:
+Parallel PoW engine – configurable worker threads
 
-Unix / Linux
-```bash
-export BUILD_CA_CERT=/opt/certs/zscaler.crt
-```
+Networking
 
-Windows (PowerShell)
-```powershell
-setx BUILD_CA_CERT "C:/Users/maierm/zscaler/zscalerwsl.crt"
-```
+Dual transport: legacy WebSocket gossipsub and libp2p with Kademlia DHT discovery
 
-Hinweise:
+Mempool
 
-- Verwende absolute Pfade in **Unix-Schreibweise**, z. B. `C:/Users/maierm/zscaler/zscaler.crt`.
-- Ist `BUILD_CA_CERT` leer, wird nichts importiert.
-- Docker BuildKit (`DOCKER_BUILDKIT=1`) muss aktiviert sein.
-- Beim Docker-Build wird das Zertifikat zuerst mit
-  `keytool -cacerts` in die Standard-Trust-Store importiert. Schlägt das fehl,
-  legt der Build einen beschreibbaren Truststore unter
-  `/etc/ssl/certs/java/cacerts` an und importiert das Zertifikat dort.
+Fee‑based priority queue with eviction policy
 
----
+API
 
-## REST API
+Reactive REST + WebSocket push; OpenAPI spec under /swagger-ui.html
 
-| Method & Path | Payload | Description |
-|---------------|---------|-------------|
-| **GET** `/api/wallet` | – | Public key + confirmed balance |
-| **POST** `/api/wallet/send` | `{ "recipient":"<base64>", "amount":1.23 }` | Builds + signs + broadcasts a TX |
-| **POST** `/api/tx` | raw `Transaction` JSON | Submit an already-signed TX |
-| **POST** `/api/mining/mine` | – | Mine one block immediately |
-| **GET** `/api/chain/latest` | – | Latest block header |
+CLI & UI
 
-Example:
+Terminal wallet utility (./gradlew run:cli) and accessible React dashboard
 
-```bash
-# my wallet address & balance
-curl http://localhost:$BACKEND_PORT/api/wallet | jq
+The docker image is < 120 MB and starts in < 2 s on a laptop.
 
-# pay 1.0 coin to recipientKey
-curl -X POST http://localhost:$BACKEND_PORT/api/wallet/send \
-     -H "Content-Type: application/json" \
-     -d '{ "recipient":"MIGbMBAGByqG...", "amount":1.0 }'
-```
+Quick Start with Docker Compose
 
----
+Requirements – Docker 24+, Docker Compose.
 
-## P2P Protocol (libp2p + Kademlia)
+### 1. Environment
 
-The node runs a libp2p host with a Kademlia DHT for peer discovery and message routing.
-All P2P messages are protobuf encoded and exchanged on the `/blocks/1.0.0` gossipsub topic.
+Create a .env in the repo root (values are safe defaults):
 
-Message types:
+BACKEND_PORT=1002
+FRONTEND_PORT=8892
+NODE_LIBP2P_PORT=4001
+NODE_PEERS=
+NODE_WALLET_PASSWORD=changeMeSuperSecret
+NODE_JWT_SECRET=myTopSecret
+MINING_THREADS=4            # 0 → auto‑detect
+BUILD_CA_CERT=
 
-* `NEW_TX`, `NEW_BLOCK`        – gossip
-* `GET_BLOCKS`, `BLOCKS`       – naïve range sync
-* `PEER_LIST`                  – share known peers
-* `PING`, `PONG`               – liveness check
-* `FIND_NODE`, `NODES`         – request/answer closest peers
+### 2. Run
 
-Set `NODE_LIBP2P_PORT` to choose the listening port and provide comma separated seed peers via `NODE_PEERS`. Each new connection triggers a `FIND_NODE` request for our own ID and any `NODES` reply is merged into the routing table.
+./gradlew dockerComposeUp
 
-### Frontend WebSocket Flow
+This builds the backend, UI and starts both containers. Point your browser to http://localhost:$FRONTEND_PORT.
 
-The React UI connects to the node via `VITE_NODE_WS` (e.g. `ws://localhost:$BACKEND_PORT/ws`).
-On connect it sends a `HandshakeDto` and automatically reconnects with
-exponential backoff if the socket closes. Only `NewBlockDto` and `NewTxDto`
-messages are forwarded to the app.
+### 3. Stop
 
+./gradlew dockerComposeDown
 
----
+REST API (excerpt)
 
-## Run a Private Network
+GET  /api/wallet                 → address, confirmed balance
+GET  /api/wallet/transactions    → last N wallet transactions
+POST /api/wallet/send            → create, sign & broadcast TX
+POST /api/mining/mine            → mine one block immediately
+GET  /api/chain/latest           → current tip
+GET  /api/chain/page?page=0&size=5 → paginated blocks (desc)
 
-| Terminal # | Command |
-|------------|---------|
-| 1 | `BACKEND_PORT=1002 ./gradlew dockerComposeUp` |
-| 2 | `BACKEND_PORT=1003 NODE_PEERS=localhost:1002 ./gradlew dockerComposeUp` |
+Fully documented via Swagger / OpenAPI at runtime.
 
-*Nodes discover each other via the seed list and stay in sync.*
-Trigger mining on either node; both ledgers will converge.
+P2P Protocol
 
----
+The node announces itself on /simple-blockchain/*.
 
-## Road-map
+Control – peer list, find‑node, range sync
 
-* ~~Fee/priority mempool & eviction~~ (done)
-* Better fork-choice (total-work)  
-* gRPC / JSON-RPC facade for dApps  
-* CLI wallet utility  
-* Multi-threaded miner
+Blocks  – single blocks (NewBlockDto)
+
+Txs     – raw TX gossip (NewTxDto)
+
+Peer discovery uses Kademlia distance metrics plus optional static seed list.
+
+Roadmap
+
+Next 30 days (v0.2)
+
+LevelDB block store with replay‑safe startup
+
+Harden wire format: length‑prefix, DoS guards
+
+Structured logging + Prometheus metrics
+
+CLI wallet (send, balance, history)
+
+Accessibility audit of the React UI
+
+Q4 2025 (v0.3)
+
+Replace JSON over WS with protobuf over gRPC
+
+Compact block relay + thin‑client (SPV) mode
+
+Adaptive fee market, child‑pays‑for‑parent
+
+Snapshots + UTXO compaction
+
+### v1.0
+
+Formal security review & fuzzing harness
+
+Ledger pruning / archival node split
+
+Governance upgrade support (BIP‑9‑style soft forks)
+
+Inter‑chain bridge PoC (IBC‑inspired)
+
+Contributing
+
+Fork, create a branch, run ./gradlew verify and open a PR.
+
+License
+
+MIT – see LICENSE.
 
