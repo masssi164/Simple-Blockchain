@@ -23,19 +23,22 @@ A lightweight Proof-of-Work blockchain node written in **Java 21** + **Spring Bo
 
 **How to run:**
 
-1. **Set your ports (optional):**
-   - Edit the `.env` file in the project root to set your desired frontend and backend ports:
-     ```env
-     BACKEND_PORT=1002
-     FRONTEND_PORT=8892
-     NODE_LIBP2P_PORT=4001
-     # Optional certificate to trust during the Docker build
-     BUILD_CA_CERT=./zscaler.crt
-      ```
-    If `BUILD_CA_CERT` is empty or the file can't be found, nothing is imported.
-    Docker BuildKit (`DOCKER_BUILDKIT=1`) must be enabled for the secret mount.
-    `docker-compose` passes `BACKEND_PORT` to the backend container as `SERVER_PORT`.
-    The Docker image exposes this port and defaults to `3333` if not overridden.
+1. **Configure the environment:**
+   Create or edit the `.env` file in the project root. Example:
+   ```env
+   BACKEND_PORT=1002
+   FRONTEND_PORT=8892
+   NODE_LIBP2P_PORT=4001
+   NODE_PEERS=
+   NODE_WALLET_PASSWORD=changeMeSuperSecret
+   NODE_JWT_SECRET=myTopSecret
+   # Optional certificate to trust during the Docker build
+   BUILD_CA_CERT=./zscaler.crt
+   ```
+   If `BUILD_CA_CERT` is empty or the file can't be found, nothing is imported.
+   Docker BuildKit (`DOCKER_BUILDKIT=1`) must be enabled for the secret mount.
+   `docker-compose` passes `BACKEND_PORT` to the backend container as `SERVER_PORT`.
+   The Docker image exposes this port and defaults to `3333` if not overridden.
 2. **Start the stack:**
    ```bash
    ./gradlew dockerComposeUp
