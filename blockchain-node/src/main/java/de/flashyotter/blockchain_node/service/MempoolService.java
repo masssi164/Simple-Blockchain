@@ -33,4 +33,9 @@ public class MempoolService {
     public void purge(List<Transaction> confirmed) {
         mempool.removeAll(confirmed);
     }
+
+    /** Current number of transactions in the pool. */
+    public int size() {
+        return mempool.size();
+    }
 }

@@ -78,6 +78,11 @@ public class Mempool {
         }
     }
 
+    /** Current number of transactions in the pool. */
+    public int size() {
+        return pool.size();
+    }
+
     private boolean isSpent(String refId) {
         return pool.values().stream()
                    .map(e -> e.tx)
