@@ -12,6 +12,7 @@ import org.apache.tuweni.kademlia.KademliaRoutingTable;
 import java.nio.charset.StandardCharsets;
 import de.flashyotter.blockchain_node.p2p.Peer;
 import io.libp2p.security.noise.NoiseXXSecureChannel;
+import io.libp2p.security.plaintext.PlaintextInsecureChannel;
 import io.libp2p.transport.tcp.TcpTransport;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -23,11 +24,16 @@ public class Libp2pConfig {
     public Host libp2pHost(NodeProperties props) {
         int listenPort = props.getLibp2pPort();
         Multiaddr addr = new Multiaddr("/ip4/0.0.0.0/tcp/" + listenPort);
+        java.util.function.BiFunction<io.libp2p.core.crypto.PrivKey,
+                java.util.List<io.libp2p.core.mux.StreamMuxer>,
+                io.libp2p.core.security.SecureChannel> secureFactory =
+                props.isLibp2pEncrypted() ? NoiseXXSecureChannel::new : PlaintextInsecureChannel::new;
+
         Host host = new HostBuilder()
                 .builderModifier(b -> b.getIdentity().setFactory(() ->
                         Secp256k1Kt.generateSecp256k1KeyPair().component1()))
                 .transport(TcpTransport::new)
-                .secureChannel(NoiseXXSecureChannel::new)
+                .secureChannel(secureFactory)
                 .muxer(StreamMuxerProtocol::getYamux)
                 .protocol((io.libp2p.core.multistream.ProtocolBinding<?>) new AutonatProtocol())
                 .listen(addr.toString())

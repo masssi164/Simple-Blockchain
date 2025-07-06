@@ -68,9 +68,11 @@ class Libp2pServiceBroadcastTest {
         props1 = new NodeProperties();
         props1.setLibp2pPort(p1);
         props1.setId("n1");
+        props1.setLibp2pEncrypted(true);
         props2 = new NodeProperties();
         props2.setLibp2pPort(p2);
         props2.setId("n2");
+        props2.setLibp2pEncrypted(true);
 
         h1 = makeHost(p1);
         h2 = makeHost(p2);
