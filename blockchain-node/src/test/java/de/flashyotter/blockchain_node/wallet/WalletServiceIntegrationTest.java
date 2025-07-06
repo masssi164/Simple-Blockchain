@@ -48,4 +48,24 @@ class WalletServiceIntegrationTest {
 
         assertTrue(tx.verifySignatures(), "ECDSA signatures verify");
     }
+
+    @Test
+    void derivesDeterministicAddresses() throws Exception {
+        java.nio.file.Path dir = java.nio.file.Files.createTempDirectory("hdtest");
+        String store = dir.resolve("ks.p12").toString();
+
+        WalletService w1 = new WalletService(new InMemoryKeyStore(), store);
+        String addr0 = AddressUtils.publicKeyToAddress(w1.getLocalWallet().getPublicKey());
+        Wallet firstDerived = w1.newAddress();
+        String addr1 = AddressUtils.publicKeyToAddress(firstDerived.getPublicKey());
+
+        WalletService w2 = new WalletService(new InMemoryKeyStore(), store);
+        String addr0b = AddressUtils.publicKeyToAddress(w2.getLocalWallet().getPublicKey());
+        Wallet secondDerived = w2.newAddress();
+        String addr2 = AddressUtils.publicKeyToAddress(secondDerived.getPublicKey());
+
+        assertEquals(addr0, addr0b);
+        assertNotEquals(addr1, addr2);
+        assertNotEquals(addr0, addr1);
+    }
 }
