@@ -15,4 +15,11 @@ class NodePropertiesTest {
         NodeProperties props = new NodeProperties();
         assertEquals(4001, props.getLibp2pPort());
     }
+
+    @Test
+    void defaultMiningThreadsMatchesCpuCount() {
+        NodeProperties props = new NodeProperties();
+        assertEquals(Runtime.getRuntime().availableProcessors(),
+                     props.getMiningThreads());
+    }
 }

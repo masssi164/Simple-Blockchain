@@ -46,6 +46,9 @@ public class NodeProperties {
      */
     private String walletPassword;
 
+    /** Number of worker threads used for mining */
+    private int miningThreads = Runtime.getRuntime().availableProcessors();
+
     @PostConstruct
     private void init() throws IOException {
         String peersEnv = System.getenv("NODE_PEERS");
