@@ -9,11 +9,23 @@ import lombok.Data;
 public class Peer {
     private final String host;
     private final int    port;
+    /** Optional libp2p peer ID */
+    private final String id;
+
+    public Peer(String host, int port) {
+        this(host, port, null);
+    }
 
     /** WebSocket URL of this peer’s raw-JSON P2P endpoint. */
     public String wsUrl() {
         // was "/p2p" but our server registers on "/ws"
         return "ws://" + host + ':' + port + "/ws";
+    }
+
+    /** Multiaddr for libp2p connections. */
+    public String multiAddr() {
+        String base = "/ip4/" + host + "/tcp/" + port;
+        return id == null ? base : base + "/p2p/" + id;
     }
 
     /** Convert canonical “host:port” string back into a {@link Peer}. */
