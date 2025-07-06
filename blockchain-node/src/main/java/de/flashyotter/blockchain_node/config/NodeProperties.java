@@ -20,6 +20,12 @@ public class NodeProperties {
     /** Base directory for node data like the ID file. */
     private String dataPath = "data";
 
+    /**
+     * P2P transport mode. Either "legacy" (WebSocket), "libp2p" or "dual" for
+     * both. Defaults to legacy to keep backward compatibility.
+     */
+    private String p2pMode = "legacy";
+
     /** Maximum number of transactions kept in the mempool */
     @Value("${mempool.maxSize:1000}")
     private int mempoolMaxSize = 1000;
