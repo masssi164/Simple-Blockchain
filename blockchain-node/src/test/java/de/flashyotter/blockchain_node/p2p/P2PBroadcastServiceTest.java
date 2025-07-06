@@ -22,13 +22,14 @@ class P2PBroadcastServiceTest {
 
     @Mock PeerRegistry registry;
     @Mock PeerClient   client;
+    @Mock de.flashyotter.blockchain_node.p2p.libp2p.Libp2pService libp2p;
 
     P2PBroadcastService svc;
 
     @BeforeEach
     void init() {
         MockitoAnnotations.openMocks(this);
-        svc = new P2PBroadcastService(registry, client);
+        svc = new P2PBroadcastService(registry, client, libp2p);
     }
 
     @Test

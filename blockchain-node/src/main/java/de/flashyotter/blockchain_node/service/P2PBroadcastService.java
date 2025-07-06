@@ -8,6 +8,7 @@ import de.flashyotter.blockchain_node.dto.P2PMessageDto;
 import de.flashyotter.blockchain_node.dto.PeerListDto;
 import de.flashyotter.blockchain_node.p2p.Peer;
 import de.flashyotter.blockchain_node.p2p.PeerClient;
+import de.flashyotter.blockchain_node.p2p.libp2p.Libp2pService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -19,6 +20,7 @@ public class P2PBroadcastService implements P2PBroadcastPort {
 
     private final PeerRegistry registry;
     private final PeerClient   client;
+    private final Libp2pService libp2p;
 
     /* ------------------------------------------------------------------ */
     /* interface implementation                                           */
@@ -49,10 +51,10 @@ public class P2PBroadcastService implements P2PBroadcastPort {
         registry.all().stream()
                 .filter(p -> origin == null || !p.equals(origin)) // avoid echo
                 .forEach(p -> {
-                    try { client.send(p, dto); }
-                    catch (Exception e) {
+                    try { client.send(p, dto); } catch (Exception e) {
                         log.warn("❌  send to {} failed: {}", p, e.getMessage());
                     }
+                    libp2p.send(p, dto);
                 });
     }
 }
