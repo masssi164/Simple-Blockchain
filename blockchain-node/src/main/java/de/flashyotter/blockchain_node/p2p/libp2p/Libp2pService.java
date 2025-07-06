@@ -74,9 +74,15 @@ public class Libp2pService {
             String json = mapper.writeValueAsString(req);
             io.libp2p.core.multiformats.Multiaddr addr =
                     new io.libp2p.core.multiformats.Multiaddr(peer.multiAddr());
-            host.getNetwork().connect(addr)
-                .thenCompose(conn -> host.newStream(PROTOCOL, conn).getStream())
-                .thenAccept(stream -> {
+            java.util.concurrent.CompletableFuture<? extends io.libp2p.core.Stream> streamFuture;
+            if (props.isLibp2pEncrypted() && peer.getId() != null) {
+                io.libp2p.core.PeerId pid = io.libp2p.core.PeerId.fromBase58(peer.getId());
+                streamFuture = host.newStream(PROTOCOL, pid, addr).getStream();
+            } else {
+                streamFuture = host.getNetwork().connect(addr)
+                        .thenCompose(conn -> host.newStream(PROTOCOL, conn).getStream());
+            }
+            streamFuture.thenAccept(stream -> {
                     stream.pushHandler(new SimpleClientHandler() {
                         @Override
                         public void messageReceived(ChannelHandlerContext ctx, ByteBuf msg) {
@@ -140,9 +146,15 @@ public class Libp2pService {
             String json = mapper.writeValueAsString(dto);
             io.libp2p.core.multiformats.Multiaddr addr =
                     new io.libp2p.core.multiformats.Multiaddr(peer.multiAddr());
-            host.getNetwork().connect(addr)
-                .thenCompose(conn -> host.newStream(protocol, conn).getStream())
-                .thenAccept(s -> s.writeAndFlush(json)).join();
+            java.util.concurrent.CompletableFuture<? extends io.libp2p.core.Stream> fut;
+            if (props.isLibp2pEncrypted() && peer.getId() != null) {
+                io.libp2p.core.PeerId pid = io.libp2p.core.PeerId.fromBase58(peer.getId());
+                fut = host.newStream(protocol, pid, addr).getStream();
+            } else {
+                fut = host.getNetwork().connect(addr)
+                        .thenCompose(c -> host.newStream(protocol, c).getStream());
+            }
+            fut.thenAccept(s -> s.writeAndFlush(json)).join();
         } catch (Exception e) {
             log.warn("libp2p send failed: {}", e.getMessage());
         }

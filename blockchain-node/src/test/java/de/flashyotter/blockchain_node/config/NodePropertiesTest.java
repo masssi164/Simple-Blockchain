@@ -22,4 +22,10 @@ class NodePropertiesTest {
         assertEquals(Runtime.getRuntime().availableProcessors(),
                      props.getMiningThreads());
     }
+
+    @Test
+    void encryptionDisabledByDefault() {
+        NodeProperties props = new NodeProperties();
+        assertFalse(props.isLibp2pEncrypted());
+    }
 }
