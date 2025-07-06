@@ -11,8 +11,10 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class DiscoveryLoop {
 
-    private final PeerRegistry reg;
-    private final SyncService  sync;
+    private final PeerRegistry   reg;
+    private final SyncService    sync;
+    private final KademliaService kademlia;
+    private final de.flashyotter.blockchain_node.p2p.libp2p.Libp2pService libp2p;
 
     @PostConstruct
     void loop() {
@@ -20,7 +22,9 @@ public class DiscoveryLoop {
             while (true) {
                 try {
                     Peer p = reg.pending().take();
+                    kademlia.store(p);
                     sync.followPeer(p).subscribe();
+                    libp2p.send(p, new de.flashyotter.blockchain_node.dto.FindNodeDto(kademlia.selfId()));
                 } catch (InterruptedException ignored) { }
             }
         });

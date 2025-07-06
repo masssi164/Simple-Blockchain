@@ -106,7 +106,11 @@ Message types (JSON with `type` discriminator):
 * `GET_BLOCKS`, `BLOCKS`       – naïve range sync
 * `PEER_LIST`                  – share known peers
 * `PING`, `PONG`               – liveness check
-* `FIND_NODE`, `NODES`         – Kademlia peer discovery
+* `FIND_NODE`, `NODES`         – request/answer closest peers (Kademlia)
+
+Nodes keep a Kademlia routing table. Each new connection triggers a
+`FIND_NODE` query for our own ID and any `NODES` reply is merged into the
+table and peer registry.
 
 You can inspect traffic with any WS client:
 

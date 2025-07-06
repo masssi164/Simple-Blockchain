@@ -3,6 +3,7 @@ package de.flashyotter.blockchain_node.p2p;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.times;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -16,6 +17,11 @@ import de.flashyotter.blockchain_node.service.P2PBroadcastService;
 import de.flashyotter.blockchain_node.service.PeerRegistry;
 import de.flashyotter.blockchain_node.service.PeerService;
 import de.flashyotter.blockchain_node.service.SyncService;
+import de.flashyotter.blockchain_node.service.KademliaService;
+import de.flashyotter.blockchain_node.p2p.libp2p.Libp2pService;
+import de.flashyotter.blockchain_node.dto.FindNodeDto;
+import de.flashyotter.blockchain_node.service.KademliaService;
+import de.flashyotter.blockchain_node.p2p.libp2p.Libp2pService;
 import reactor.core.publisher.Flux;
 
 class PeerServiceTest {
@@ -29,6 +35,12 @@ class PeerServiceTest {
     @Mock
     private P2PBroadcastService broad;
 
+    @Mock
+    private KademliaService kademlia;
+
+    @Mock
+    private Libp2pService libp2p;
+
 
     private PeerService svc;
     private NodeProperties props;
@@ -39,7 +51,7 @@ class PeerServiceTest {
         props = new NodeProperties();
         // set two peers
         props.setPeers(java.util.List.of("one:100", "two:200"));
-        svc = new PeerService(props, sync, reg, broad);
+        svc = new PeerService(props, sync, reg, broad, kademlia, libp2p);
     }
 
     @Test
@@ -52,10 +64,13 @@ class PeerServiceTest {
         // registry.add for each peer string
         verify(reg).add(new Peer("one", 100));
         verify(reg).add(new Peer("two", 200));
+        verify(kademlia).store(new Peer("one", 100));
+        verify(kademlia).store(new Peer("two", 200));
 
         // followPeer called for each peer
         verify(sync).followPeer(new Peer("one", 100));
         verify(sync).followPeer(new Peer("two", 200));
+        verify(libp2p, times(2)).send(any(Peer.class), any(FindNodeDto.class));
 
         // broadcastPeerList at end
         verify(broad).broadcastPeerList();
