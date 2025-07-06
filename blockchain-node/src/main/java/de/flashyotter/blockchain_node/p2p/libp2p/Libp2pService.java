@@ -95,7 +95,7 @@ public class Libp2pService {
         try {
             String json = mapper.writeValueAsString(dto);
             io.libp2p.core.multiformats.Multiaddr addr =
-                    new io.libp2p.core.multiformats.Multiaddr("/ip4/" + peer.getHost() + "/tcp/" + peer.getPort());
+                    new io.libp2p.core.multiformats.Multiaddr(peer.multiAddr());
             host.getNetwork().connect(addr)
                 .thenCompose(conn -> host.newStream(protocol, conn).getStream())
                 .thenAccept(s -> s.writeAndFlush(json)).join();
