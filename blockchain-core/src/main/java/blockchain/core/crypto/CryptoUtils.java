@@ -20,6 +20,8 @@ import org.bouncycastle.jce.interfaces.ECPublicKey;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.jce.spec.ECParameterSpec;
 import org.bouncycastle.jce.spec.ECPublicKeySpec;
+import org.bouncycastle.jce.ECNamedCurveTable;
+import org.bouncycastle.jce.spec.ECPrivateKeySpec;
 import org.bouncycastle.math.ec.ECPoint;
 
 import lombok.extern.slf4j.Slf4j;
@@ -126,6 +128,20 @@ public final class CryptoUtils {
         } catch (GeneralSecurityException e) {
             log.error("Public key derivation failed", e);
             throw new RuntimeException("Public key derivation failed", e);
+        }
+    }
+
+    /**
+     * Constructs a secp256k1 private key from the given scalar value.
+     */
+    public static PrivateKey privateKeyFromBigInt(BigInteger d) {
+        try {
+            ECParameterSpec params = ECNamedCurveTable.getParameterSpec("secp256k1");
+            var spec = new ECPrivateKeySpec(d, params);
+            KeyFactory kf = KeyFactory.getInstance("EC", BouncyCastleProvider.PROVIDER_NAME);
+            return kf.generatePrivate(spec);
+        } catch (GeneralSecurityException e) {
+            throw new RuntimeException("Private key construction failed", e);
         }
     }
 
