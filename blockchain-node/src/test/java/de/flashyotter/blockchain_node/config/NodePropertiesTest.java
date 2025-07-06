@@ -9,4 +9,10 @@ class NodePropertiesTest {
         NodeProperties props = new NodeProperties();
         assertEquals("legacy", props.getP2pMode());
     }
+
+    @Test
+    void defaultLibp2pPortIs4001() {
+        NodeProperties props = new NodeProperties();
+        assertEquals(4001, props.getLibp2pPort());
+    }
 }

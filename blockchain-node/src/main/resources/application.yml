@@ -17,6 +17,7 @@ node:
   data-path: data
   wallet-password: ${NODE_WALLET_PASSWORD:changeMe}
   jwt-secret:    ${NODE_JWT_SECRET:changeMeSuperSecret}
+  libp2p-port:   ${NODE_LIBP2P_PORT:4001}
 
 wallet:
   store-path: .simple-chain/wallet.p12

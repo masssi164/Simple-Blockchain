@@ -21,7 +21,7 @@ public class Libp2pConfig {
 
     @Bean(destroyMethod = "stop")
     public Host libp2pHost(NodeProperties props) {
-        int listenPort = 4001; // read from application.yml
+        int listenPort = props.getLibp2pPort();
         Multiaddr addr = new Multiaddr("/ip4/0.0.0.0/tcp/" + listenPort);
         Host host = new HostBuilder()
                 .builderModifier(b -> b.getIdentity().setFactory(() ->

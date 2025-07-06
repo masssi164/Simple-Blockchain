@@ -30,6 +30,9 @@ public class NodeProperties {
     @Value("${mempool.maxSize:1000}")
     private int mempoolMaxSize = 1000;
 
+    /** libp2p TCP listen port */
+    private int libp2pPort = 4001;
+
     /** HTTP/WebSocket server port */
     @Value("${server.port:0}")
     private int port;

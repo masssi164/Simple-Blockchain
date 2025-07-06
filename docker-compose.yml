@@ -15,10 +15,12 @@ services:
       NODE_WALLET_PASSWORD: "${NODE_WALLET_PASSWORD}"
       NODE_JWT_SECRET:     "${NODE_JWT_SECRET}"
       NODE_PEERS:          "${NODE_PEERS}"
+      NODE_LIBP2P_PORT:   "${NODE_LIBP2P_PORT}"
       # Keep container and host ports in sync
       SERVER_PORT:         "${BACKEND_PORT}"
     ports:
       - "${BACKEND_PORT}:${BACKEND_PORT}"
+      - "${NODE_LIBP2P_PORT}:${NODE_LIBP2P_PORT}"
     restart: unless-stopped
     secrets: [zscaler_cert]
 
