@@ -12,7 +12,7 @@ import reactor.core.scheduler.Schedulers;
 import java.util.List;
 
 /** Periodically prunes old fork data from the in-memory chain. */
-@Service
+@Deprecated
 @RequiredArgsConstructor
 @Slf4j
 public class PruningService {

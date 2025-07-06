@@ -17,6 +17,8 @@ import blockchain.core.model.Wallet;
 import blockchain.core.serialization.JsonUtils;
 import de.flashyotter.blockchain_node.storage.InMemoryBlockStore;
 import de.flashyotter.blockchain_node.storage.BlockStore;
+import de.flashyotter.blockchain_node.service.SnapshotService;
+import de.flashyotter.blockchain_node.config.NodeProperties;
 
 class ChainBootstrapTest {
 
@@ -39,7 +41,9 @@ class ChainBootstrapTest {
     }
 
     private Chain build(BlockStore store) {
-        return new CoreConsensusConfig().chain(store);
+        SnapshotService svc = new SnapshotService(
+                new Chain(), new NodeProperties(), store, mapper);
+        return new CoreConsensusConfig().chain(store, svc);
     }
 
     @Test
