@@ -1,6 +1,9 @@
 package de.flashyotter.blockchain_node.service;
 
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.springframework.stereotype.Service;
 
@@ -9,6 +12,7 @@ import blockchain.core.consensus.ConsensusParams;
 import blockchain.core.model.Block;
 import blockchain.core.model.Transaction;
 import de.flashyotter.blockchain_node.wallet.WalletService;
+import de.flashyotter.blockchain_node.config.NodeProperties;
 import lombok.RequiredArgsConstructor;
 
 /**
@@ -23,6 +27,7 @@ public class MiningService {
     private final Chain          chain;
     private final MempoolService mempool;
     private final WalletService  wallet;          // ➊ neu
+    private final NodeProperties props;
 
     public Block mine() {
 
@@ -47,7 +52,35 @@ public class MiningService {
         int    bits     = chain.nextCompactBits();
 
         Block candidate = new Block(height, prevHash, txs, bits);
-        candidate.mineLocally();
-        return candidate;
+
+        int threads = Math.max(1, props.getMiningThreads());
+        if (threads == 1) {
+            candidate.mineLocally();
+            return candidate;
+        }
+
+        long fixedTime = candidate.getTimeMillis();
+        AtomicReference<Block> result = new AtomicReference<>();
+        ForkJoinPool pool = new ForkJoinPool(threads);
+        try {
+            pool.submit(() -> java.util.stream.IntStream.range(0, threads).parallel().forEach(t -> {
+                Block work = new Block(height, prevHash, txs, bits, fixedTime, t);
+                while (result.get() == null) {
+                    if (work.isProofValid()) {
+                        result.compareAndSet(null, work);
+                        break;
+                    }
+                    for (int i = 0; i < threads && result.get() == null; i++) {
+                        work.getHeader().incrementNonce();
+                    }
+                }
+            })).get();
+        } catch (InterruptedException | ExecutionException e) {
+            Thread.currentThread().interrupt();
+        } finally {
+            pool.shutdownNow();
+        }
+
+        return result.get();
     }
 }
