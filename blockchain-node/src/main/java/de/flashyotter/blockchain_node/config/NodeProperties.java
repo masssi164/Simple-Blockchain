@@ -55,6 +55,12 @@ public class NodeProperties {
     /** Number of worker threads used for mining */
     private int miningThreads = Runtime.getRuntime().availableProcessors();
 
+    /** Interval for writing UTXO snapshots in seconds */
+    private int snapshotIntervalSec = 300;
+
+    /** How many recent blocks to keep in memory and on disk */
+    private int historyDepth = 1000;
+
     @PostConstruct
     private void init() throws IOException {
         String peersEnv = System.getenv("NODE_PEERS");

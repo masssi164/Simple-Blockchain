@@ -100,6 +100,18 @@ public class Chain {
     public Map<String, TxOutput> getUtxoSnapshot()  { return Map.copyOf(utxo.get()); }
     public BigInteger            getTotalWork()     { return cumulativeWork.get(bestTipHash); }
 
+    /** Height at which each coinbase output was created. */
+    public Map<String, Integer> getCoinbaseHeightSnapshot() {
+        return Map.copyOf(coinbaseHeight.get());
+    }
+
+    /** Replaces the UTXO and coinbase height maps with the provided snapshot. */
+    public synchronized void loadUtxoSnapshot(Map<String, TxOutput> utxoMap,
+                                               Map<String, Integer> heights) {
+        utxo.set(new ConcurrentHashMap<>(utxoMap));
+        coinbaseHeight.set(new ConcurrentHashMap<>(heights));
+    }
+
     /* ───────────────────────── Block-Append ───────────────────────── */
     public synchronized void addBlock(Block b) {
 
