@@ -5,6 +5,7 @@ import de.flashyotter.blockchain_node.config.NodeProperties;
 import de.flashyotter.blockchain_node.dto.*;
 import de.flashyotter.blockchain_node.p2p.Peer;
 import de.flashyotter.blockchain_node.service.NodeService;
+import de.flashyotter.blockchain_node.service.KademliaService;
 import io.libp2p.core.Host;
 import io.libp2p.etc.SimpleClientHandler;
 import io.libp2p.etc.SimpleClientHandlerKt;
@@ -28,11 +29,14 @@ public class Libp2pService {
     private final NodeProperties props;
     private final ObjectMapper   mapper;
     private final NodeService    node;
+    private final KademliaService kademlia;
 
     @PostConstruct
     public void init() {
         host.listenAddresses().forEach(a -> log.info("libp2p listening on {}", a));
 
+        host.addProtocolHandler(SimpleClientHandlerKt.createSimpleBinding(
+                PROTOCOL.get(0), ControlHandler::new));
         host.addProtocolHandler(SimpleClientHandlerKt.createSimpleBinding(
                 PROTOCOL_BLOCK.get(0), BlockHandler::new));
         host.addProtocolHandler(SimpleClientHandlerKt.createSimpleBinding(
@@ -61,6 +65,30 @@ public class Libp2pService {
 
     public void broadcastTxs(java.util.Collection<Peer> peers, NewTxDto dto) {
         peers.forEach(p -> sendTx(p, dto));
+    }
+
+    /** Handles peer discovery messages (FIND_NODE/NODES). */
+    class ControlHandler extends SimpleClientHandler {
+        @Override
+        public void messageReceived(ChannelHandlerContext ctx, ByteBuf msg) {
+            try {
+                String json = msg.toString(java.nio.charset.StandardCharsets.UTF_8);
+                P2PMessageDto dto = mapper.readValue(json, P2PMessageDto.class);
+
+                if (dto instanceof FindNodeDto find) {
+                    var nearest = kademlia.closest(find.nodeId(), 16)
+                            .stream().map(Peer::toString).toList();
+                    String reply = mapper.writeValueAsString(new NodesDto(nearest));
+                    ctx.writeAndFlush(io.netty.buffer.Unpooled.copiedBuffer(reply, java.nio.charset.StandardCharsets.UTF_8));
+                } else if (dto instanceof NodesDto nodes) {
+                    kademlia.merge(nodes);
+                } else if (dto instanceof PeerListDto pl) {
+                    kademlia.merge(new NodesDto(pl.peers()));
+                }
+            } catch (Exception e) {
+                log.warn("libp2p inbound failed: {}", e.getMessage());
+            }
+        }
     }
 
     private void send(Peer peer, java.util.List<String> protocol, Object dto) {

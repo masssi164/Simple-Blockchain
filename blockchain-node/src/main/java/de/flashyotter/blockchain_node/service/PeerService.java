@@ -2,6 +2,7 @@ package de.flashyotter.blockchain_node.service;
 
 import de.flashyotter.blockchain_node.config.NodeProperties;
 import de.flashyotter.blockchain_node.p2p.Peer;
+import de.flashyotter.blockchain_node.p2p.libp2p.Libp2pService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import jakarta.annotation.PostConstruct;          // ← switched to Jakarta namespace
@@ -17,16 +18,24 @@ public class PeerService {
     private final SyncService          syncService;
     private final PeerRegistry         registry;
     private final P2PBroadcastService  broadcaster;
+    private final KademliaService      kademlia;
+    private final de.flashyotter.blockchain_node.p2p.libp2p.Libp2pService libp2p;
 
     @PostConstruct
     public void init() {
         props.getPeers().forEach(addr -> {
             var sp = addr.split(":");
-            registry.add(new Peer(sp[0], Integer.parseInt(sp[1])));
+            Peer p = new Peer(sp[0], Integer.parseInt(sp[1]));
+            registry.add(p);
+            kademlia.store(p);
         });
 
         registry.all()
-                .forEach(p -> syncService.followPeer(p).subscribe());
+                .forEach(p -> {
+                    syncService.followPeer(p).subscribe();
+                    // bootstrap discovery via kademlia
+                    libp2p.send(p, new de.flashyotter.blockchain_node.dto.FindNodeDto(kademlia.selfId()));
+                });
 
         broadcaster.broadcastPeerList();
     }

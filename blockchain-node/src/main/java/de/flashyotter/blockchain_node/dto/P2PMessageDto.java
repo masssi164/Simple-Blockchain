@@ -12,6 +12,8 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
         @JsonSubTypes.Type(GetBlocksDto.class),
         @JsonSubTypes.Type(BlocksDto.class),
         @JsonSubTypes.Type(PeerListDto.class),
-        @JsonSubTypes.Type(HandshakeDto.class)
+        @JsonSubTypes.Type(HandshakeDto.class),
+        @JsonSubTypes.Type(FindNodeDto.class),
+        @JsonSubTypes.Type(NodesDto.class)
 })
 public interface P2PMessageDto { }
