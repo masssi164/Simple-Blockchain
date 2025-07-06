@@ -9,6 +9,7 @@ import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.List;
 
 @Data
@@ -46,7 +47,12 @@ public class NodeProperties {
     private String walletPassword;
 
     @PostConstruct
-    private void initId() throws IOException {
+    private void init() throws IOException {
+        String peersEnv = System.getenv("NODE_PEERS");
+        if ((peers == null || peers.isEmpty()) && peersEnv != null && !peersEnv.isBlank()) {
+            peers = Arrays.asList(peersEnv.split(","));
+        }
+
         if (id != null && !id.isBlank()) return;
         Path path = Path.of(dataPath, "nodeId");
         if (Files.exists(path)) {
