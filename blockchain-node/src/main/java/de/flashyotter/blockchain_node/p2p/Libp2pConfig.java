@@ -7,6 +7,10 @@ import io.libp2p.core.multiformats.Multiaddr;
 import io.libp2p.crypto.keys.Secp256k1Kt;
 import io.libp2p.core.mux.StreamMuxerProtocol;
 import io.libp2p.discovery.MDnsDiscovery;
+import io.libp2p.protocol.autonat.AutonatProtocol;
+import org.apache.tuweni.kademlia.KademliaRoutingTable;
+import java.nio.charset.StandardCharsets;
+import de.flashyotter.blockchain_node.p2p.Peer;
 import io.libp2p.security.noise.NoiseXXSecureChannel;
 import io.libp2p.transport.tcp.TcpTransport;
 import org.springframework.context.annotation.Bean;
@@ -25,6 +29,7 @@ public class Libp2pConfig {
                 .transport(TcpTransport::new)
                 .secureChannel(NoiseXXSecureChannel::new)
                 .muxer(StreamMuxerProtocol::getYamux)
+                .protocol((io.libp2p.core.multistream.ProtocolBinding<?>) new AutonatProtocol())
                 .listen(addr.toString())
                 .build();
         host.start().join();
@@ -38,5 +43,14 @@ public class Libp2pConfig {
             throw new RuntimeException(e);
         }
         return host;
+    }
+
+    @Bean
+    public KademliaRoutingTable<Peer> kademliaRouting(NodeProperties props) {
+        return KademliaRoutingTable.create(
+                props.getId().getBytes(StandardCharsets.UTF_8),
+                16,
+                p -> p.toString().getBytes(StandardCharsets.UTF_8),
+                p -> 0);
     }
 }

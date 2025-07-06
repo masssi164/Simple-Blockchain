@@ -2,11 +2,6 @@ package de.flashyotter.blockchain_node.p2p;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.flashyotter.blockchain_node.config.NodeProperties;
-import de.flashyotter.blockchain_node.discovery.FindNodeDto;
-import de.flashyotter.blockchain_node.discovery.NodesDto;
-import de.flashyotter.blockchain_node.discovery.PeerDiscoveryService;
-import de.flashyotter.blockchain_node.discovery.PingDto;
-import de.flashyotter.blockchain_node.discovery.PongDto;
 import de.flashyotter.blockchain_node.dto.*;
 import de.flashyotter.blockchain_node.service.NodeService;
 import de.flashyotter.blockchain_node.service.P2PBroadcastService;
@@ -34,7 +29,6 @@ public class PeerServer implements WebSocketHandler {
     private final PeerRegistry        registry;
     private final P2PBroadcastService broadcast;
     private final NodeProperties      props;
-    private final PeerDiscoveryService discovery;
     private final ConnectionManager   connectionManager;
     private final SyncService         syncService;
 
@@ -65,7 +59,6 @@ public class PeerServer implements WebSocketHandler {
                 actual.set(real);
                 boolean fresh = registry.add(real);
                 broadcast.broadcastPeerList();
-                discovery.onMessage(hs, real);
                 if (fresh) {
                     syncService.followPeer(real).subscribe();
                 }
@@ -106,10 +99,6 @@ public class PeerServer implements WebSocketHandler {
                 return;
             }
 
-            if (dto instanceof PingDto || dto instanceof PongDto ||
-                dto instanceof FindNodeDto || dto instanceof NodesDto) {
-                discovery.onMessage(dto, actual.get());
-            }
         });
 
         return session.closeStatus().then();
