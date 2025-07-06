@@ -6,7 +6,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,metrics
+        include: health,metrics,prometheus
 
 server:
   address: 0.0.0.0
