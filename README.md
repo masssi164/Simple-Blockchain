@@ -76,6 +76,18 @@ BUILD_CA_CERT=
 
 This builds the backend, UI and starts both containers. Point your browser to http://localhost:$FRONTEND_PORT.
 
+### Multiple nodes
+
+To run several nodes on one host give each instance its own data and wallet folder. Map these directories under `backend`:
+
+```yaml
+volumes:
+  - ./data1:${NODE_DATA_PATH}
+  - ./wallet1:/root/.simple-chain
+```
+
+Use `data2`/`wallet2` etc. for additional nodes.
+
 ### 3. Connect peers
 Set `NODE_PEERS` to a comma-separated list of multiaddresses.
 Expose `NODE_LIBP2P_PORT` so other nodes can dial your instance.
