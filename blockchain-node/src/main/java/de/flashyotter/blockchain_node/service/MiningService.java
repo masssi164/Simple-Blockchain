@@ -5,6 +5,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicReference;
 
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+
 import org.springframework.stereotype.Service;
 
 import blockchain.core.consensus.Chain;
@@ -28,6 +31,24 @@ public class MiningService {
     private final MempoolService mempool;
     private final WalletService  wallet;          // ➊ neu
     private final NodeProperties props;
+
+    private ForkJoinPool pool;
+    private int          threads;
+
+    @PostConstruct
+    private void initPool() {
+        threads = Math.max(1, props.getMiningThreads());
+        if (threads > 1) {
+            pool = new ForkJoinPool(threads);
+        }
+    }
+
+    @PreDestroy
+    private void shutdownPool() {
+        if (pool != null) {
+            pool.shutdownNow();
+        }
+    }
 
     public Block mine() {
 
@@ -55,15 +76,13 @@ public class MiningService {
 
         Block candidate = new Block(height, prevHash, txs, bits);
 
-        int threads = Math.max(1, props.getMiningThreads());
-        if (threads == 1) {
+        if (threads == 1 || pool == null) {
             candidate.mineLocally();
             return candidate;
         }
 
         long fixedTime = candidate.getTimeMillis();
         AtomicReference<Block> result = new AtomicReference<>();
-        ForkJoinPool pool = new ForkJoinPool(threads);
         try {
             pool.submit(() -> java.util.stream.IntStream.range(0, threads).parallel().forEach(t -> {
                 Block work = new Block(height, prevHash, txs, bits, fixedTime, t);
@@ -79,8 +98,6 @@ public class MiningService {
             })).get();
         } catch (InterruptedException | ExecutionException e) {
             Thread.currentThread().interrupt();
-        } finally {
-            pool.shutdownNow();
         }
 
         return result.get();
