@@ -2,7 +2,15 @@ Simple‑Chain Node (v0.2‑DEV)
 
 A lean Java 21 + Spring Boot 3 blockchain node that demonstrates a production‑grade architecture in a minimal code base. Proof‑of‑Work consensus, UTXO model, libp2p networking and a reactive REST/WS interface.
 
-Status – BetaThe project recently moved beyond proof‑of‑concept. Expect breaking changes until v1.0.
+Status – Beta
+The project recently moved beyond proof-of-concept. Expect breaking changes until v1.0.
+## Recent additions
+- Fee market with base fee calculation and optional transaction tips.
+- Periodic UTXO snapshots with automatic pruning.
+- HD wallet derived from a mnemonic seed phrase.
+- REST API secured with JWT tokens.
+- libp2p supports optional Noise encryption.
+- Prometheus metrics exported at `/actuator/prometheus`.
 
 Feature Matrix
 
@@ -16,7 +24,7 @@ Bitcoin‑style PoW, UTXO, compact‑bits difficulty retarget, fork‑choice by 
 
 Wallet
 
-Local secp256k1 key‑pair stored in encrypted PKCS#12 keystore
+HD wallet with mnemonic stored in encrypted PKCS#12 keystore
 
 Mining
 
@@ -24,15 +32,15 @@ Parallel PoW engine – configurable worker threads
 
 Networking
 
-Dual transport: legacy WebSocket gossipsub and libp2p with Kademlia DHT discovery
+Dual transport: legacy WebSocket gossipsub and libp2p with Kademlia DHT discovery; optional Noise encryption
 
 Mempool
 
-Fee‑based priority queue with eviction policy
+Fee-based priority queue with base fee and tip sorting
 
 API
 
-Reactive REST + WebSocket push; OpenAPI spec under /swagger-ui.html
+Reactive REST + WebSocket push; JWT secured; Prometheus metrics at /actuator/prometheus
 
 CLI & UI
 
@@ -50,20 +58,29 @@ Create a .env in the repo root (values are safe defaults):
 
 BACKEND_PORT=1002
 FRONTEND_PORT=8892
+NODE_P2P_MODE=dual                  # legacy | libp2p | dual
 NODE_LIBP2P_PORT=4001
+NODE_LIBP2P_ENCRYPTED=false         # true to enable Noise
 NODE_PEERS=
+NODE_DATA_PATH=data
 NODE_WALLET_PASSWORD=changeMeSuperSecret
 NODE_JWT_SECRET=myTopSecret
-MINING_THREADS=4            # 0 → auto‑detect
+NODE_MINING_THREADS=4               # 0 → auto-detect
+NODE_SNAPSHOT_INTERVAL_SEC=300
+NODE_HISTORY_DEPTH=1000
 BUILD_CA_CERT=
 
-### 2. Run
+### 2. Run
 
 ./gradlew dockerComposeUp
 
 This builds the backend, UI and starts both containers. Point your browser to http://localhost:$FRONTEND_PORT.
 
-### 3. Stop
+### 3. Connect peers
+Set `NODE_PEERS` to a comma-separated list of multiaddresses.
+Expose `NODE_LIBP2P_PORT` so other nodes can dial your instance.
+
+### 4. Stop
 
 ./gradlew dockerComposeDown
 
