@@ -13,7 +13,7 @@ import lombok.extern.slf4j.Slf4j;
  * Mining / PoW live entirely in the header.
  */
 @Getter @Slf4j
-public class Block {
+public class Block implements java.io.Serializable {
 
     private final BlockHeader       header;
     private final List<Transaction> txList;

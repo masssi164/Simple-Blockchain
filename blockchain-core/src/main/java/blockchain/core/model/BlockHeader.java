@@ -11,7 +11,7 @@ import blockchain.core.crypto.HashingUtils;
  * <p>
  * Hash = SHA-256(height ‖ prevHash ‖ time ‖ nonce ‖ merkleRoot)
  */
-public final class BlockHeader {
+public final class BlockHeader implements java.io.Serializable {
 
     /* consensus-critical fields  */
     public final int    height;
