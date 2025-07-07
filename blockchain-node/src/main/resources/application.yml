@@ -12,12 +12,17 @@ server:
   address: 0.0.0.0
   port: ${SERVER_PORT:3333}
 
-  node:
-    peers: ${NODE_PEERS:}
-    data-path: data
-    wallet-password: ${NODE_WALLET_PASSWORD:changeMe}
-    jwt-secret:    ${NODE_JWT_SECRET:changeMeSuperSecret}
-    libp2p-port:   ${NODE_LIBP2P_PORT:4001}
+node:
+  peers: ${NODE_PEERS:}
+  data-path: data
+  wallet-password: ${NODE_WALLET_PASSWORD:changeMe}
+  jwt-secret:    ${NODE_JWT_SECRET:changeMeSuperSecret}
+  libp2p-port:   ${NODE_LIBP2P_PORT:4001}
+  p2p-mode: ${NODE_P2P_MODE:legacy}
+  libp2p-encrypted: ${NODE_LIBP2P_ENCRYPTED:false}
+  mining-threads: ${MINING_THREADS:${server.cpuCount}}
+  snapshot-interval-sec: ${NODE_SNAPSHOT_INTERVAL_SEC:300}
+  history-depth: ${NODE_HISTORY_DEPTH:1000}
 
 wallet:
   store-path: .simple-chain/wallet.p12
