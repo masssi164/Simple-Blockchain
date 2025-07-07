@@ -81,6 +81,26 @@ class WalletControllerTest {
     }
 
     @Test
+    void invalidAddress() throws Exception {
+        SendFundsDto dto = new SendFundsDto("", 1.0);
+
+        mvc.perform(post("/api/wallet/send")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(mapper.writeValueAsString(dto)))
+           .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void negativeAmount() throws Exception {
+        SendFundsDto dto = new SendFundsDto("addr1", -1.0);
+
+        mvc.perform(post("/api/wallet/send")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(mapper.writeValueAsString(dto)))
+           .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void historyEndpoint() throws Exception {
         Transaction tx = new Transaction();
         when(nodeSvc.walletHistory("addr1", 5)).thenReturn(List.of(tx));

@@ -8,6 +8,7 @@ import de.flashyotter.blockchain_node.dto.WalletInfoDto;
 import de.flashyotter.blockchain_node.service.NodeService;
 import de.flashyotter.blockchain_node.wallet.WalletService;
 import lombok.RequiredArgsConstructor;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -29,7 +30,7 @@ public class WalletController {
     private final NodeService   node;
 
     @PostMapping("/send")
-    public Transaction send(@RequestBody SendFundsDto dto) {
+    public Transaction send(@RequestBody @Valid SendFundsDto dto) {
         // Create a transaction consuming UTXOs and producing outputs (including change)
         Transaction tx = wallet.createTx(
             dto.recipient(),
