@@ -42,7 +42,7 @@ class ChainBootstrapTest {
 
     private Chain build(BlockStore store) {
         SnapshotService svc = new SnapshotService(
-                new Chain(), new NodeProperties(), store, mapper);
+                new Chain(), new NodeProperties(), store, mapper, new io.micrometer.core.instrument.simple.SimpleMeterRegistry());
         return new CoreConsensusConfig().chain(store, svc);
     }
 

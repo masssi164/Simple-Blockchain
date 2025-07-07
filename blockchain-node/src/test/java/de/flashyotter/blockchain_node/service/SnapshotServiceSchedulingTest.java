@@ -50,8 +50,9 @@ class SnapshotServiceSchedulingTest {
 
         BlockStore store = mock(BlockStore.class);
         ObjectMapper mapper = new ObjectMapper();
+        io.micrometer.core.instrument.simple.SimpleMeterRegistry metrics = new io.micrometer.core.instrument.simple.SimpleMeterRegistry();
 
-        SnapshotService target = new SnapshotService(chain, props, store, mapper);
+        SnapshotService target = new SnapshotService(chain, props, store, mapper, metrics);
         spySvc = spy(target);
 
         ctx = new AnnotationConfigApplicationContext();
@@ -59,6 +60,7 @@ class SnapshotServiceSchedulingTest {
         ctx.registerBean(Chain.class, () -> chain);
         ctx.registerBean(BlockStore.class, () -> store);
         ctx.registerBean(ObjectMapper.class, () -> mapper);
+        ctx.registerBean(io.micrometer.core.instrument.MeterRegistry.class, () -> metrics);
         ctx.registerBean(SnapshotService.class, () -> spySvc);
         ctx.registerBean(ScheduledAnnotationBeanPostProcessor.class);
         ctx.refresh();

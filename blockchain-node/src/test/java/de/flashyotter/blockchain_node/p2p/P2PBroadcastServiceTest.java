@@ -6,11 +6,13 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 
 import de.flashyotter.blockchain_node.dto.NewBlockDto;
 import de.flashyotter.blockchain_node.dto.NewTxDto;
@@ -23,12 +25,14 @@ class P2PBroadcastServiceTest {
     @Mock PeerRegistry registry;
     @Mock de.flashyotter.blockchain_node.p2p.libp2p.Libp2pService libp2p;
 
+    SimpleMeterRegistry meters;
     P2PBroadcastService svc;
 
     @BeforeEach
     void init() {
         MockitoAnnotations.openMocks(this);
-        svc = new P2PBroadcastService(registry, libp2p);
+        meters = new SimpleMeterRegistry();
+        svc = new P2PBroadcastService(registry, libp2p, meters);
     }
 
     @Test
@@ -41,6 +45,8 @@ class P2PBroadcastServiceTest {
         // p1 origin should be skipped, only p2
         verify(libp2p).sendTx(eq(p2), eq(dto));
         verify(libp2p, never()).sendTx(eq(p1), any());
+        // timer should not be recorded for tx
+        assertEquals(null, meters.find("node_block_broadcast_time").timer());
     }
 
     @Test
@@ -50,6 +56,7 @@ class P2PBroadcastServiceTest {
         NewBlockDto dto = new NewBlockDto("jb");
         svc.broadcastBlock(dto, null);
         verify(libp2p).sendBlock(eq(p1), eq(dto));
+        assertEquals(1, meters.find("node_block_broadcast_time").timer().count());
     }
 
     @Test

@@ -8,6 +8,9 @@ import de.flashyotter.blockchain_node.dto.P2PMessageDto;
 import de.flashyotter.blockchain_node.dto.PeerListDto;
 import de.flashyotter.blockchain_node.p2p.Peer;
 import de.flashyotter.blockchain_node.p2p.libp2p.Libp2pService;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
+import de.flashyotter.blockchain_node.config.MetricsConfig;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -17,8 +20,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class P2PBroadcastService implements P2PBroadcastPort {
 
-    private final PeerRegistry registry;
-    private final Libp2pService libp2p;
+    private final PeerRegistry   registry;
+    private final Libp2pService  libp2p;
+    private final MeterRegistry  metrics;
 
     /* ------------------------------------------------------------------ */
     /* interface implementation                                           */
@@ -31,7 +35,13 @@ public class P2PBroadcastService implements P2PBroadcastPort {
 
     @Override
     public void broadcastBlock(NewBlockDto dto, Peer origin) {
+        Timer.Sample sample = Timer.start(metrics);
         fanOut(dto, origin);
+        long nanos = sample.stop(metrics.timer(MetricsConfig.BLOCK_BROADCAST_TIME));
+        int count = (int) registry.all().stream()
+                                  .filter(p -> origin == null || !p.equals(origin))
+                                  .count();
+        log.info("Broadcasted block to {} peers in {} ms", count, nanos / 1_000_000);
     }
 
     @Override
