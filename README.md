@@ -70,6 +70,10 @@ NODE_SNAPSHOT_INTERVAL_SEC=300
 NODE_HISTORY_DEPTH=1000
 BUILD_CA_CERT=
 
+Blocks are kept in a LevelDB database under `${NODE_DATA_PATH}/blocks`. Mount
+this directory when running the Docker image so the chain persists across
+restarts.
+
 ### 2. Run
 
 ./gradlew dockerComposeUp
@@ -78,7 +82,9 @@ This builds the backend, UI and starts both containers. Point your browser to ht
 
 ### Multiple nodes
 
-To run several nodes on one host give each instance its own data and wallet folder. Map these directories under `backend`:
+To run several nodes on one host give each instance its own data and wallet
+folder. Map these directories under `backend` so the LevelDB store stays
+persistent:
 
 ```yaml
 volumes:

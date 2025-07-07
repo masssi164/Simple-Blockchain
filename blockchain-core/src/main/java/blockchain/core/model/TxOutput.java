@@ -4,7 +4,7 @@ import blockchain.core.crypto.AddressUtils;
 
 import java.security.PublicKey;
 
-public record TxOutput(double value, String recipientAddress) {
+public record TxOutput(double value, String recipientAddress) implements java.io.Serializable {
 
     /** Helper so tests (and older code) that still pass a PublicKey keep compiling */
     public TxOutput(double value, PublicKey recipient) {

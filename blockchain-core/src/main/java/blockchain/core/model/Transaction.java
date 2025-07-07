@@ -9,7 +9,7 @@ import blockchain.core.crypto.CryptoUtils;
 import blockchain.core.crypto.HashingUtils;
 
 /** Mutable until signatures are applied, then effectively frozen. */
-public class Transaction {
+public class Transaction implements java.io.Serializable {
 
     private final List<TxInput>  inputs  = new ArrayList<>();
     private final List<TxOutput> outputs = new ArrayList<>();
