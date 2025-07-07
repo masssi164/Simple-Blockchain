@@ -15,10 +15,11 @@ public class Mempool {
     private static final int DEFAULT_MAX = 1000;
 
     private final Map<String, Entry> pool = new ConcurrentHashMap<>();
-    private final PriorityQueue<Entry> byFee = new PriorityQueue<>(Comparator.comparingDouble(e -> e.fee));
+    private final PriorityQueue<Entry> byFee = new PriorityQueue<>(Comparator.comparingDouble(e -> e.maxFee));
     private final int maxSize;
+    private volatile double baseFee;
 
-    private record Entry(String txHash, Transaction tx, double fee) {}
+    private record Entry(String txHash, Transaction tx, double maxFee, double tip) {}
 
     public Mempool() { this(DEFAULT_MAX); }
 
@@ -48,11 +49,11 @@ public class Mempool {
             if (isSpent(in.getReferencedOutputId()))
                 throw new BlockchainException("double-spend in mempool");
         }
-        double fee = calcFee(tx, effectiveUtxo);
-        String id = tx.calcHashHex();
-        Entry entry = new Entry(id, tx, fee);
+        double diff = calcFee(tx, effectiveUtxo);
+        if (tx.getMaxFee() == 0.0) tx.setMaxFee(diff);
+        Entry entry = new Entry(tx.calcHashHex(), tx, tx.getMaxFee(), tx.getTip());
         synchronized (this) {
-            pool.put(id, entry);
+            pool.put(entry.txHash(), entry);
             byFee.add(entry);
             if (pool.size() > maxSize) {
                 Entry evicted = byFee.poll();
@@ -61,9 +62,13 @@ public class Mempool {
         }
     }
 
-    public List<Transaction> take(int max) {
+    public synchronized List<Transaction> take(int max) {
+        baseFee = pool.values().stream()
+                       .mapToDouble(e -> e.maxFee)
+                       .average().orElse(0.0);
+
         return pool.values().stream()
-                   .sorted((a, b) -> Double.compare(b.fee, a.fee))
+                   .sorted((a, b) -> Double.compare(b.tip, a.tip))
                    .limit(max)
                    .map(e -> e.tx)
                    .toList();
@@ -97,5 +102,14 @@ public class Mempool {
         }
         double outSum = tx.getOutputs().stream().mapToDouble(TxOutput::value).sum();
         return inSum - outSum;
+    }
+
+    /** Base fee calculated during the last {@link #take(int)} call. */
+    public double getBaseFee() { return baseFee; }
+
+    /** Tip specified by the given transaction. */
+    public double tipFor(Transaction tx) {
+        Entry e = pool.get(tx.calcHashHex());
+        return e == null ? 0.0 : e.tip;
     }
 }

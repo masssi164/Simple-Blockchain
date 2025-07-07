@@ -30,6 +30,14 @@ public class MempoolService {
         return mempool.take(max);
     }
 
+    public double getBaseFee() {
+        return mempool.getBaseFee();
+    }
+
+    public double tipFor(Transaction tx) {
+        return mempool.tipFor(tx);
+    }
+
     public void purge(List<Transaction> confirmed) {
         mempool.removeAll(confirmed);
     }

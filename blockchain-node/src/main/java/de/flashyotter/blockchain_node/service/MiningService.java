@@ -33,10 +33,12 @@ public class MiningService {
 
         /* 1) alle pending TXs holen ------------------------------------ */
         List<Transaction> memTx = mempool.take(500);
+        double baseFee = mempool.getBaseFee();
+        double tips    = memTx.stream().mapToDouble(mempool::tipFor).sum();
 
         /* 2) Coinbase für lokale Wallet bauen --------------------------- */
         int height   = chain.getLatest().getHeight() + 1;
-        double reward = ConsensusParams.blockReward(height);
+        double reward = ConsensusParams.blockReward(height) + tips;
         Transaction coinbase = new Transaction(
                 wallet.getLocalWallet().getPublicKey(),
                 reward,
