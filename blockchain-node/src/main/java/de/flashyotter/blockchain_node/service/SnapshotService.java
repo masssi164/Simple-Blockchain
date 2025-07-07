@@ -55,8 +55,35 @@ public class SnapshotService {
                 chain.getCoinbaseHeightSnapshot()
         );
         Path file = dir.resolve(String.format("%07d.json", snap.height()));
-        mapper.writeValue(file.toFile(), snap);
-        log.info("Wrote snapshot {}", file.getFileName());
+
+        IOException last = null;
+        for (int attempt = 1; attempt <= 3; attempt++) {
+            Path tmp = Files.createTempFile(dir, file.getFileName().toString(), ".tmp");
+            try {
+                mapper.writeValue(tmp.toFile(), snap);
+                Files.move(tmp, file,
+                        java.nio.file.StandardCopyOption.ATOMIC_MOVE,
+                        java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                log.info("Wrote snapshot {}", file.getFileName());
+                return;
+            } catch (IOException e) {
+                last = e;
+                try {
+                    Files.deleteIfExists(tmp);
+                } catch (IOException ex) {
+                    // ignore cleanup failure
+                }
+                if (attempt < 3) {
+                    try {
+                        Thread.sleep(100);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        break;
+                    }
+                }
+            }
+        }
+        if (last != null) throw last;
     }
 
     private void pruneBlocks() {
