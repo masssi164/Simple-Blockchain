@@ -1,6 +1,7 @@
 node:
   wallet-password: test
   data-path: data
+  genesis-keystore:
 
 wallet:
   store-path: .simple-chain/wallet.p12

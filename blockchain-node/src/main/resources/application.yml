@@ -16,6 +16,7 @@ node:
   peers: ${NODE_PEERS:}
   data-path: data
   wallet-password: ${NODE_WALLET_PASSWORD:changeMe}
+  genesis-keystore: ${GENESIS_KEYSTORE_PATH:}
   jwt-secret:    ${NODE_JWT_SECRET:changeMeSuperSecret}
   libp2p-port:   ${NODE_LIBP2P_PORT:4001}
   p2p-mode: ${NODE_P2P_MODE:legacy}

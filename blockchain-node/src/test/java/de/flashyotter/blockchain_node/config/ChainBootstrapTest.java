@@ -41,9 +41,10 @@ class ChainBootstrapTest {
     }
 
     private Chain build(BlockStore store) {
+        NodeProperties props = new NodeProperties();
         SnapshotService svc = new SnapshotService(
-                new Chain(), new NodeProperties(), store, mapper);
-        return new CoreConsensusConfig().chain(store, svc);
+                new Chain(), props, store, mapper);
+        return new CoreConsensusConfig().chain(store, svc, props);
     }
 
     @Test

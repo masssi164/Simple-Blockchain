@@ -49,6 +49,9 @@ public class NodeProperties {
      */
     private String walletPassword;
 
+    /** Path to the PKCS#12 keystore containing the genesis key. */
+    private String genesisKeystore;
+
     /** Shared secret used to sign and verify JWT tokens. */
     private String jwtSecret = "changeMeSuperSecret";
 

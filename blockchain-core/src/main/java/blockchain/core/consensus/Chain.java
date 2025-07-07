@@ -80,18 +80,24 @@ public class Chain {
     }
 
     /* ──────────────────────── Genesis Block ───────────────────────── */
-    private static final Block  GENESIS;
-    private static final String GENESIS_HASH;
-
-    static {
-        GENESIS = createGenesis();
-        GENESIS_HASH = GENESIS.getHashHex();
-    }
+    private static       Block   GENESIS;
+    private static       String  GENESIS_HASH;
+    private static       Wallet  GENESIS_WALLET;
 
     /* ───────────────────────── Konstruktor ────────────────────────── */
     public Chain() {
+        ensureGenesis();
         indexBlock(GENESIS);
         switchActiveChain(GENESIS_HASH);   // füllt UTXO
+    }
+
+    private static synchronized void ensureGenesis() {
+        if (GENESIS != null) return;
+        if (GENESIS_WALLET == null) {
+            GENESIS_WALLET = new Wallet();
+        }
+        GENESIS = createGenesis();
+        GENESIS_HASH = GENESIS.getHashHex();
     }
 
     /* ───────────────────────── Read-only API ──────────────────────── */
@@ -148,7 +154,7 @@ public class Chain {
 
     /* ─────────────────────── Genesis & Helpers ────────────────────── */
     private static Block createGenesis() {
-        Wallet miner = deterministicWallet();
+        Wallet miner = GENESIS_WALLET;
         Transaction cb = new Transaction(miner.getPublicKey(),
                                          ConsensusParams.blockReward(0),
                                          "GENESIS");
@@ -157,17 +163,33 @@ public class Chain {
                          1_694_303_200_000L, 0);
     }
 
-    private static Wallet deterministicWallet() {
+    /** Loads the private key for the genesis block from a PKCS#12 keystore.
+     *  The keystore must contain exactly one key entry without a password. */
+    public static synchronized void loadGenesisWallet(java.nio.file.Path keystore) {
         try {
-            java.security.Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
-            KeyPairGenerator kpg = KeyPairGenerator.getInstance("EC", "BC");
-            SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
-            sr.setSeed("simple-chain-genesis".getBytes());
-            kpg.initialize(new ECGenParameterSpec("secp256k1"), sr);
-            KeyPair kp = kpg.generateKeyPair();
-            return new Wallet(kp.getPrivate(), kp.getPublic());
-        } catch (GeneralSecurityException e) {
-            throw new BlockchainException("genesis key", e);
+            if (keystore == null) {
+                GENESIS_WALLET = null;
+                GENESIS = null;
+                GENESIS_HASH = null;
+                return;
+            }
+            java.security.KeyStore ks = java.security.KeyStore.getInstance("PKCS12");
+            try (var in = java.nio.file.Files.newInputStream(keystore)) {
+                ks.load(in, new char[0]);
+            }
+            String alias = ks.aliases().nextElement();
+            java.security.Key key = ks.getKey(alias, new char[0]);
+            if (!(key instanceof java.security.PrivateKey priv))
+                throw new BlockchainException("No private key in keystore");
+            java.security.cert.Certificate cert = ks.getCertificate(alias);
+            java.security.PublicKey pub = (cert != null)
+                    ? cert.getPublicKey()
+                    : blockchain.core.crypto.CryptoUtils.derivePublicKey(priv);
+            GENESIS_WALLET = new Wallet(priv, pub);
+            GENESIS = null;
+            GENESIS_HASH = null;
+        } catch (Exception e) {
+            throw new BlockchainException("load genesis wallet", e);
         }
     }
 

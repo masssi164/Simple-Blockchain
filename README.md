@@ -68,7 +68,19 @@ NODE_JWT_SECRET=myTopSecret
 NODE_MINING_THREADS=4               # 0 → auto-detect
 NODE_SNAPSHOT_INTERVAL_SEC=300
 NODE_HISTORY_DEPTH=1000
+GENESIS_KEYSTORE_PATH=
 BUILD_CA_CERT=
+
+Create a PKCS#12 keystore containing the private key used for the genesis block
+and point `GENESIS_KEYSTORE_PATH` to it. Example using OpenSSL:
+
+```bash
+openssl ecparam -genkey -name secp256k1 -noout -out genesis.key
+openssl req -new -x509 -key genesis.key -out genesis.crt -subj "/CN=Genesis"
+openssl pkcs12 -export -out genesis.p12 -inkey genesis.key -in genesis.crt -nodes -password pass:
+```
+
+Use the absolute path to `genesis.p12` in the environment variable.
 
 ### 2. Run
 
