@@ -21,6 +21,7 @@ import blockchain.core.model.Block;
 import blockchain.core.model.Transaction;
 import de.flashyotter.blockchain_node.config.NodeProperties;
 import de.flashyotter.blockchain_node.storage.BlockStore;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 
 class SnapshotServiceRetryTest {
 
@@ -50,7 +51,8 @@ class SnapshotServiceRetryTest {
             return inv.callRealMethod();
         }).when(mapper).writeValue(Mockito.any(File.class), Mockito.any());
 
-        SnapshotService svc = new SnapshotService(chain, props, store, mapper);
+        SimpleMeterRegistry metrics = new SimpleMeterRegistry();
+        SnapshotService svc = new SnapshotService(chain, props, store, mapper, metrics);
         svc.snapshotTask();
 
         assertEquals(2, calls.get(), "should retry once");
