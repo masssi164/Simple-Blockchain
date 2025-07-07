@@ -6,6 +6,9 @@ import blockchain.core.model.TxOutput;
 import de.flashyotter.blockchain_node.config.NodeProperties;
 import de.flashyotter.blockchain_node.storage.BlockStore;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.flashyotter.blockchain_node.config.MetricsConfig;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Counter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -23,10 +26,11 @@ import java.util.Map;
 @RequiredArgsConstructor
 @Slf4j
 public class SnapshotService {
-    private final Chain chain;
+    private final Chain          chain;
     private final NodeProperties props;
-    private final BlockStore store;
-    private final ObjectMapper mapper;
+    private final BlockStore     store;
+    private final ObjectMapper   mapper;
+    private final MeterRegistry  metrics;
 
     public record Snapshot(int height,
                            Block tip,
@@ -38,7 +42,10 @@ public class SnapshotService {
         try {
             writeSnapshot();
             pruneBlocks();
+            metrics.counter(MetricsConfig.SNAPSHOT_SUCCESS).increment();
+            log.info("Snapshot completed successfully");
         } catch (Exception e) {
+            metrics.counter(MetricsConfig.SNAPSHOT_FAILURE).increment();
             log.warn("Snapshot failed", e);
         }
     }

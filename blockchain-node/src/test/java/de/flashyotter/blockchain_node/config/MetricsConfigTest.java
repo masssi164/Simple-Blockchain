@@ -58,4 +58,11 @@ class MetricsConfigTest {
         mempool.submit(tx, chain.getUtxoSnapshot());
         assertEquals(1.0, size.value());
     }
+
+    @Test
+    void additionalMetricsPresent() {
+        assertNotNull(registry.find("node_block_broadcast_time").timer());
+        assertNotNull(registry.find("snapshot_success_total").counter());
+        assertNotNull(registry.find("snapshot_failure_total").counter());
+    }
 }
