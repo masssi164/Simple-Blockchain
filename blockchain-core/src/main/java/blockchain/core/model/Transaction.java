@@ -13,8 +13,10 @@ public class Transaction {
 
     private final List<TxInput>  inputs  = new ArrayList<>();
     private final List<TxOutput> outputs = new ArrayList<>();
-    private String txHashHex;                      // lazily computed
-    private String coinbaseNonce;                  // for deterministic hashing
+    private String  txHashHex;                     // lazily computed
+    private String  coinbaseNonce;                 // for deterministic hashing
+    private double  maxFee;                        // sender max willingness
+    private double  tip;                           // miner incentive
 
     /* ------------------------------------------------------------------ */
     /* ctors                                                              */
@@ -31,6 +33,10 @@ public class Transaction {
     public List<TxInput>  getInputs()  { return inputs; }
     public List<TxOutput> getOutputs() { return outputs; }
     public boolean isCoinbase()        { return inputs.isEmpty(); }
+    public double getMaxFee()          { return maxFee; }
+    public void   setMaxFee(double v)  { this.maxFee = v; }
+    public double getTip()             { return tip; }
+    public void   setTip(double v)     { this.tip = v; }
 
     /* ------------------------------------------------------------------ */
     /* signing / verification                                             */
@@ -70,6 +76,8 @@ public class Transaction {
         outputs.add(new TxOutput(reward, recipient));
         this.coinbaseNonce = coinbaseNonce;
         // no inputs
+        this.maxFee = 0.0;
+        this.tip    = 0.0;
     }
 
 /* -------- internal -------- */

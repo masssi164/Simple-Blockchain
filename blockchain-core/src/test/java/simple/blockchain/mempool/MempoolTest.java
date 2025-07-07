@@ -59,8 +59,8 @@ class MempoolTest {
     }
 
     @Test
-    @DisplayName("Transactions are returned by descending fee")
-    void orderedByFee() {
+    @DisplayName("Transactions are returned by descending tip")
+    void orderedByTip() {
         Wallet w = new Wallet();
         String id1 = "utxo1:0";
         String id2 = "utxo2:0";
@@ -68,21 +68,23 @@ class MempoolTest {
         TxOutput utxo1 = new TxOutput(10.0, w.getPublicKey());
         TxOutput utxo2 = new TxOutput(10.0, w.getPublicKey());
 
-        Transaction highFee = new Transaction();
-        highFee.getInputs().add(new TxInput(id1, null, w.getPublicKey()));
-        highFee.getOutputs().add(new TxOutput(8.0, w.getPublicKey())); // fee 2
-        highFee.signInputs(w.getPrivateKey());
+        Transaction highTip = new Transaction();
+        highTip.getInputs().add(new TxInput(id1, null, w.getPublicKey()));
+        highTip.getOutputs().add(new TxOutput(8.0, w.getPublicKey())); // maxFee 2
+        highTip.setTip(1.5);
+        highTip.signInputs(w.getPrivateKey());
 
-        Transaction lowFee = new Transaction();
-        lowFee.getInputs().add(new TxInput(id2, null, w.getPublicKey()));
-        lowFee.getOutputs().add(new TxOutput(9.5, w.getPublicKey())); // fee 0.5
-        lowFee.signInputs(w.getPrivateKey());
+        Transaction lowTip = new Transaction();
+        lowTip.getInputs().add(new TxInput(id2, null, w.getPublicKey()));
+        lowTip.getOutputs().add(new TxOutput(9.5, w.getPublicKey())); // maxFee 0.5
+        lowTip.setTip(0.1);
+        lowTip.signInputs(w.getPrivateKey());
 
         Mempool mp = new Mempool();
-        mp.add(lowFee, Map.of(id1, utxo1, id2, utxo2));
-        mp.add(highFee, Map.of(id1, utxo1, id2, utxo2));
+        mp.add(lowTip, Map.of(id1, utxo1, id2, utxo2));
+        mp.add(highTip, Map.of(id1, utxo1, id2, utxo2));
 
-        assertEquals(highFee, mp.take(2).get(0), "highest fee first");
+        assertEquals(highTip, mp.take(2).get(0), "highest tip first");
     }
 
     @Test
