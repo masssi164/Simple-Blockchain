@@ -24,6 +24,9 @@ public class Libp2pService {
     private static final java.util.List<String> PROTOCOL       = java.util.List.of("/simple-blockchain/1.0.0");
     private static final java.util.List<String> PROTOCOL_BLOCK = java.util.List.of("/simple-blockchain/block/1.0.0");
     private static final java.util.List<String> PROTOCOL_TX    = java.util.List.of("/simple-blockchain/tx/1.0.0");
+    private static final String PROTOCOL_VERSION = "1.0.0";
+
+    private final TokenBucket rateLimiter = new TokenBucket(50, 50);
 
     private final Host           host;
     private final NodeProperties props;
@@ -109,11 +112,20 @@ public class Libp2pService {
     class ControlHandler extends SimpleClientHandler {
         @Override
         public void messageReceived(ChannelHandlerContext ctx, ByteBuf msg) {
+            if (!rateLimiter.allow()) {
+                ctx.close();
+                return;
+            }
             try {
                 String json = msg.toString(java.nio.charset.StandardCharsets.UTF_8);
                 P2PMessageDto dto = mapper.readValue(json, P2PMessageDto.class);
 
-                if (dto instanceof FindNodeDto find) {
+                if (dto instanceof HandshakeDto hs) {
+                    if (!PROTOCOL_VERSION.equals(hs.protocolVersion())) {
+                        ctx.close();
+                        return;
+                    }
+                } else if (dto instanceof FindNodeDto find) {
                     var nearest = kademlia.closest(find.nodeId(), 16)
                             .stream().map(Peer::toString).toList();
                     String reply = mapper.writeValueAsString(new NodesDto(nearest));
@@ -189,6 +201,10 @@ public class Libp2pService {
 
         @Override
         public void messageReceived(ChannelHandlerContext ctx, ByteBuf msg) {
+            if (!rateLimiter.allow()) {
+                ctx.close();
+                return;
+            }
             try {
                 String json = msg.toString(java.nio.charset.StandardCharsets.UTF_8);
                 T dto = mapper.readValue(json, type);
@@ -199,5 +215,33 @@ public class Libp2pService {
         }
 
         protected abstract void handle(T dto) throws Exception;
+    }
+
+    /** Simple token bucket rate limiter. */
+    static class TokenBucket {
+        private final int capacity;
+        private final double refillPerSec;
+        private double tokens;
+        private long lastRefill = System.nanoTime();
+
+        TokenBucket(int capacity, double refillPerSec) {
+            this.capacity = capacity;
+            this.refillPerSec = refillPerSec;
+            this.tokens = capacity;
+        }
+
+        synchronized boolean allow() {
+            long now = System.nanoTime();
+            double add = (now - lastRefill) / 1_000_000_000.0 * refillPerSec;
+            if (add > 0) {
+                tokens = Math.min(capacity, tokens + add);
+                lastRefill = now;
+            }
+            if (tokens >= 1) {
+                tokens -= 1;
+                return true;
+            }
+            return false;
+        }
     }
 }

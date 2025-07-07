@@ -35,7 +35,7 @@ public class NodeProperties {
     private int libp2pPort = 4001;
 
     /** Enable Noise encryption for libp2p connections */
-    private boolean libp2pEncrypted = false;
+    private boolean libp2pEncrypted = true;
 
     /** HTTP/WebSocket server port */
     @Value("${server.port:0}")

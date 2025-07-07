@@ -24,8 +24,8 @@ class NodePropertiesTest {
     }
 
     @Test
-    void encryptionDisabledByDefault() {
+    void encryptionEnabledByDefault() {
         NodeProperties props = new NodeProperties();
-        assertFalse(props.isLibp2pEncrypted());
+        assertTrue(props.isLibp2pEncrypted());
     }
 }
