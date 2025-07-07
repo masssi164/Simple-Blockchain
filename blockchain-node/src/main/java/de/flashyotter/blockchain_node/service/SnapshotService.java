@@ -6,11 +6,10 @@ import blockchain.core.model.TxOutput;
 import de.flashyotter.blockchain_node.config.NodeProperties;
 import de.flashyotter.blockchain_node.storage.BlockStore;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import reactor.core.scheduler.Schedulers;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -34,21 +33,14 @@ public class SnapshotService {
                            Map<String, TxOutput> utxo,
                            Map<String, Integer> coinbase) {}
 
-    @PostConstruct
-    void start() {
-        Schedulers.boundedElastic().schedule(() -> {
-            while (true) {
-                try {
-                    Thread.sleep(props.getSnapshotIntervalSec() * 1000L);
-                    writeSnapshot();
-                    pruneBlocks();
-                } catch (InterruptedException e) {
-                    return;
-                } catch (Exception e) {
-                    log.warn("Snapshot failed", e);
-                }
-            }
-        });
+    @Scheduled(fixedDelayString = "#{@nodeProperties.snapshotIntervalSec * 1000}")
+    void snapshotTask() {
+        try {
+            writeSnapshot();
+            pruneBlocks();
+        } catch (Exception e) {
+            log.warn("Snapshot failed", e);
+        }
     }
 
     private void writeSnapshot() throws IOException {
@@ -98,3 +90,4 @@ public class SnapshotService {
         }
     }
 }
+
