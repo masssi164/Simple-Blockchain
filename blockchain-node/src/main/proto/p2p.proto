@@ -1,0 +1,57 @@
+syntax = "proto3";
+package de.flashyotter.blockchain_node.p2p;
+
+option java_multiple_files = true;
+option java_package = "de.flashyotter.blockchain_node.p2p";
+option java_outer_classname = "P2PProto";
+
+import "node.proto";
+
+message Handshake {
+  string nodeId = 1;
+  string protocolVersion = 2;
+  int32 listenPort = 3;
+  string publicAddr = 4;
+}
+
+message NewBlock {
+  de.flashyotter.blockchain_node.grpc.Block block = 1;
+}
+
+message NewTx {
+  de.flashyotter.blockchain_node.grpc.Transaction tx = 1;
+}
+
+message GetBlocks {
+  int32 fromHeight = 1;
+}
+
+message Blocks {
+  repeated de.flashyotter.blockchain_node.grpc.Block blocks = 1;
+}
+
+message PeerList {
+  repeated string peers = 1;
+}
+
+message FindNode {
+  string nodeId = 1;
+}
+
+message Nodes {
+  repeated string nodes = 1;
+}
+
+message P2PMessage {
+  oneof msg {
+    Handshake handshake = 1;
+    NewBlock newBlock = 2;
+    NewTx newTx = 3;
+    GetBlocks getBlocks = 4;
+    Blocks blocks = 5;
+    PeerList peerList = 6;
+    FindNode findNode = 7;
+    Nodes nodes = 8;
+  }
+  string jwt = 9;
+}

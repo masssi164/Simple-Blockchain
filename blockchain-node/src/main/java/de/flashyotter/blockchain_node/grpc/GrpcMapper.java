@@ -45,4 +45,40 @@ public final class GrpcMapper {
                 .addAllTxList(block.getTxList().stream().map(GrpcMapper::toProto).toList());
         return b.build();
     }
+
+    /* ----------------------------------------------------- */
+    /*  Conversions from protobuf back to domain objects      */
+    /* ----------------------------------------------------- */
+
+    public static TxInput fromProto(de.flashyotter.blockchain_node.grpc.TxInput in) {
+        try {
+            java.security.PublicKey key = java.security.KeyFactory.getInstance(
+                    "EC", org.bouncycastle.jce.provider.BouncyCastleProvider.PROVIDER_NAME)
+                    .generatePublic(new java.security.spec.X509EncodedKeySpec(in.getSender().toByteArray()));
+            return new TxInput(in.getReferencedOutputId(), in.getSignature().toByteArray(), key);
+        } catch (java.security.GeneralSecurityException e) {
+            throw new RuntimeException("public key decode failed", e);
+        }
+    }
+
+    public static TxOutput fromProto(de.flashyotter.blockchain_node.grpc.TxOutput out) {
+        return new TxOutput(out.getValue(), out.getRecipientAddress());
+    }
+
+    public static Transaction fromProto(de.flashyotter.blockchain_node.grpc.Transaction tx) {
+        Transaction t = new Transaction();
+        tx.getInputsList().forEach(i -> t.getInputs().add(fromProto(i)));
+        tx.getOutputsList().forEach(o -> t.getOutputs().add(fromProto(o)));
+        t.setMaxFee(tx.getMaxFee());
+        t.setTip(tx.getTip());
+        return t;
+    }
+
+    public static Block fromProto(de.flashyotter.blockchain_node.grpc.Block pb) {
+        java.util.List<Transaction> txs = pb.getTxListList().stream()
+                .map(GrpcMapper::fromProto)
+                .toList();
+        return new Block(pb.getHeight(), pb.getPreviousHashHex(), txs,
+                pb.getCompactBits(), pb.getTimeMillis(), pb.getNonce());
+    }
 }
