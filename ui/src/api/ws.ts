@@ -1,3 +1,5 @@
+import { sign } from 'jsonwebtoken';
+
 export interface P2PMessage {
   type: 'HandshakeDto' | 'NewBlockDto' | 'NewTxDto' | string;
   rawBlockJson?: string;
@@ -11,6 +13,9 @@ export class NodeWs {
   private listeners: Listener[] = [];
   private reconnectMs = 1000;
   private closed = false;
+  private readonly jwt = import.meta.env.VITE_NODE_JWT_SECRET
+    ? sign({}, import.meta.env.VITE_NODE_JWT_SECRET)
+    : undefined;
 
   connect() {
     this.closed = false;
@@ -18,7 +23,9 @@ export class NodeWs {
   }
 
   private open() {
-    this.ws = new WebSocket(import.meta.env.VITE_NODE_WS);
+    const base = import.meta.env.VITE_NODE_WS;
+    const url = this.jwt ? `${base}?jwt=${encodeURIComponent(this.jwt)}` : base;
+    this.ws = new WebSocket(url);
 
     this.ws.onopen = () => {
       this.reconnectMs = 1000;
