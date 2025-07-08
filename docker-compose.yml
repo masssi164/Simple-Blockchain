@@ -21,11 +21,13 @@ services:
       MINING_THREADS:     "${MINING_THREADS}"
       NODE_SNAPSHOT_INTERVAL_SEC: "${NODE_SNAPSHOT_INTERVAL_SEC}"
       NODE_HISTORY_DEPTH: "${NODE_HISTORY_DEPTH}"
+      NODE_GRPC_PORT: "${NODE_GRPC_PORT}"
       # Keep container and host ports in sync
       SERVER_PORT:         "${BACKEND_PORT}"
     ports:
       - "${BACKEND_PORT}:${BACKEND_PORT}"
       - "${NODE_LIBP2P_PORT}:${NODE_LIBP2P_PORT}"
+      - "${NODE_GRPC_PORT}:${NODE_GRPC_PORT}"
     restart: unless-stopped
     secrets: [zscaler_cert]
     volumes:
