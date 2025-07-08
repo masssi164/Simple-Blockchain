@@ -27,7 +27,6 @@ import static org.iq80.leveldb.impl.Iq80DBFactory.factory;
 
 /** Persistent LevelDB-based BlockStore. */
 @Component
-@Primary
 public class LevelDbBlockStore implements BlockStore, AutoCloseable {
     private final DB db;
 
