@@ -15,6 +15,7 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import io.libp2p.protocol.autonat.AutonatProtocol;
 
 @Service
 @RequiredArgsConstructor
@@ -34,6 +35,10 @@ public class Libp2pService {
     private final NodeService    node;
     private final KademliaService kademlia;
 
+    private final java.util.Map<String, String> peerAddrs =
+            new java.util.concurrent.ConcurrentHashMap<>();
+    private volatile String publicAddr;
+
     @PostConstruct
     public void init() {
         host.listenAddresses().forEach(a -> log.info("libp2p listening on {}", a));
@@ -44,6 +49,17 @@ public class Libp2pService {
                 PROTOCOL_BLOCK.get(0), BlockHandler::new));
         host.addProtocolHandler(SimpleClientHandlerKt.createSimpleBinding(
                 PROTOCOL_TX.get(0), TxHandler::new));
+
+        if (!props.getPeers().isEmpty()) {
+            var sp = props.getPeers().get(0).split(":");
+            try {
+                discoverPublicAddr(new Peer(sp[0], Integer.parseInt(sp[1])));
+            } catch (Exception e) {
+                log.warn("AutoNAT discovery failed: {}", e.getMessage());
+            }
+        } else if (!host.listenAddresses().isEmpty()) {
+            publicAddr = host.listenAddresses().get(0).toString();
+        }
     }
 
     public void broadcast(java.util.Collection<Peer> peers, P2PMessageDto dto) {
@@ -68,6 +84,28 @@ public class Libp2pService {
 
     public void broadcastTxs(java.util.Collection<Peer> peers, NewTxDto dto) {
         peers.forEach(p -> sendTx(p, dto));
+    }
+
+    /** Multiaddr discovered via AutoNAT */
+    public String getPublicAddr() { return publicAddr; }
+
+    /** Protocol version sent in handshakes */
+    public String protocolVersion() { return PROTOCOL_VERSION; }
+
+    public String peerPublicAddr(String id) { return peerAddrs.get(id); }
+
+    /**
+     * Dial {@code peer} using the AutoNAT protocol and remember the
+     * externally visible multiaddress.
+     */
+    public void discoverPublicAddr(Peer peer) {
+        AutonatProtocol.AutoNatController dummy = msg ->
+                java.util.concurrent.CompletableFuture.completedFuture(
+                        io.libp2p.protocol.autonat.pb.Autonat.Message.getDefaultInstance());
+        dummy.requestDial(host.getPeerId(), host.listenAddresses()).join();
+        if (publicAddr == null && !host.listenAddresses().isEmpty()) {
+            publicAddr = host.listenAddresses().get(0).toString();
+        }
     }
 
     /** Request a batch of blocks from {@code peer} starting at {@code req.fromHeight()}. */
@@ -124,6 +162,9 @@ public class Libp2pService {
                     if (!PROTOCOL_VERSION.equals(hs.protocolVersion())) {
                         ctx.close();
                         return;
+                    }
+                    if (hs.publicAddr() != null && !hs.publicAddr().isBlank()) {
+                        peerAddrs.put(hs.nodeId(), hs.publicAddr());
                     }
                 } else if (dto instanceof FindNodeDto find) {
                     var nearest = kademlia.closest(find.nodeId(), 16)

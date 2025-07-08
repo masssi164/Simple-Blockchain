@@ -35,6 +35,11 @@ public class PeerService {
                     syncService.followPeer(p).subscribe();
                     // bootstrap discovery via kademlia
                     libp2p.send(p, new de.flashyotter.blockchain_node.dto.FindNodeDto(kademlia.selfId()));
+                    libp2p.send(p, new de.flashyotter.blockchain_node.dto.HandshakeDto(
+                            props.getId(),
+                            libp2p.protocolVersion(),
+                            props.getLibp2pPort(),
+                            libp2p.getPublicAddr()));
                 });
 
         broadcaster.broadcastPeerList();

@@ -15,6 +15,7 @@ public class DiscoveryLoop {
     private final SyncService    sync;
     private final KademliaService kademlia;
     private final de.flashyotter.blockchain_node.p2p.libp2p.Libp2pService libp2p;
+    private final de.flashyotter.blockchain_node.config.NodeProperties props;
 
     @Scheduled(fixedDelay = 1000)
     void pollPendingPeers() {
@@ -23,6 +24,11 @@ public class DiscoveryLoop {
             kademlia.store(p);
             sync.followPeer(p).subscribe();
             libp2p.send(p, new de.flashyotter.blockchain_node.dto.FindNodeDto(kademlia.selfId()));
+            libp2p.send(p, new de.flashyotter.blockchain_node.dto.HandshakeDto(
+                    kademlia.selfId(),
+                    libp2p.protocolVersion(),
+                    props.getLibp2pPort(),
+                    libp2p.getPublicAddr()));
         }
     }
 }
