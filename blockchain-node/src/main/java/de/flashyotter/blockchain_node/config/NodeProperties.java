@@ -52,6 +52,9 @@ public class NodeProperties {
     /** Shared secret used to sign and verify JWT tokens. */
     private String jwtSecret = "changeMeSuperSecret";
 
+    /** Require JWT on P2P messages */
+    private boolean p2pJwtEnabled = false;
+
     /** Number of worker threads used for mining */
     private int miningThreads = Runtime.getRuntime().availableProcessors();
 

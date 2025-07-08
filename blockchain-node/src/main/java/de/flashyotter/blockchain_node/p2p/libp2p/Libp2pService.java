@@ -6,12 +6,18 @@ import de.flashyotter.blockchain_node.dto.*;
 import de.flashyotter.blockchain_node.p2p.Peer;
 import de.flashyotter.blockchain_node.service.NodeService;
 import de.flashyotter.blockchain_node.service.KademliaService;
+import de.flashyotter.blockchain_node.p2p.proto.ProtoUtils;
+import de.flashyotter.blockchain_node.p2p.proto.P2P.Envelope;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
 import io.libp2p.core.Host;
 import io.libp2p.etc.SimpleClientHandler;
 import io.libp2p.etc.SimpleClientHandlerKt;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.buffer.ByteBufInputStream;
 import jakarta.annotation.PostConstruct;
+import java.nio.charset.StandardCharsets;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -36,6 +42,8 @@ public class Libp2pService {
     private final KademliaService kademlia;
 
     private final java.util.Map<String, String> peerAddrs =
+            new java.util.concurrent.ConcurrentHashMap<>();
+    private final java.util.concurrent.ConcurrentMap<String, TokenBucket> peerLimits =
             new java.util.concurrent.ConcurrentHashMap<>();
     private volatile String publicAddr;
 
@@ -94,6 +102,30 @@ public class Libp2pService {
 
     public String peerPublicAddr(String id) { return peerAddrs.get(id); }
 
+    private TokenBucket bucketFor(String key) {
+        return peerLimits.computeIfAbsent(key, k -> new TokenBucket(20, 20));
+    }
+
+    private String createJwt() {
+        if (!props.isP2pJwtEnabled()) return "";
+        return Jwts.builder()
+                .signWith(Keys.hmacShaKeyFor(props.getJwtSecret().getBytes(StandardCharsets.UTF_8)))
+                .compact();
+    }
+
+    private boolean verifyJwt(String token) {
+        if (!props.isP2pJwtEnabled()) return true;
+        try {
+            Jwts.parserBuilder()
+                    .setSigningKey(Keys.hmacShaKeyFor(props.getJwtSecret().getBytes(StandardCharsets.UTF_8)))
+                    .build()
+                    .parseClaimsJws(token);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     /**
      * Dial {@code peer} using the AutoNAT protocol and remember the
      * externally visible multiaddress.
@@ -112,7 +144,11 @@ public class Libp2pService {
     public BlocksDto requestBlocks(Peer peer, GetBlocksDto req) {
         java.util.concurrent.CompletableFuture<BlocksDto> fut = new java.util.concurrent.CompletableFuture<>();
         try {
-            String json = mapper.writeValueAsString(req);
+            Envelope envReq = ProtoUtils.toProto(req, createJwt());
+            byte[] payload = envReq.toByteArray();
+            io.netty.buffer.ByteBuf out = io.netty.buffer.Unpooled.buffer(4 + payload.length);
+            out.writeInt(payload.length);
+            out.writeBytes(payload);
             io.libp2p.core.multiformats.Multiaddr addr =
                     new io.libp2p.core.multiformats.Multiaddr(peer.multiAddr());
             java.util.concurrent.CompletableFuture<? extends io.libp2p.core.Stream> streamFuture;
@@ -128,8 +164,12 @@ public class Libp2pService {
                         @Override
                         public void messageReceived(ChannelHandlerContext ctx, ByteBuf msg) {
                             try {
-                                String body = msg.toString(java.nio.charset.StandardCharsets.UTF_8);
-                                BlocksDto bd = mapper.readValue(body, BlocksDto.class);
+                                int len = msg.readInt();
+                                byte[] arr = new byte[len];
+                                msg.readBytes(arr);
+                                Envelope env = Envelope.parseFrom(arr);
+                                if (!verifyJwt(env.getJwt())) { ctx.close(); return; }
+                                BlocksDto bd = (BlocksDto) ProtoUtils.fromProto(env);
                                 fut.complete(bd);
                                 stream.close();
                             } catch (Exception e) {
@@ -137,7 +177,7 @@ public class Libp2pService {
                             }
                         }
                     });
-                    stream.writeAndFlush(json);
+                    stream.writeAndFlush(out);
                 }).join();
             return fut.get(5, java.util.concurrent.TimeUnit.SECONDS);
         } catch (Exception e) {
@@ -150,13 +190,19 @@ public class Libp2pService {
     class ControlHandler extends SimpleClientHandler {
         @Override
         public void messageReceived(ChannelHandlerContext ctx, ByteBuf msg) {
-            if (!rateLimiter.allow()) {
+            String key = ctx.channel() != null && ctx.channel().remoteAddress() != null ?
+                    ctx.channel().remoteAddress().toString() : "test";
+            if (!rateLimiter.allow() || !bucketFor(key).allow()) {
                 ctx.close();
                 return;
             }
             try {
-                String json = msg.toString(java.nio.charset.StandardCharsets.UTF_8);
-                P2PMessageDto dto = mapper.readValue(json, P2PMessageDto.class);
+                int len = msg.readInt();
+                byte[] arr = new byte[len];
+                msg.readBytes(arr);
+                Envelope env = Envelope.parseFrom(arr);
+                if (!verifyJwt(env.getJwt())) { ctx.close(); return; }
+                P2PMessageDto dto = ProtoUtils.fromProto(env);
 
                 if (dto instanceof HandshakeDto hs) {
                     if (!PROTOCOL_VERSION.equals(hs.protocolVersion())) {
@@ -169,8 +215,12 @@ public class Libp2pService {
                 } else if (dto instanceof FindNodeDto find) {
                     var nearest = kademlia.closest(find.nodeId(), 16)
                             .stream().map(Peer::toString).toList();
-                    String reply = mapper.writeValueAsString(new NodesDto(nearest));
-                    ctx.writeAndFlush(io.netty.buffer.Unpooled.copiedBuffer(reply, java.nio.charset.StandardCharsets.UTF_8));
+                    Envelope envOut = ProtoUtils.toProto(new NodesDto(nearest), createJwt());
+                    byte[] pl = envOut.toByteArray();
+                    ByteBuf buf = io.netty.buffer.Unpooled.buffer(4 + pl.length);
+                    buf.writeInt(pl.length);
+                    buf.writeBytes(pl);
+                    ctx.writeAndFlush(buf);
                 } else if (dto instanceof NodesDto nodes) {
                     kademlia.merge(nodes);
                 } else if (dto instanceof PeerListDto pl) {
@@ -180,8 +230,12 @@ public class Libp2pService {
                     var list = blocks.stream()
                             .map(blockchain.core.serialization.JsonUtils::toJson)
                             .toList();
-                    String reply = mapper.writeValueAsString(new BlocksDto(list));
-                    ctx.writeAndFlush(io.netty.buffer.Unpooled.copiedBuffer(reply, java.nio.charset.StandardCharsets.UTF_8));
+                    Envelope envOut = ProtoUtils.toProto(new BlocksDto(list), createJwt());
+                    byte[] arrOut = envOut.toByteArray();
+                    ByteBuf buf = io.netty.buffer.Unpooled.buffer(4 + arrOut.length);
+                    buf.writeInt(arrOut.length);
+                    buf.writeBytes(arrOut);
+                    ctx.writeAndFlush(buf);
                 } else if (dto instanceof BlocksDto bd) {
                     for (String raw : bd.rawBlocks()) {
                         blockchain.core.model.Block blk = mapper.readValue(raw, blockchain.core.model.Block.class);
@@ -196,7 +250,11 @@ public class Libp2pService {
 
     private void send(Peer peer, java.util.List<String> protocol, Object dto) {
         try {
-            String json = mapper.writeValueAsString(dto);
+            Envelope env = ProtoUtils.toProto((P2PMessageDto) dto, createJwt());
+            byte[] bytes = env.toByteArray();
+            ByteBuf buf = io.netty.buffer.Unpooled.buffer(4 + bytes.length);
+            buf.writeInt(bytes.length);
+            buf.writeBytes(bytes);
             io.libp2p.core.multiformats.Multiaddr addr =
                     new io.libp2p.core.multiformats.Multiaddr(peer.multiAddr());
             java.util.concurrent.CompletableFuture<? extends io.libp2p.core.Stream> fut;
@@ -207,13 +265,13 @@ public class Libp2pService {
                 fut = host.getNetwork().connect(addr)
                         .thenCompose(c -> host.newStream(protocol, c).getStream());
             }
-            fut.thenAccept(s -> s.writeAndFlush(json)).join();
+            fut.thenAccept(s -> s.writeAndFlush(buf)).join();
         } catch (Exception e) {
             log.warn("libp2p send failed: {}", e.getMessage());
         }
     }
 
-    private class BlockHandler extends JsonHandler<NewBlockDto> {
+    private class BlockHandler extends ProtoHandler<NewBlockDto> {
         BlockHandler() { super(NewBlockDto.class); }
 
         @Override
@@ -223,7 +281,7 @@ public class Libp2pService {
         }
     }
 
-    private class TxHandler extends JsonHandler<NewTxDto> {
+    private class TxHandler extends ProtoHandler<NewTxDto> {
         TxHandler() { super(NewTxDto.class); }
 
         @Override
@@ -233,22 +291,28 @@ public class Libp2pService {
         }
     }
 
-    private abstract class JsonHandler<T> extends SimpleClientHandler {
+    private abstract class ProtoHandler<T> extends SimpleClientHandler {
         private final Class<T> type;
 
-        JsonHandler(Class<T> type) {
+        ProtoHandler(Class<T> type) {
             this.type = type;
         }
 
         @Override
         public void messageReceived(ChannelHandlerContext ctx, ByteBuf msg) {
-            if (!rateLimiter.allow()) {
+            String key = ctx.channel() != null && ctx.channel().remoteAddress() != null ?
+                    ctx.channel().remoteAddress().toString() : "test";
+            if (!rateLimiter.allow() || !bucketFor(key).allow()) {
                 ctx.close();
                 return;
             }
             try {
-                String json = msg.toString(java.nio.charset.StandardCharsets.UTF_8);
-                T dto = mapper.readValue(json, type);
+                int len = msg.readInt();
+                byte[] arr = new byte[len];
+                msg.readBytes(arr);
+                Envelope env = Envelope.parseFrom(arr);
+                if (!verifyJwt(env.getJwt())) { ctx.close(); return; }
+                T dto = (T) ProtoUtils.fromProto(env);
                 handle(dto);
             } catch (Exception e) {
                 log.warn("libp2p inbound failed: {}", e.getMessage());

@@ -40,8 +40,10 @@ class Libp2pHandshakeTest {
         Object handler = ctor.newInstance(svc);
 
         ChannelHandlerContext ctx = mock(ChannelHandlerContext.class);
-        ByteBuf buf = Unpooled.copiedBuffer(new ObjectMapper()
-                .writeValueAsString(new HandshakeDto("x","0.0.1",0,"/ip4/1.1.1.1/tcp/1")), StandardCharsets.UTF_8);
+        var env = de.flashyotter.blockchain_node.p2p.proto.ProtoUtils.toProto(
+                new HandshakeDto("x","0.0.1",0,"/ip4/1.1.1.1/tcp/1"), "");
+        byte[] arr = env.toByteArray();
+        ByteBuf buf = Unpooled.buffer(4 + arr.length).writeInt(arr.length).writeBytes(arr);
         when(ctx.close()).thenReturn(null);
 
         var method = cls.getDeclaredMethod("messageReceived", ChannelHandlerContext.class, ByteBuf.class);
@@ -71,8 +73,10 @@ class Libp2pHandshakeTest {
         Object handler = ctor.newInstance(svc);
 
         ChannelHandlerContext ctx = mock(ChannelHandlerContext.class);
-        ByteBuf buf = Unpooled.copiedBuffer(new ObjectMapper()
-                .writeValueAsString(new HandshakeDto("x","1.0.0",0,"/ip4/1.1.1.1/tcp/1")), StandardCharsets.UTF_8);
+        var env = de.flashyotter.blockchain_node.p2p.proto.ProtoUtils.toProto(
+                new HandshakeDto("x","1.0.0",0,"/ip4/1.1.1.1/tcp/1"), "");
+        byte[] arr = env.toByteArray();
+        ByteBuf buf = Unpooled.buffer(4 + arr.length).writeInt(arr.length).writeBytes(arr);
         when(ctx.close()).thenReturn(null);
 
         var method = cls.getDeclaredMethod("messageReceived", ChannelHandlerContext.class, ByteBuf.class);

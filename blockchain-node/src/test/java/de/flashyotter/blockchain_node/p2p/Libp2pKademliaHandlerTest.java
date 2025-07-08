@@ -46,8 +46,9 @@ class Libp2pKademliaHandlerTest {
         Object handler = ctor.newInstance(svc);
 
         ChannelHandlerContext ctx = mock(ChannelHandlerContext.class);
-        ByteBuf buf = Unpooled.copiedBuffer(new ObjectMapper()
-                .writeValueAsString(new FindNodeDto("abc")), StandardCharsets.UTF_8);
+        var env = de.flashyotter.blockchain_node.p2p.proto.ProtoUtils.toProto(new FindNodeDto("abc"), "");
+        byte[] arr = env.toByteArray();
+        ByteBuf buf = Unpooled.buffer(4 + arr.length).writeInt(arr.length).writeBytes(arr);
         when(ctx.writeAndFlush(any())).thenReturn(null);
 
         var method = cls.getDeclaredMethod("messageReceived", ChannelHandlerContext.class, ByteBuf.class);
@@ -58,7 +59,11 @@ class Libp2pKademliaHandlerTest {
         var captor = org.mockito.ArgumentCaptor.forClass(Object.class);
         verify(ctx).writeAndFlush(captor.capture());
         ByteBuf out = (ByteBuf) captor.getValue();
-        NodesDto resp = new ObjectMapper().readValue(out.toString(StandardCharsets.UTF_8), NodesDto.class);
+        int len = out.readInt();
+        byte[] arr2 = new byte[len];
+        out.readBytes(arr2);
+        NodesDto resp = (NodesDto) de.flashyotter.blockchain_node.p2p.proto.ProtoUtils.fromProto(
+                de.flashyotter.blockchain_node.p2p.proto.P2P.Envelope.parseFrom(arr2));
         assertEquals(List.of("x:1"), resp.peers());
     }
 }
