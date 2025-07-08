@@ -17,6 +17,7 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import org.springframework.scheduling.annotation.ScheduledAnnotationBeanPostProcessor;
 
 import de.flashyotter.blockchain_node.p2p.Peer;
+import de.flashyotter.blockchain_node.config.NodeProperties;
 
 class DiscoveryLoopSchedulingTest {
 
@@ -30,8 +31,9 @@ class DiscoveryLoopSchedulingTest {
         SyncService sync = mock(SyncService.class);
         kademlia = mock(KademliaService.class);
         de.flashyotter.blockchain_node.p2p.libp2p.Libp2pService libp2p = mock(de.flashyotter.blockchain_node.p2p.libp2p.Libp2pService.class);
+        NodeProperties props = new NodeProperties();
 
-        DiscoveryLoop target = new DiscoveryLoop(reg, sync, kademlia, libp2p);
+        DiscoveryLoop target = new DiscoveryLoop(reg, sync, kademlia, libp2p, props);
         DiscoveryLoop spySvc = spy(target);
 
         ctx = new AnnotationConfigApplicationContext();
@@ -39,6 +41,7 @@ class DiscoveryLoopSchedulingTest {
         ctx.registerBean(SyncService.class, () -> sync);
         ctx.registerBean(KademliaService.class, () -> kademlia);
         ctx.registerBean(de.flashyotter.blockchain_node.p2p.libp2p.Libp2pService.class, () -> libp2p);
+        ctx.registerBean(NodeProperties.class, () -> props);
         ctx.registerBean(DiscoveryLoop.class, () -> spySvc);
         ctx.registerBean(ScheduledAnnotationBeanPostProcessor.class);
         ctx.refresh();

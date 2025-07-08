@@ -41,7 +41,7 @@ class Libp2pHandshakeTest {
 
         ChannelHandlerContext ctx = mock(ChannelHandlerContext.class);
         ByteBuf buf = Unpooled.copiedBuffer(new ObjectMapper()
-                .writeValueAsString(new HandshakeDto("x","0.0.1",0)), StandardCharsets.UTF_8);
+                .writeValueAsString(new HandshakeDto("x","0.0.1",0,"/ip4/1.1.1.1/tcp/1")), StandardCharsets.UTF_8);
         when(ctx.close()).thenReturn(null);
 
         var method = cls.getDeclaredMethod("messageReceived", ChannelHandlerContext.class, ByteBuf.class);
@@ -72,7 +72,7 @@ class Libp2pHandshakeTest {
 
         ChannelHandlerContext ctx = mock(ChannelHandlerContext.class);
         ByteBuf buf = Unpooled.copiedBuffer(new ObjectMapper()
-                .writeValueAsString(new HandshakeDto("x","1.0.0",0)), StandardCharsets.UTF_8);
+                .writeValueAsString(new HandshakeDto("x","1.0.0",0,"/ip4/1.1.1.1/tcp/1")), StandardCharsets.UTF_8);
         when(ctx.close()).thenReturn(null);
 
         var method = cls.getDeclaredMethod("messageReceived", ChannelHandlerContext.class, ByteBuf.class);
