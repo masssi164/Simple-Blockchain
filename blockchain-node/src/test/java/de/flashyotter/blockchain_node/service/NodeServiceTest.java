@@ -34,6 +34,7 @@ class NodeServiceTest {
     private MiningService mining;
     private P2PBroadcastService broadcaster; // ✔ korrekte Typ-Deklaration
     private BlockStore store;
+    private io.micrometer.core.instrument.simple.SimpleMeterRegistry metrics;
     private NodeService svc;
 
     @BeforeEach
@@ -43,11 +44,12 @@ class NodeServiceTest {
         mining      = mock(MiningService.class);
         broadcaster = mock(P2PBroadcastService.class);
         store       = mock(BlockStore.class);
+        metrics     = new io.micrometer.core.instrument.simple.SimpleMeterRegistry();
 
         when(chain.getBlocks()).thenReturn(List.of());
         when(mempool.take(Integer.MAX_VALUE)).thenReturn(List.of());
 
-        svc = new NodeService(chain, mempool, mining, broadcaster, store);
+        svc = new NodeService(chain, mempool, mining, broadcaster, store, metrics);
     }
 
     @Test

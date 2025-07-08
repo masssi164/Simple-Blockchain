@@ -26,7 +26,8 @@ class NodeServiceUtxoTest {
                 Mockito.mock(MempoolService.class),      // ↙ neue Reihenfolge
                 Mockito.mock(MiningService.class),
                 Mockito.mock(P2PBroadcastService.class),
-                new InMemoryBlockStore()
+                new InMemoryBlockStore(),
+                new io.micrometer.core.instrument.simple.SimpleMeterRegistry()
         );
     }
 

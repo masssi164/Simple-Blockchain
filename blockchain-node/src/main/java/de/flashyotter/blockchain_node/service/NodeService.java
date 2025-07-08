@@ -7,11 +7,14 @@ import blockchain.core.model.TxInput;
 import blockchain.core.model.TxOutput;
 import de.flashyotter.blockchain_node.dto.NewBlockDto;
 import de.flashyotter.blockchain_node.dto.NewTxDto;
+import de.flashyotter.blockchain_node.config.MetricsConfig;
 import lombok.RequiredArgsConstructor;
 import blockchain.core.exceptions.BlockchainException;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
+import io.micrometer.core.instrument.MeterRegistry;
+import java.util.concurrent.TimeUnit;
 
 import java.util.HashMap;
 import java.util.List;
@@ -29,6 +32,7 @@ public class NodeService {
     private final MiningService                mining;
     private final P2PBroadcastService          broadcaster;
     private final de.flashyotter.blockchain_node.storage.BlockStore store;
+    private final MeterRegistry metrics;
 
     /** Snapshot of the currently active chain to detect re-orgs. */
     private java.util.List<Block> chainSnapshot = new java.util.ArrayList<>();
@@ -77,6 +81,10 @@ public class NodeService {
         store.save(blk);
         mempool.purge(blk.getTxList());
         handleReorg(prev, chain.getBlocks());
+
+        long delay = System.currentTimeMillis() - blk.getTimeMillis();
+        metrics.timer(MetricsConfig.BLOCK_PROPAGATION_DELAY)
+               .record(delay, TimeUnit.MILLISECONDS);
     }
 
     /* ---------- simple getters ---------- */

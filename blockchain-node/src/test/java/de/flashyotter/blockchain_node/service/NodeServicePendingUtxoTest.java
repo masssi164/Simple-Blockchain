@@ -35,7 +35,8 @@ class NodeServicePendingUtxoTest {
             mempool,
             Mockito.mock(MiningService.class),
             Mockito.mock(P2PBroadcastService.class),
-            Mockito.mock(de.flashyotter.blockchain_node.storage.BlockStore.class)
+            Mockito.mock(de.flashyotter.blockchain_node.storage.BlockStore.class),
+            new io.micrometer.core.instrument.simple.SimpleMeterRegistry()
         );
     }
 

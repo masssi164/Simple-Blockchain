@@ -41,7 +41,8 @@ class NodeServiceDoubleSpendTest {
                 mempool,
                 Mockito.mock(MiningService.class),
                 Mockito.mock(P2PBroadcastService.class),
-                new InMemoryBlockStore()
+                new InMemoryBlockStore(),
+                new io.micrometer.core.instrument.simple.SimpleMeterRegistry()
         );
 
         // spend the coinbase output once
