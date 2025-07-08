@@ -53,6 +53,7 @@ class SnapshotServiceMetricsTest {
     void successIncrementsCounter() {
         svc.snapshotTask();
         assertEquals(1, registry.get("snapshot_success_total").counter().count());
+        assertEquals(1, registry.get("snapshot_duration").timer().count());
     }
 
     @Test
@@ -63,5 +64,6 @@ class SnapshotServiceMetricsTest {
         SnapshotService failing = new SnapshotService(chain, props, mock(BlockStore.class), failingMapper, registry);
         failing.snapshotTask();
         assertEquals(1, registry.get("snapshot_failure_total").counter().count());
+        assertEquals(1, registry.get("snapshot_duration").timer().count());
     }
 }

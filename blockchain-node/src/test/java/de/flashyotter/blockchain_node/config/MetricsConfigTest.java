@@ -8,6 +8,7 @@ import blockchain.core.model.Block;
 import blockchain.core.model.Transaction;
 import blockchain.core.model.Wallet;
 import de.flashyotter.blockchain_node.service.MempoolService;
+import de.flashyotter.blockchain_node.service.PeerRegistry;
 import de.flashyotter.blockchain_node.config.NodeProperties;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -20,14 +21,16 @@ class MetricsConfigTest {
 
     private Chain chain;
     private MempoolService mempool;
+    private PeerRegistry peers;
     private SimpleMeterRegistry registry;
 
     @BeforeEach
     void setup() {
         chain = new Chain();
         mempool = new MempoolService(new NodeProperties());
+        peers = new PeerRegistry();
         registry = new SimpleMeterRegistry();
-        new MetricsConfig(registry, chain, mempool).init();
+        new MetricsConfig(registry, chain, mempool, peers).init();
     }
 
     @Test
@@ -62,7 +65,10 @@ class MetricsConfigTest {
     @Test
     void additionalMetricsPresent() {
         assertNotNull(registry.find("node_block_broadcast_time").timer());
+        assertNotNull(registry.find("block_propagation_delay").timer());
+        assertNotNull(registry.find("snapshot_duration").timer());
         assertNotNull(registry.find("snapshot_success_total").counter());
         assertNotNull(registry.find("snapshot_failure_total").counter());
+        assertNotNull(registry.find("node_peer_count").gauge());
     }
 }

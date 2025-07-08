@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.flashyotter.blockchain_node.config.MetricsConfig;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Timer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -39,6 +40,7 @@ public class SnapshotService {
 
     @Scheduled(fixedDelayString = "#{@nodeProperties.snapshotIntervalSec * 1000}")
     void snapshotTask() {
+        io.micrometer.core.instrument.Timer.Sample sample = io.micrometer.core.instrument.Timer.start(metrics);
         try {
             writeSnapshot();
             pruneBlocks();
@@ -47,6 +49,8 @@ public class SnapshotService {
         } catch (Exception e) {
             metrics.counter(MetricsConfig.SNAPSHOT_FAILURE).increment();
             log.warn("Snapshot failed", e);
+        } finally {
+            sample.stop(metrics.timer(MetricsConfig.SNAPSHOT_DURATION));
         }
     }
 
