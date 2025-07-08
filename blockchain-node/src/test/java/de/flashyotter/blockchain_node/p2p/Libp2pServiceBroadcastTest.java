@@ -7,7 +7,6 @@ import static org.mockito.Mockito.verify;
 import blockchain.core.model.Transaction;
 import blockchain.core.model.TxOutput;
 import blockchain.core.serialization.JsonUtils;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import de.flashyotter.blockchain_node.config.NodeProperties;
 import de.flashyotter.blockchain_node.dto.NewTxDto;
 import de.flashyotter.blockchain_node.p2p.libp2p.Libp2pService;
@@ -91,8 +90,8 @@ class Libp2pServiceBroadcastTest {
         KademliaService k1 = new KademliaService(t1, r1, props1);
         KademliaService k2 = new KademliaService(t2, r2, props2);
 
-        s1 = new Libp2pService(h1, props1, new ObjectMapper(), n1, k1);
-        s2 = new Libp2pService(h2, props2, new ObjectMapper(), n2, k2);
+        s1 = new Libp2pService(h1, props1, n1, k1);
+        s2 = new Libp2pService(h2, props2, n2, k2);
         s1.init();
         s2.init();
     }
