@@ -3,6 +3,7 @@ plugins {
     id 'jacoco'
     id 'org.springframework.boot'      version '3.5.1'
     id 'io.spring.dependency-management' version '1.1.7'
+    id 'com.google.protobuf' version '0.9.4'
 }
 
 group   = 'de.flashyotter'
@@ -52,6 +53,10 @@ dependencies {
     runtimeOnly    'io.jsonwebtoken:jjwt-impl:0.11.5'
     runtimeOnly    'io.jsonwebtoken:jjwt-jackson:0.11.5'
 
+    // gRPC server
+    implementation 'net.devh:grpc-server-spring-boot-starter:2.15.0.RELEASE'
+    compileOnly 'javax.annotation:javax.annotation-api:1.3.2'
+
     // Networking and concurrency
     implementation platform("io.netty:netty-bom:4.1.117.Final")
     implementation "io.libp2p:jvm-libp2p:1.2.2-RELEASE"
@@ -77,3 +82,18 @@ tasks.named('test') {
 tasks.named('jacocoTestReport') {
     dependsOn 'test'
 }
+
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:3.25.3"
+    }
+    plugins {
+        grpc {
+            artifact = "io.grpc:protoc-gen-grpc-java:1.63.0"
+        }
+    }
+    generateProtoTasks {
+        all().forEach { task ->
+            task.plugins { grpc {} }
+        }
+    }}

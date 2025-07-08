@@ -1,0 +1,79 @@
+syntax = "proto3";
+package de.flashyotter.blockchain_node.grpc;
+
+option java_multiple_files = true;
+option java_package = "de.flashyotter.blockchain_node.grpc";
+option java_outer_classname = "NodeProto";
+
+message Empty {}
+
+message TxInput {
+  string referencedOutputId = 1;
+  bytes  signature = 2;
+  bytes  sender = 3;
+}
+
+message TxOutput {
+  double value = 1;
+  string recipientAddress = 2;
+}
+
+message Transaction {
+  repeated TxInput inputs = 1;
+  repeated TxOutput outputs = 2;
+  double maxFee = 3;
+  double tip = 4;
+}
+
+message Block {
+  int32 height = 1;
+  string previousHashHex = 2;
+  int64 timeMillis = 3;
+  int32 compactBits = 4;
+  int32 nonce = 5;
+  string merkleRootHex = 6;
+  repeated Transaction txList = 7;
+}
+
+message BlockList {
+  repeated Block blocks = 1;
+}
+
+message PageRequest {
+  int32 page = 1;
+  int32 size = 2;
+}
+
+message HistoryRequest {
+  string address = 1;
+  int32 limit = 2;
+}
+
+message WalletInfo {
+  string address = 1;
+  double balance = 2;
+}
+
+message SendRequest {
+  string recipient = 1;
+  double amount = 2;
+}
+
+message TxList {
+  repeated Transaction txs = 1;
+}
+
+service Mining {
+  rpc Mine(Empty) returns (Block);
+}
+
+service Wallet {
+  rpc Send(SendRequest) returns (Transaction);
+  rpc Info(Empty) returns (WalletInfo);
+  rpc History(HistoryRequest) returns (TxList);
+}
+
+service Chain {
+  rpc Latest(Empty) returns (Block);
+  rpc Page(PageRequest) returns (BlockList);
+}

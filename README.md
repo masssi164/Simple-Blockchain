@@ -69,6 +69,7 @@ VITE_NODE_JWT_SECRET=myTopSecret   # same secret for UI
 NODE_MINING_THREADS=4               # 0 → auto-detect
 NODE_SNAPSHOT_INTERVAL_SEC=300
 NODE_HISTORY_DEPTH=1000
+NODE_GRPC_PORT=9090
 BUILD_CA_CERT=
 
 Blocks are kept in a LevelDB database under `${NODE_DATA_PATH}/blocks`. Mount
@@ -113,6 +114,12 @@ GET  /api/chain/latest           → current tip
 GET  /api/chain/page?page=0&size=5 → paginated blocks (desc)
 
 Fully documented via Swagger / OpenAPI at runtime.
+
+### gRPC API
+
+Set `NODE_GRPC_PORT` to expose the same endpoints over gRPC (defaults to
+`9090`). Service definitions live under `blockchain-node/src/main/proto` and
+cover mining, wallet and chain queries.
 
 P2P Protocol
 
