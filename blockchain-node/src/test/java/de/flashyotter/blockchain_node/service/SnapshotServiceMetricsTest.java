@@ -60,7 +60,7 @@ class SnapshotServiceMetricsTest {
     void failureIncrementsCounter() throws Exception {
         ObjectMapper failingMapper = org.mockito.Mockito.mock(ObjectMapper.class);
         doThrow(new IOException()).when(failingMapper)
-                .writeValue(org.mockito.ArgumentMatchers.any(java.io.File.class), org.mockito.ArgumentMatchers.any());
+                .writeValue(org.mockito.ArgumentMatchers.any(java.io.OutputStream.class), org.mockito.ArgumentMatchers.any());
         SnapshotService failing = new SnapshotService(chain, props, mock(BlockStore.class), failingMapper, registry);
         failing.snapshotTask();
         assertEquals(1, registry.get("snapshot_failure_total").counter().count());

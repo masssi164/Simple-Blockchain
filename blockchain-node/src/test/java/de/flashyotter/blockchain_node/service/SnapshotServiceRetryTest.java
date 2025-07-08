@@ -49,14 +49,16 @@ class SnapshotServiceRetryTest {
                 throw new IOException("boom");
             }
             return inv.callRealMethod();
-        }).when(mapper).writeValue(Mockito.any(File.class), Mockito.any());
+        }).when(mapper).writeValue(Mockito.any(java.io.OutputStream.class), Mockito.any());
 
         SimpleMeterRegistry metrics = new SimpleMeterRegistry();
         SnapshotService svc = new SnapshotService(chain, props, store, mapper, metrics);
         svc.snapshotTask();
 
         assertEquals(2, calls.get(), "should retry once");
-        long files = Files.list(temp.resolve("snapshots")).count();
+        long files = Files.list(temp.resolve("snapshots"))
+                          .filter(p -> p.toString().endsWith(".gz"))
+                          .count();
         assertEquals(1, files, "snapshot file created");
     }
 }
