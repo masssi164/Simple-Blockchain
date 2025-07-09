@@ -11,6 +11,12 @@ The project recently moved beyond proof-of-concept. Expect breaking changes unti
 - REST API secured with JWT tokens.
 - libp2p supports optional Noise encryption.
 - Prometheus metrics exported at `/actuator/prometheus`.
+- gRPC API for chain, wallet and mining operations.
+- Write-ahead log for replay-safe LevelDB block storage.
+- UTXO snapshots compressed and tracked via manifest.
+- Structured JSON logging with additional Prometheus metrics.
+- Handshake broadcasts the node's public address for autodiscovery.
+- P2P messages encoded with protobuf.
 
 Feature Matrix
 
@@ -41,7 +47,6 @@ Fee-based priority queue with base fee and tip sorting
 API
 
 Reactive REST + WebSocket push; JWT secured; Prometheus metrics at /actuator/prometheus
-
 CLI & UI
 
 Terminal wallet utility (./gradlew run:cli) and accessible React dashboard
@@ -124,53 +129,34 @@ cover mining, wallet and chain queries.
 P2P Protocol
 
 The node announces itself on /simple-blockchain/*.
+Handshake messages include the node's public address for easier discovery.
+All data is encoded using protobuf definitions in `p2p.proto`.
 
 Control – peer list, find‑node, range sync
 
-Blocks  – single blocks (NewBlockDto)
+Blocks  – single block messages
 
-Txs     – raw TX gossip (NewTxDto)
+Txs     – raw TX gossip
 
 Peer discovery uses Kademlia distance metrics plus optional static seed list.
 
 Roadmap
-
 Next 30 days (v0.2)
-
-LevelDB block store with replay‑safe startup
-
 Harden wire format: length‑prefix, DoS guards
-
-Structured logging + Prometheus metrics
-
 CLI wallet (send, balance, history)
-
 Accessibility audit of the React UI
-
 Q4 2025 (v0.3)
-
 Replace JSON over WS with protobuf over gRPC
-
 Compact block relay + thin‑client (SPV) mode
-
 Adaptive fee market, child‑pays‑for‑parent
-
 Snapshots + UTXO compaction
-
 ### v1.0
-
 Formal security review & fuzzing harness
-
 Ledger pruning / archival node split
-
 Governance upgrade support (BIP‑9‑style soft forks)
-
 Inter‑chain bridge PoC (IBC‑inspired)
-
 Contributing
-
 Fork, create a branch, run ./gradlew verify and open a PR.
-
 License
 
 MIT – see LICENSE.

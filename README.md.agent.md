@@ -1,1 +1,1 @@
-This README describes how to build and run the demo blockchain node. It documents available REST endpoints, libp2p message types, and hints for running a private network. Use it as a primer when exploring the project.
+This README describes how to build and run the demo blockchain node. It documents available REST and gRPC endpoints, protobuf‑based P2P messages and hints for running a private network. Use it as a primer when exploring the project.
