@@ -43,3 +43,7 @@ build
 # Ignore all agent*md files
 *agent*md
 **/*agent*md
+
+# Python
+__pycache__/
+*.pyc

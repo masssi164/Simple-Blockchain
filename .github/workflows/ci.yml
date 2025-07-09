@@ -45,3 +45,23 @@ jobs:
       with:
         name: blockchain-core-jar
         path: blockchain-core/build/libs/**/*.jar
+
+    - name: Start Selenium container
+      run: docker run -d --name selenium -p 4444:4444 selenium/standalone-chrome
+
+    - name: Build & start multi-node setup
+      run: docker compose -f docker-compose.ci.yml up -d --build
+
+    - name: Wait for nodes
+      run: sleep 30
+
+    - name: Run end-to-end tests
+      run: |
+        pip install selenium requests PyJWT behave
+        behave features/e2e.feature
+
+    - name: Stop containers
+      if: always()
+      run: |
+        docker compose -f docker-compose.ci.yml down
+        docker rm -f selenium
