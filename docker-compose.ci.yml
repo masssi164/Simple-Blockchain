@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+  backend1:
+    build:
+      context: .
+      dockerfile: blockchain-node/Dockerfile
+      args:
+        SERVER_PORT: 3333
+    environment:
+      NODE_LIBP2P_PORT: 4001
+      NODE_PEERS: "host.docker.internal:4002"
+      NODE_JWT_SECRET: changeMeSuperSecret
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "3333:3333"
+      - "4001:4001"
+    networks:
+      - net1
+    volumes:
+      - ./data1:/app/data1
+      - ./wallet1:/root/.simple-chain
+  frontend1:
+    build:
+      context: ./ui
+      dockerfile: Dockerfile
+      args:
+        VITE_NODE_URL: http://localhost:3333/api
+        VITE_NODE_WS: ws://localhost:3333/ws
+        VITE_NODE_JWT_SECRET: changeMeSuperSecret
+    ports:
+      - "8081:80"
+    depends_on:
+      - backend1
+    networks:
+      - net1
+
+  backend2:
+    build:
+      context: .
+      dockerfile: blockchain-node/Dockerfile
+      args:
+        SERVER_PORT: 3334
+    environment:
+      NODE_LIBP2P_PORT: 4002
+      NODE_JWT_SECRET: changeMeSuperSecret
+    ports:
+      - "3334:3334"
+      - "4002:4002"
+    networks:
+      - net2
+    volumes:
+      - ./data2:/app/data2
+      - ./wallet2:/root/.simple-chain
+  frontend2:
+    build:
+      context: ./ui
+      dockerfile: Dockerfile
+      args:
+        VITE_NODE_URL: http://localhost:3334/api
+        VITE_NODE_WS: ws://localhost:3334/ws
+        VITE_NODE_JWT_SECRET: changeMeSuperSecret
+    ports:
+      - "8082:80"
+    depends_on:
+      - backend2
+    networks:
+      - net2
+
+networks:
+  net1:
+  net2:
