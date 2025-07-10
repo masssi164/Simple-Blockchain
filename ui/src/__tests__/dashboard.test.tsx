@@ -2,9 +2,9 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import Dashboard from '../pages/Dashboard';
 
-/* REST-Call stubben ------------------------------------------------------- */
-vi.mock('../api/rest', () => ({
-  get: vi.fn(() =>
+/* gRPC-Call stubben ------------------------------------------------------- */
+vi.mock('../api/grpc', () => ({
+  chainLatest: vi.fn(() =>
     Promise.resolve({
       height: 7,
       compactDifficultyBits: 0x1f0fffff,

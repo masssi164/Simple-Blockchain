@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import BlockHistory from '../components/BlockHistory';
 
-vi.mock('../api/rest', () => ({ get: vi.fn() }));
+vi.mock('../api/grpc', () => ({ chainPage: vi.fn() }));
 vi.mock('swr', () => ({
   __esModule: true,
   default: () => ({

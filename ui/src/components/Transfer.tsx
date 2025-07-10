@@ -26,7 +26,7 @@ import {
 import { messageService } from '../services/messageService';
 import { Fragment, useCallback, useState } from 'react';
 import { mutate } from 'swr';
-import { post } from '../api/rest';
+import { sendFunds } from '../api/grpc';
 
 // DTO produced by the WalletController on the backend
 export type SendFundsDto = {
@@ -87,10 +87,7 @@ export function Transfer() {
       setErrorMsg(null);
       try {
         // ---- POST /api/wallet/send ----------------------------------------
-        await post<void, SendFundsDto>('/wallet/send', {
-          recipient,
-          amount,
-        });
+        await sendFunds(recipient, amount);
 
         /* ------------------------------------------------------------------ */
         /* Optimistic SWR cache update – decrease confirmed balance           */

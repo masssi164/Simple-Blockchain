@@ -6,8 +6,8 @@ vi.mock('../services/messageService', () => ({
   messageService: { success: vi.fn(), error: vi.fn() },
 }));
 
-vi.mock('../api/rest', () => ({
-  post: vi.fn(() =>
+vi.mock('../api/grpc', () => ({
+  mineBlock: vi.fn(() =>
     Promise.resolve({
       height: 42,
       compactDifficultyBits: 0x1f0fffff,

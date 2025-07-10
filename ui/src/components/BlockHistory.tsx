@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import useSWR from 'swr';
-import { get } from '../api/rest';
+import { chainPage } from '../api/grpc';
 import type { Block } from '../types/block';
 
 export default function BlockHistory() {
@@ -8,7 +8,7 @@ export default function BlockHistory() {
   const [gap, setGap] = useState(5);
   const { data } = useSWR<Block[]>(
     `/chain/page?page=${page}&size=${gap}`,
-    (path: string) => get<Block[]>(path),
+    () => chainPage(page, gap),
   );
 
   if (!data) return null;

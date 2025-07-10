@@ -1,5 +1,5 @@
 import useSWR from 'swr';
-import { get } from '../api/rest';
+import { chainLatest } from '../api/grpc';
 import type { Block } from '../types/block';   // ❶ Type-only-Import
 import { StatCard } from '../components/StatCard';
 import WalletView from '../components/WalletView';
@@ -9,7 +9,7 @@ import BlockHistory from '../components/BlockHistory';
 export default function Dashboard() {
   const { data: tip } = useSWR<Block>(
     '/chain/latest',
-    path => get<Block>(path),
+    () => chainLatest(),
     { refreshInterval: 10_000 },
   );
 
