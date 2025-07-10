@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { CpuChipIcon } from '@heroicons/react/24/outline';
-import { post } from '../api/rest';
+import { mineBlock } from '../api/grpc';
 import { messageService } from '../services/messageService';
 import type { Block } from '../types/block';
 
@@ -26,7 +26,7 @@ export function MineArea() {
   const doMine = async () => {
     setIsMining(true);
     try {
-      const newBlock = await post<Block>('/mining/mine');
+      const newBlock = await mineBlock();
       setBlock(newBlock);
       messageService.success(`Mined block #${newBlock.height}`);
     } catch (err: unknown) {

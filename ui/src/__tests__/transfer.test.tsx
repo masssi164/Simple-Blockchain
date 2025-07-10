@@ -9,10 +9,10 @@ vi.mock('../services/messageService', () => ({
   messageService: { success: vi.fn(), error: vi.fn() },
 }));
 
-// REST-Modul mocken – einheitliches Mock-Objekt
-vi.mock('../api/rest', () => ({
+// gRPC-Modul mocken – einheitliches Mock-Objekt
+vi.mock('../api/grpc', () => ({
   __esModule: true,
-  post: vi.fn(), // wird pro Test konfiguriert
+  sendFunds: vi.fn(), // wird pro Test konfiguriert
 }));
 
 describe('<Transfer />', () => {
@@ -41,8 +41,8 @@ describe('<Transfer />', () => {
 
   it('schließt Modal nach erfolgreichem Senden & ruft API korrekt auf', async () => {
     // --- Mock konfigurieren ---
-    const { post } = await import('../api/rest');
-    (post as Mock).mockResolvedValueOnce(undefined);
+    const { sendFunds } = await import('../api/grpc');
+    (sendFunds as Mock).mockResolvedValueOnce(undefined);
 
     render(<Transfer />);
     await userEvent.click(screen.getByRole('button', { name: /transfer/i }));
@@ -61,9 +61,9 @@ describe('<Transfer />', () => {
     );
 
     // API-Aufruf korrekt
-    expect(post).toHaveBeenCalledWith('/wallet/send', {
-      recipient: '17VZNX1SN5NtKa8UQFxwQbFeFc3iqRYhem',
-      amount: 3.1415,
-    });
+    expect(sendFunds).toHaveBeenCalledWith(
+      '17VZNX1SN5NtKa8UQFxwQbFeFc3iqRYhem',
+      3.1415,
+    );
   });
 });

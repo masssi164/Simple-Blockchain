@@ -1,11 +1,11 @@
 import useSWR from 'swr';
-import { get } from '../api/rest';
+import { chainPage } from '../api/grpc';
 import type { Block } from '../types/block';
 
 export default function BlockList() {
   const { data } = useSWR<Block[]>(
     '/chain?from=0',
-    (path: string) => get<Block[]>(path),
+    () => chainPage(0, 20),
     { refreshInterval: 10000 },
   );
 

@@ -71,6 +71,7 @@ NODE_DATA_PATH=data
 NODE_WALLET_PASSWORD=changeMeSuperSecret
 NODE_JWT_SECRET=myTopSecret
 VITE_NODE_JWT_SECRET=myTopSecret   # same secret for UI
+VITE_NODE_GRPC=localhost:9090      # gRPC address for UI
 NODE_MINING_THREADS=4               # 0 → auto-detect
 NODE_SNAPSHOT_INTERVAL_SEC=300
 NODE_HISTORY_DEPTH=1000

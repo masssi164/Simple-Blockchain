@@ -1,7 +1,7 @@
 import { DocumentDuplicateIcon } from '@heroicons/react/24/outline';
 import QRCode from 'react-qr-code';
 import useSWR from 'swr';
-import { get } from '../api/rest';
+import { walletInfo } from '../api/grpc';
 import { MineArea } from './MiningArea';
 import { Transfer } from './Transfer';
 
@@ -15,7 +15,7 @@ type WalletInfo = {
 export default function WalletView() {
   const { data } = useSWR<WalletInfo>(
     '/wallet',
-    (path: string) => get<WalletInfo>(path),
+    () => walletInfo(),
     { refreshInterval: 5_000 },
   );
 
