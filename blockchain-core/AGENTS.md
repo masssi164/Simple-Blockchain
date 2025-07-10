@@ -10,5 +10,7 @@ Packages under `src/main/java/blockchain/core`:
 - `serialization` – JSON helpers (`JsonUtils`).
 - `exceptions` – custom runtime `BlockchainException`.
 
+Proto definitions in `blockchain-node/src/main/proto` map these models for gRPC.
+
 Tests in `src/test/java` mirror these packages. Build logic resides in
 `build.gradle`.

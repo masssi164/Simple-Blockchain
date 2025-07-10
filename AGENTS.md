@@ -17,6 +17,8 @@ Directories and notable files
 - `data/` – runtime LevelDB store for blocks and wallet.
 - `settings.gradle` – lists included modules.
 - `README.md` – build and usage instructions.
+- gRPC API available on `NODE_GRPC_PORT` (default 9090).
+- Gradle tasks `composeUp` / `composeDown` manage the Docker Compose setup.
 
 Overall relationship
 --------------------
