@@ -7,5 +7,6 @@ Key files:
 - `vite.config.ts` – Vite build configuration.
 - `src/` – TypeScript sources and tests.
 - `tsconfig*.json` – TypeScript compiler settings.
+- Communicates with the backend via REST and gRPC clients.
 
 Run `npm install` then `npm run dev` in this directory to start the dev server.

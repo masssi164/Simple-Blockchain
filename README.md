@@ -1,98 +1,78 @@
-Simple‑Chain Node (v0.2‑DEV)
+# Simple-Chain Node (v0.2-DEV)
 
-A lean Java 21 + Spring Boot 3 blockchain node that demonstrates a production‑grade architecture in a minimal code base. Proof‑of‑Work consensus, UTXO model, libp2p networking and a reactive REST/WS interface.
+A lean Java&nbsp;21 and Spring Boot&nbsp;3 blockchain node demonstrating a modern architecture in a concise code base. It implements Proof-of-Work mining, a UTXO ledger and libp2p networking. Clients interact via REST, WebSocket or gRPC.
 
-Status – Beta
-The project recently moved beyond proof-of-concept. Expect breaking changes until v1.0.
+**Status: Beta** – breaking changes may occur until v1.0.
+
 ## Recent additions
-- Fee market with base fee calculation and optional transaction tips.
-- Periodic UTXO snapshots with automatic pruning.
-- HD wallet derived from a mnemonic seed phrase.
-- REST API secured with JWT tokens.
-- libp2p supports optional Noise encryption.
-- Prometheus metrics exported at `/actuator/prometheus`.
-- gRPC API for chain, wallet and mining operations.
-- Write-ahead log for replay-safe LevelDB block storage.
-- UTXO snapshots compressed and tracked via manifest.
-- Structured JSON logging with additional Prometheus metrics.
-- Handshake broadcasts the node's public address for autodiscovery.
-- P2P messages encoded with protobuf.
+- Fee market with base fee and optional transaction tips
+- Periodic UTXO snapshots with pruning
+- HD wallet derived from a mnemonic seed
+- REST API secured with JWT tokens
+- Optional Noise encryption for libp2p
+- Prometheus metrics exported at `/actuator/prometheus`
+- gRPC API for chain, wallet and mining operations
+- Compose tasks `composeUp` and `composeDown` manage Docker
+- Write-ahead log for replay-safe LevelDB storage
+- Compressed UTXO snapshots tracked via manifest
+- Structured JSON logging with Prometheus metrics
+- Handshake advertises the node's public address for autodiscovery
+- P2P messages encoded with protobuf
 
-Feature Matrix
+## Feature matrix
 
-Area
+| Area | Details |
+|------|---------|
+| Consensus | Bitcoin-style PoW, UTXO model, compact-bits difficulty retarget, fork choice by total work |
+| Wallet | HD wallet stored in encrypted PKCS#12 keystore |
+| Mining | Parallel PoW engine with configurable worker threads |
+| Networking | WebSocket gossip and libp2p with Kademlia DHT, optional Noise encryption |
+| Mempool | Fee-based priority queue with base fee and tips |
+| API | Reactive REST & WebSocket push, JWT secured, Prometheus metrics |
+| UI | React dashboard using REST and gRPC clients |
 
-Details
+The Docker image is under 120&nbsp;MB and starts in less than two seconds on a laptop.
 
-Consensus
+## Quick start with Docker Compose
 
-Bitcoin‑style PoW, UTXO, compact‑bits difficulty retarget, fork‑choice by total work
+**Requirements** – Docker&nbsp;24+ and Docker Compose.
 
-Wallet
+### 1. Environment
 
-HD wallet with mnemonic stored in encrypted PKCS#12 keystore
+Create a `.env` file in the repo root with values similar to:
 
-Mining
-
-Parallel PoW engine – configurable worker threads
-
-Networking
-
-Dual transport: legacy WebSocket gossipsub and libp2p with Kademlia DHT discovery; optional Noise encryption
-
-Mempool
-
-Fee-based priority queue with base fee and tip sorting
-
-API
-
-Reactive REST + WebSocket push; JWT secured; Prometheus metrics at /actuator/prometheus
-CLI & UI
-
-Terminal wallet utility (./gradlew run:cli) and accessible React dashboard
-
-The docker image is < 120 MB and starts in < 2 s on a laptop.
-
-Quick Start with Docker Compose
-
-Requirements – Docker 24+, Docker Compose.
-
-### 1. Environment
-
-Create a .env in the repo root (values are safe defaults):
-
+```
 BACKEND_PORT=1002
 FRONTEND_PORT=8892
-NODE_P2P_MODE=dual                  # legacy | libp2p | dual
+NODE_P2P_MODE=dual
 NODE_LIBP2P_PORT=4001
-NODE_LIBP2P_ENCRYPTED=false         # true to enable Noise
+NODE_LIBP2P_ENCRYPTED=false
 NODE_PEERS=
 NODE_DATA_PATH=data
 NODE_WALLET_PASSWORD=changeMeSuperSecret
 NODE_JWT_SECRET=myTopSecret
-VITE_NODE_JWT_SECRET=myTopSecret   # same secret for UI
-VITE_NODE_GRPC=localhost:9090      # gRPC address for UI
-NODE_MINING_THREADS=4               # 0 → auto-detect
+VITE_NODE_JWT_SECRET=myTopSecret
+VITE_NODE_GRPC=localhost:9090
+NODE_MINING_THREADS=4
 NODE_SNAPSHOT_INTERVAL_SEC=300
 NODE_HISTORY_DEPTH=1000
 NODE_GRPC_PORT=9090
 BUILD_CA_CERT=
+```
 
-Blocks are kept in a LevelDB database under `${NODE_DATA_PATH}/blocks`. Mount
-this directory when running the Docker image so the chain persists across
-restarts.
+Blocks reside under `${NODE_DATA_PATH}/blocks`. Mount this directory to preserve the chain between restarts.
 
 ### 2. Run
 
-./gradlew dockerComposeUp
+```
+./gradlew composeUp
+```
 
-This builds the backend, UI and starts both containers. Point your browser to http://localhost:$FRONTEND_PORT.
+This builds the backend and UI and then launches both containers. Browse to `http://localhost:$FRONTEND_PORT`.
 
 ### Multiple nodes
 
-To run several nodes on one host give each instance its own data and wallet
-folder. Map these directories under `backend` so the LevelDB store stays
-persistent:
+Give each instance its own data and wallet folder:
 
 ```yaml
 volumes:
@@ -103,62 +83,46 @@ volumes:
 Use `data2`/`wallet2` etc. for additional nodes.
 
 ### 3. Connect peers
-Set `NODE_PEERS` to a comma-separated list of multiaddresses.
-Expose `NODE_LIBP2P_PORT` so other nodes can dial your instance.
+
+Set `NODE_PEERS` to a comma-separated list of multiaddresses and expose `NODE_LIBP2P_PORT` so others can dial your node.
 
 ### 4. Stop
 
-./gradlew dockerComposeDown
+```
+./gradlew composeDown
+```
 
-REST API (excerpt)
+## REST API (excerpt)
 
+```
 GET  /api/wallet                 → address, confirmed balance
-GET  /api/wallet/transactions    → last N wallet transactions
-POST /api/wallet/send            → create, sign & broadcast TX
+GET  /api/wallet/transactions    → last N wallet transactions
+POST /api/wallet/send            → create, sign & broadcast TX
 POST /api/mining/mine            → mine one block immediately
 GET  /api/chain/latest           → current tip
 GET  /api/chain/page?page=0&size=5 → paginated blocks (desc)
+```
 
-Fully documented via Swagger / OpenAPI at runtime.
+The full API is documented via Swagger / OpenAPI at runtime.
 
 ### gRPC API
 
-Set `NODE_GRPC_PORT` to expose the same endpoints over gRPC (defaults to
-`9090`). Service definitions live under `blockchain-node/src/main/proto` and
-cover mining, wallet and chain queries.
+Set `NODE_GRPC_PORT` to expose the same endpoints over gRPC (defaults to `9090`). Service definitions reside in `blockchain-node/src/main/proto` and are used by the React UI for low-latency communication.
 
-P2P Protocol
+## P2P protocol
 
-The node announces itself on /simple-blockchain/*.
-Handshake messages include the node's public address for easier discovery.
-All data is encoded using protobuf definitions in `p2p.proto`.
+The node announces itself on `/simple-blockchain/*`. Handshake messages include the node's public address for discovery. All data is encoded using the protobuf definitions in `p2p.proto`.
 
-Control – peer list, find‑node, range sync
+- Control – peer list, find-node, range sync
+- Blocks  – single block messages
+- Txs     – raw transaction gossip
 
-Blocks  – single block messages
+Peer discovery uses Kademlia distance metrics plus optional static seeds.
 
-Txs     – raw TX gossip
+## Contributing
 
-Peer discovery uses Kademlia distance metrics plus optional static seed list.
+Fork the repo, create a branch, run `./gradlew verify` and open a PR.
 
-Roadmap
-Next 30 days (v0.2)
-Harden wire format: length‑prefix, DoS guards
-CLI wallet (send, balance, history)
-Accessibility audit of the React UI
-Q4 2025 (v0.3)
-Replace JSON over WS with protobuf over gRPC
-Compact block relay + thin‑client (SPV) mode
-Adaptive fee market, child‑pays‑for‑parent
-Snapshots + UTXO compaction
-### v1.0
-Formal security review & fuzzing harness
-Ledger pruning / archival node split
-Governance upgrade support (BIP‑9‑style soft forks)
-Inter‑chain bridge PoC (IBC‑inspired)
-Contributing
-Fork, create a branch, run ./gradlew verify and open a PR.
-License
+## License
 
-MIT – see LICENSE.
-
+MIT – see [LICENSE](LICENSE).

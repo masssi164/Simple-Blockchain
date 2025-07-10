@@ -9,6 +9,7 @@ Important paths under `src/main/java/de/flashyotter/blockchain_node`:
 - `p2p/` – `Peer`, `PeerClient` and `PeerServer` for libp2p networking.
 - `storage/` – `BlockStore` with LevelDB and in-memory implementations.
 - `wallet/` – wallet and keystore utilities.
+- `grpc/` – service implementations from `src/main/proto`.
 
 Resources in `src/main/resources` define application defaults. Tests in
 `src/test` cover controllers, services and networking.

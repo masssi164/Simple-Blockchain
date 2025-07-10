@@ -6,6 +6,7 @@ This package contains the services composing the node.
 - `P2PBroadcastService` (via `P2PBroadcastPort`) – sends blocks and txs to peers.
 - `PeerService` with `PeerRegistry` – manages the list of known peers.
 - `DiscoveryLoop` and `SyncService` – keep peers connected and the chain synced.
+- gRPC service classes expose these operations remotely.
 
 ```plantuml
 @startuml

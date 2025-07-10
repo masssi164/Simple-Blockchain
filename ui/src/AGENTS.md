@@ -8,4 +8,6 @@ Folders:
 - `assets/` – static assets such as `react.svg`.
 - `__tests__/` – unit tests for components and pages.
 
+- `services/` – generated gRPC client bindings.
+
 Entry point `main.tsx` bootstraps React.
