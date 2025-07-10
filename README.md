@@ -123,6 +123,11 @@ Peer discovery uses Kademlia distance metrics plus optional static seeds.
 
 Fork the repo, create a branch, run `./gradlew verify` and open a PR.
 
+## Roadmap
+
+The planned improvements for upcoming releases are outlined in
+[ROADMAP.md](ROADMAP.md).
+
 ## License
 
 MIT – see [LICENSE](LICENSE).

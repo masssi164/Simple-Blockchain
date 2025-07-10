@@ -17,7 +17,7 @@ dependencies {
 
 
     // --- Crypto / hashing helper ---
-    implementation 'com.google.guava:guava:33.1.0-jre'
+    implementation 'com.google.guava:guava:33.4.8-jre'
 
     // --- Test ---
     testImplementation libs.junit.jupiter
