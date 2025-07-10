@@ -12,7 +12,8 @@ const headers = {
 
 // Generic rpc implementation using protobufjs service stubs
 const rpcImpl: $protobuf.RPCImpl = (method, requestData, callback) => {
-  fetch(`http://${host}/${method.service.fullName}/${method.name}`, {
+  const m = method as any;
+  fetch(`http://${host}/${m.service.fullName}/${m.name}`, {
     method: 'POST',
     headers,
     body: requestData,
@@ -34,7 +35,8 @@ const wallet = Wallet.create(rpcImpl, false, false);
 const chain = Chain.create(rpcImpl, false, false);
 
 export async function mineBlock() {
-  return mining.mine({});
+  const b = await mining.mine({});
+  return toBlock(b);
 }
 
 export async function sendFunds(recipient: string, amount: number) {
