@@ -44,7 +44,7 @@ dependencies {
 
     implementation 'com.fasterxml.jackson.core:jackson-databind'
     implementation 'com.fasterxml.jackson.module:jackson-module-parameter-names'
-    implementation 'com.google.guava:guava'
+    implementation 'com.google.guava:guava:33.4.8-jre'
     implementation 'org.iq80.leveldb:leveldb:0.12'
 
     implementation 'io.github.resilience4j:resilience4j-circuitbreaker:2.2.0'
