@@ -1,6 +1,7 @@
 import * as $protobuf from "protobufjs/minimal";
 import { sign } from 'jsonwebtoken';
 import { de } from '../services/node_pb';
+import type { Block } from '../types/block';
 
 const host = import.meta.env.VITE_NODE_GRPC;
 const jwt = import.meta.env.VITE_NODE_JWT_SECRET ? sign({}, import.meta.env.VITE_NODE_JWT_SECRET) : undefined;
@@ -13,6 +14,7 @@ const headers = {
 // Generic rpc implementation using protobufjs service stubs
 const rpcImpl: $protobuf.RPCImpl = (method, requestData, callback) => {
   const m = method as any;
+  // @ts-ignore accessing internal protobufjs fields
   fetch(`http://${host}/${m.service.fullName}/${m.name}`, {
     method: 'POST',
     headers,
@@ -34,7 +36,7 @@ const mining = Mining.create(rpcImpl, false, false);
 const wallet = Wallet.create(rpcImpl, false, false);
 const chain = Chain.create(rpcImpl, false, false);
 
-export async function mineBlock() {
+export async function mineBlock(): Promise<Block> {
   const b = await mining.mine({});
   return toBlock(b);
 }
@@ -48,17 +50,17 @@ export async function walletInfo() {
   return { address: info.address, confirmedBalance: info.balance };
 }
 
-export async function chainLatest() {
+export async function chainLatest(): Promise<Block> {
   const b = await chain.latest({});
   return toBlock(b);
 }
 
-export async function chainPage(page: number, size: number) {
+export async function chainPage(page: number, size: number): Promise<Block[]> {
   const list = await chain.page({ page, size });
   return list.blocks.map(toBlock);
 }
 
-function toBlock(b: any) {
+function toBlock(b: any): Block {
   return {
     height: b.height,
     compactDifficultyBits: b.compactBits,

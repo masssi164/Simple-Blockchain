@@ -58,7 +58,7 @@ jobs:
     - name: Run end-to-end tests
       run: |
         pip install selenium requests PyJWT behave grpcio
-        behave features/e2e.feature
+        behave pipeline-tests/e2e.feature
 
     - name: Stop containers
       if: always()
