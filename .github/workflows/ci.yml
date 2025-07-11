@@ -57,7 +57,7 @@ jobs:
 
     - name: Run end-to-end tests
       run: |
-        pip install selenium requests PyJWT behave grpcio
+        pip install selenium requests PyJWT behave grpcio protobuf
         behave pipeline-tests/e2e.feature
 
     - name: Stop containers
