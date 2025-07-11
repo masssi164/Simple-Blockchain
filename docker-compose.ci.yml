@@ -11,6 +11,7 @@ services:
       NODE_LIBP2P_PORT: 4001
       NODE_PEERS: "host.docker.internal:4002"
       NODE_JWT_SECRET: changeMeSuperSecret
+      NODE_WALLET_PASSWORD: changeMeSuperSecret
       NODE_GRPC_PORT: 9090
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -47,7 +48,9 @@ services:
         SERVER_PORT: 3334
     environment:
       NODE_LIBP2P_PORT: 4002
+      NODE_PEERS: "host.docker.internal:4001"
       NODE_JWT_SECRET: changeMeSuperSecret
+      NODE_WALLET_PASSWORD: changeMeSuperSecret
       NODE_GRPC_PORT: 9091
     ports:
       - "3334:3334"

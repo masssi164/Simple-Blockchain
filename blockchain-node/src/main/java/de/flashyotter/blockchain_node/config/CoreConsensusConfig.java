@@ -6,6 +6,7 @@ import blockchain.core.exceptions.BlockchainException;
 import blockchain.core.model.Block;
 import de.flashyotter.blockchain_node.storage.BlockStore;
 import de.flashyotter.blockchain_node.service.SnapshotService;
+import org.springframework.context.annotation.Lazy;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,7 +21,7 @@ import java.util.Comparator;
 public class CoreConsensusConfig {
 
     @Bean
-    public Chain chain(BlockStore store, SnapshotService snapshots) {
+    public Chain chain(BlockStore store, @Lazy SnapshotService snapshots) {
         Chain chain = new Chain();
 
         java.util.List<Block> blocks = new ArrayList<>();

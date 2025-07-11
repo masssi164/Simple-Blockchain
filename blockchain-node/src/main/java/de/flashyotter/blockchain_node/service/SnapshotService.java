@@ -13,6 +13,7 @@ import io.micrometer.core.instrument.Timer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -33,7 +34,7 @@ import java.util.zip.GZIPOutputStream;
 @RequiredArgsConstructor
 @Slf4j
 public class SnapshotService {
-    private final Chain          chain;
+    private final @Lazy Chain    chain;
     private final NodeProperties props;
     private final BlockStore     store;
     private final ObjectMapper   mapper;

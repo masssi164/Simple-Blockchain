@@ -24,7 +24,6 @@ node:
   libp2p-port:   ${NODE_LIBP2P_PORT:4001}
   p2p-mode: ${NODE_P2P_MODE:legacy}
   libp2p-encrypted: ${NODE_LIBP2P_ENCRYPTED:true}
-  mining-threads: ${MINING_THREADS:${server.cpuCount}}
   snapshot-interval-sec: ${NODE_SNAPSHOT_INTERVAL_SEC:300}
   history-depth: ${NODE_HISTORY_DEPTH:1000}
 
