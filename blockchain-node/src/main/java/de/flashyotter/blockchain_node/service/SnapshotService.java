@@ -47,6 +47,14 @@ public class SnapshotService {
                            Map<String, TxOutput> utxo,
                            Map<String, Integer> coinbase) {}
 
+    @jakarta.annotation.PostConstruct
+    private void loadInitialSnapshot() {
+        Snapshot snap = loadLatest();
+        if (snap != null && snap.height() == chain.getLatest().getHeight()) {
+            chain.loadUtxoSnapshot(snap.utxo(), snap.coinbase());
+        }
+    }
+
     @Scheduled(fixedDelayString = "#{@nodeProperties.snapshotIntervalSec * 1000}")
     void snapshotTask() {
         io.micrometer.core.instrument.Timer.Sample sample = io.micrometer.core.instrument.Timer.start(metrics);
