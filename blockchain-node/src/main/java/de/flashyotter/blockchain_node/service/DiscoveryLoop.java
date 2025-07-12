@@ -27,8 +27,7 @@ public class DiscoveryLoop {
             libp2p.send(p, new de.flashyotter.blockchain_node.dto.HandshakeDto(
                     kademlia.selfId(),
                     libp2p.protocolVersion(),
-                    props.getLibp2pPort(),
-                    libp2p.getPublicAddr()));
+                    props.getLibp2pPort()));
         }
     }
 }

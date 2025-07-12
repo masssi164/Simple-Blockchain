@@ -16,7 +16,6 @@ A lean Java&nbsp;21 and Spring Boot&nbsp;3 blockchain node demonstrating a moder
 - Write-ahead log for replay-safe LevelDB storage
 - Compressed UTXO snapshots tracked via manifest
 - Structured JSON logging with Prometheus metrics
-- Handshake advertises the node's public address for autodiscovery
 - P2P messages encoded with protobuf
 
 ## Feature matrix
@@ -111,7 +110,7 @@ Set `NODE_GRPC_PORT` to expose the same endpoints over gRPC (defaults to `9090`)
 
 ## P2P protocol
 
-The node announces itself on `/simple-blockchain/*`. Handshake messages include the node's public address for discovery. All data is encoded using the protobuf definitions in `p2p.proto`.
+The node announces itself on `/simple-blockchain/*`. All handshake data is encoded using the protobuf definitions in `p2p.proto`.
 
 - Control – peer list, find-node, range sync
 - Blocks  – single block messages

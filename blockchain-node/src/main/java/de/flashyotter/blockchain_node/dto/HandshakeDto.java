@@ -11,10 +11,8 @@ package de.flashyotter.blockchain_node.dto;
  * @param nodeId          arbitrary, human-friendly identifier
  * @param protocolVersion semantic protocol version (major.minor.patch)
  * @param listenPort      TCP port the node is accepting peer connections on
- * @param publicAddr      multiaddress observed via AutoNAT
  */
 public record HandshakeDto(String nodeId,
                            String protocolVersion,
-                           int listenPort,
-                           String publicAddr)
+                           int listenPort)
         implements P2PMessageDto { }
