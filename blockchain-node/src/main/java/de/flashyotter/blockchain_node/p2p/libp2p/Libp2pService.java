@@ -36,6 +36,7 @@ public class Libp2pService {
 
     private final Host           host;
     private final NodeProperties props;
+    @org.springframework.context.annotation.Lazy
     private final NodeService    node;
     private final KademliaService kademlia;
 

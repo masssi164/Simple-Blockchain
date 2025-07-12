@@ -8,6 +8,7 @@ import io.libp2p.crypto.keys.Secp256k1Kt;
 import io.libp2p.core.mux.StreamMuxerProtocol;
 import io.libp2p.discovery.MDnsDiscovery;
 import io.libp2p.protocol.autonat.AutonatProtocol;
+import io.libp2p.protocol.autonat.AutonatProtocol.Binding;
 import org.apache.tuweni.kademlia.KademliaRoutingTable;
 import java.nio.charset.StandardCharsets;
 import de.flashyotter.blockchain_node.p2p.Peer;
@@ -35,7 +36,7 @@ public class Libp2pConfig {
                 .transport(TcpTransport::new)
                 .secureChannel(secureFactory)
                 .muxer(StreamMuxerProtocol::getYamux)
-                .protocol((io.libp2p.core.multistream.ProtocolBinding<?>) new AutonatProtocol())
+                .protocol(new Binding())
                 .listen(addr.toString())
                 .build();
         host.start().join();
