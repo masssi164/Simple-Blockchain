@@ -13,6 +13,7 @@ import de.flashyotter.blockchain_node.service.KademliaService;
 import io.libp2p.core.Host;
 import io.libp2p.etc.SimpleClientHandler;
 import io.libp2p.etc.SimpleClientHandlerKt;
+import io.libp2p.protocol.autonat.AutonatProtocol;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import java.nio.ByteBuffer;
@@ -20,7 +21,6 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import io.libp2p.protocol.autonat.AutonatProtocol;
 
 @Service
 @RequiredArgsConstructor
