@@ -39,8 +39,6 @@ public class Libp2pService {
     private final NodeService    node;
     private final KademliaService kademlia;
 
-    private final java.util.Map<String, String> peerAddrs =
-            new java.util.concurrent.ConcurrentHashMap<>();
     private volatile String publicAddr;
 
     @PostConstruct
@@ -95,8 +93,6 @@ public class Libp2pService {
 
     /** Protocol version sent in handshakes */
     public String protocolVersion() { return PROTOCOL_VERSION; }
-
-    public String peerPublicAddr(String id) { return peerAddrs.get(id); }
 
     /**
      * Dial {@code peer} using the AutoNAT protocol and remember the
@@ -211,8 +207,9 @@ public class Libp2pService {
                         ctx.close();
                         return;
                     }
-                    if (hs.publicAddr() != null && !hs.publicAddr().isBlank()) {
-                        peerAddrs.put(hs.nodeId(), hs.publicAddr());
+                    if (ctx.channel().remoteAddress() instanceof java.net.InetSocketAddress isa) {
+                        String host = isa.getAddress().getHostAddress();
+                        kademlia.store(new Peer(host, hs.listenPort()));
                     }
                 } else if (dto instanceof FindNodeDto find) {
                     var nearest = kademlia.closest(find.nodeId(), 16)

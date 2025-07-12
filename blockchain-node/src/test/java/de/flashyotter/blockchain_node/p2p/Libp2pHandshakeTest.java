@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
 class Libp2pHandshakeTest {
@@ -41,7 +42,7 @@ class Libp2pHandshakeTest {
 
         ChannelHandlerContext ctx = mock(ChannelHandlerContext.class);
         var msg = de.flashyotter.blockchain_node.p2p.P2PProtoMapper.toProto(
-                new HandshakeDto("x","0.0.1",0,"/ip4/1.1.1.1/tcp/1"));
+                new HandshakeDto("x","0.0.1",0));
         byte[] data = msg.toByteArray();
         ByteBuf buf = Unpooled.buffer(4 + data.length).writeInt(data.length).writeBytes(data);
         when(ctx.close()).thenReturn(null);
@@ -73,8 +74,13 @@ class Libp2pHandshakeTest {
         Object handler = ctor.newInstance(svc);
 
         ChannelHandlerContext ctx = mock(ChannelHandlerContext.class);
+        io.netty.channel.Channel ch = mock(io.netty.channel.Channel.class);
+        when(ctx.channel()).thenReturn(ch);
+        java.net.InetSocketAddress addr = new java.net.InetSocketAddress("1.2.3.4", 10000);
+        when(ch.remoteAddress()).thenReturn(addr);
+
         var msg = de.flashyotter.blockchain_node.p2p.P2PProtoMapper.toProto(
-                new HandshakeDto("x","1.0.0",0,"/ip4/1.1.1.1/tcp/1"));
+                new HandshakeDto("x","1.0.0",7000));
         byte[] data = msg.toByteArray();
         ByteBuf buf = Unpooled.buffer(4 + data.length).writeInt(data.length).writeBytes(data);
         when(ctx.close()).thenReturn(null);
@@ -84,5 +90,6 @@ class Libp2pHandshakeTest {
         method.invoke(handler, ctx, buf);
 
         verify(ctx, never()).close();
+        assertTrue(reg.all().contains(new Peer("1.2.3.4", 7000)));
     }
 }

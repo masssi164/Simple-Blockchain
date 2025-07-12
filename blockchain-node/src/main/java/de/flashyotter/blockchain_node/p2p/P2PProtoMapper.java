@@ -25,7 +25,6 @@ public final class P2PProtoMapper {
                     .setNodeId(hs.nodeId())
                     .setProtocolVersion(hs.protocolVersion())
                     .setListenPort(hs.listenPort())
-                    .setPublicAddr(hs.publicAddr() == null ? "" : hs.publicAddr())
                     .build());
         } else if (dto instanceof NewBlockDto nb) {
             Block b = blockchain.core.serialization.JsonUtils.blockFromJson(nb.rawBlockJson());
@@ -62,8 +61,7 @@ public final class P2PProtoMapper {
             case HANDSHAKE -> new HandshakeDto(
                     msg.getHandshake().getNodeId(),
                     msg.getHandshake().getProtocolVersion(),
-                    msg.getHandshake().getListenPort(),
-                    msg.getHandshake().getPublicAddr());
+                    msg.getHandshake().getListenPort());
             case NEWBLOCK -> new NewBlockDto(
                     blockchain.core.serialization.JsonUtils.toJson(
                             GrpcMapper.fromProto(msg.getNewBlock().getBlock())));

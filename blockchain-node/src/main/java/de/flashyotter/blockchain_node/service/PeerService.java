@@ -38,8 +38,7 @@ public class PeerService {
                     libp2p.send(p, new de.flashyotter.blockchain_node.dto.HandshakeDto(
                             props.getId(),
                             libp2p.protocolVersion(),
-                            props.getLibp2pPort(),
-                            libp2p.getPublicAddr()));
+                            props.getLibp2pPort()));
                 });
 
         broadcaster.broadcastPeerList();
