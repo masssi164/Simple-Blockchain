@@ -3,7 +3,7 @@ package de.flashyotter.blockchain_node.service;
 import de.flashyotter.blockchain_node.config.NodeProperties;
 import de.flashyotter.blockchain_node.p2p.Peer;
 import de.flashyotter.blockchain_node.p2p.libp2p.Libp2pService;
-import de.flashyotter.blockchain_node.dto.NodeIdDto;
+import de.flashyotter.blockchain_node.dto.PeerIdDto;
 import org.springframework.web.reactive.function.client.WebClient;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -30,20 +30,27 @@ public class PeerService {
             var sp = addr.split(":");
             String host = sp[0];
             int port = Integer.parseInt(sp[1]);
-            try {
-                NodeIdDto dto = webClient.get()
-                        .uri("http://" + host + ':' + port + "/node/id")
-                        .retrieve()
-                        .bodyToMono(NodeIdDto.class)
-                        .block(java.time.Duration.ofSeconds(3));
-                Peer p = new Peer(host, port, dto != null ? dto.nodeId() : null);
-                registry.add(p);
-                kademlia.store(p);
-            } catch (Exception e) {
-                Peer p = new Peer(host, port);
-                registry.add(p);
-                kademlia.store(p);
+            PeerIdDto dto = null;
+            for (int i = 0; i < 10 && dto == null; i++) {
+                try {
+                    dto = webClient.get()
+                            .uri("http://" + host + ':' + port + "/node/peer-id")
+                            .retrieve()
+                            .bodyToMono(PeerIdDto.class)
+                            .block(java.time.Duration.ofSeconds(3));
+                } catch (Exception e) {
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        break;
+                    }
+                }
             }
+
+            Peer p = new Peer(host, port, dto != null ? dto.peerId() : null);
+            registry.add(p);
+            kademlia.store(p);
         });
 
         registry.all()
