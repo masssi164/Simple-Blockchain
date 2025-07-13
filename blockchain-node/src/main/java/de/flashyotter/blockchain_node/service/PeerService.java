@@ -26,15 +26,17 @@ public class PeerService {
 
     @PostConstruct
     public void init() {
+        int offset = props.getLibp2pPort() - props.getPort();
         props.getPeers().forEach(addr -> {
             var sp = addr.split(":");
             String host = sp[0];
             int port = Integer.parseInt(sp[1]);
             PeerIdDto dto = null;
+            int httpPort = port - offset;
             for (int i = 0; i < 10 && dto == null; i++) {
                 try {
                     dto = webClient.get()
-                            .uri("http://" + host + ':' + port + "/node/peer-id")
+                            .uri("http://" + host + ':' + httpPort + "/node/peer-id")
                             .retrieve()
                             .bodyToMono(PeerIdDto.class)
                             .block(java.time.Duration.ofSeconds(3));

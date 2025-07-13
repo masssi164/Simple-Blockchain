@@ -30,5 +30,17 @@ public class DiscoveryLoop {
                     props.getLibp2pPort()));
         }
     }
+
+    /**
+     * Periodically poll all known peers for new blocks. This acts as a safety
+     * net in case the initial sync happens before peers start mining or a
+     * broadcast gets lost.
+     */
+    @Scheduled(fixedDelay = 5000)
+    void refreshKnownPeers() {
+        for (Peer p : reg.all()) {
+            sync.followPeer(p).subscribe();
+        }
+    }
 }
 
