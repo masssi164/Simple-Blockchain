@@ -24,6 +24,11 @@ services:
     volumes:
       - ./data1:/app/data1
       - ./wallet1:/root/.simple-chain
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/localhost/$NODE_GRPC_PORT'"]
+      interval: 5s
+      timeout: 5s
+      retries: 24
   frontend1:
     build:
       context: ./ui
@@ -61,6 +66,11 @@ services:
     volumes:
       - ./data2:/app/data2
       - ./wallet2:/root/.simple-chain
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/localhost/$NODE_GRPC_PORT'"]
+      interval: 5s
+      timeout: 5s
+      retries: 24
   frontend2:
     build:
       context: ./ui
