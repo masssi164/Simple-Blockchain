@@ -65,6 +65,16 @@ def step_check_sync(context):
             time.sleep(3)
     raise AssertionError("Node2 did not sync the mined block")
 
+@then("node1 should have a positive balance")
+def step_check_balance(context):
+    wait_for_grpc(GRPC_PORT1)
+    with grpc.insecure_channel(f"localhost:{GRPC_PORT1}") as channel:
+        stub = WalletStub(channel)
+        info = stub.Info(Empty())
+        if info.balance <= 0:
+            raise AssertionError(f"Balance was {info.balance}")
+        context.balance = info.balance
+
 @then("both dashboards should load")
 def step_dashboards_load(context):
     options = Options()

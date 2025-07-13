@@ -5,7 +5,18 @@ public final class ConsensusParams {
     public static final long   TARGET_BLOCK_INTERVAL_MS = 60_000;
     public static final int    DIFFICULTY_WINDOW        = 10;
     public static final int    MAX_BLOCK_SIZE_BYTES     = 1_000_000;
-    public static final int    COINBASE_MATURITY        = 100;
+    /**
+     * Blocks that must be mined before a coinbase output becomes spendable.
+     * The default is {@code 100} but it can be overridden via the system
+     * property {@code consensus.coinbaseMaturity} or the environment variable
+     * {@code CONSENSUS_COINBASE_MATURITY}. This allows tests to shorten the
+     * maturity period.
+     */
+    public static final int    COINBASE_MATURITY        = Integer.parseInt(
+            System.getProperty(
+                    "consensus.coinbaseMaturity",
+                    System.getenv().getOrDefault("CONSENSUS_COINBASE_MATURITY",
+                                               "100")));
     public static final int    HALVING_INTERVAL         = 210_000;
     public static final double INITIAL_BLOCK_REWARD     = 50.0;
     public static final int    RETARGET_SPAN            = 10;             // blocks
