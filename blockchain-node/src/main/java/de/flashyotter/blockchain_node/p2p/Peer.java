@@ -24,7 +24,8 @@ public class Peer {
 
     /** Multiaddr for libp2p connections. */
     public String multiAddr() {
-        String base = "/ip4/" + host + "/tcp/" + port;
+        String prefix = host.matches("\\d+\\.\\d+\\.\\d+\\.\\d+") ? "/ip4/" : "/dns4/";
+        String base = prefix + host + "/tcp/" + port;
         return id == null ? base : base + "/p2p/" + id;
     }
 

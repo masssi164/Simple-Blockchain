@@ -26,7 +26,7 @@ services:
       - ./data1:/app/data1
       - ./wallet1:/root/.simple-chain
     healthcheck:
-      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/localhost/$NODE_GRPC_PORT'"]
+      test: ["CMD-SHELL", "curl -fs http://localhost:$$SERVER_PORT/actuator/health >/dev/null"]
       interval: 5s
       timeout: 5s
       retries: 24
@@ -71,7 +71,7 @@ services:
       - ./data2:/app/data2
       - ./wallet2:/root/.simple-chain
     healthcheck:
-      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/localhost/$NODE_GRPC_PORT'"]
+      test: ["CMD-SHELL", "curl -fs http://localhost:$$SERVER_PORT/actuator/health >/dev/null"]
       interval: 5s
       timeout: 5s
       retries: 24
