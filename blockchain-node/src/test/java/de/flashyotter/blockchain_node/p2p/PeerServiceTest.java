@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
+import org.mockito.Mockito;
 
 import de.flashyotter.blockchain_node.config.NodeProperties;
 import de.flashyotter.blockchain_node.p2p.Peer;
@@ -19,9 +20,9 @@ import de.flashyotter.blockchain_node.service.PeerService;
 import de.flashyotter.blockchain_node.service.SyncService;
 import de.flashyotter.blockchain_node.service.KademliaService;
 import de.flashyotter.blockchain_node.p2p.libp2p.Libp2pService;
+import org.springframework.web.reactive.function.client.WebClient;
 import de.flashyotter.blockchain_node.dto.FindNodeDto;
-import de.flashyotter.blockchain_node.service.KademliaService;
-import de.flashyotter.blockchain_node.p2p.libp2p.Libp2pService;
+import de.flashyotter.blockchain_node.dto.NodeIdDto;
 import reactor.core.publisher.Flux;
 
 class PeerServiceTest {
@@ -41,6 +42,8 @@ class PeerServiceTest {
     @Mock
     private Libp2pService libp2p;
 
+    private WebClient webClient;
+
 
     private PeerService svc;
     private NodeProperties props;
@@ -49,9 +52,18 @@ class PeerServiceTest {
     void setUp() {
         MockitoAnnotations.openMocks(this);
         props = new NodeProperties();
+        props.setPort(3333);
+        props.setLibp2pPort(4001);
         // set two peers
         props.setPeers(java.util.List.of("one:100", "two:200"));
-        svc = new PeerService(props, sync, reg, broad, kademlia, libp2p);
+        webClient = Mockito.mock(WebClient.class, Mockito.RETURNS_DEEP_STUBS);
+        when(webClient.get()
+                .uri(Mockito.anyString())
+                .retrieve()
+                .bodyToMono(Mockito.eq(NodeIdDto.class)))
+            .thenReturn(reactor.core.publisher.Mono.just(new NodeIdDto("id")));
+
+        svc = new PeerService(props, sync, reg, broad, kademlia, libp2p, webClient);
     }
 
     @Test
@@ -62,14 +74,14 @@ class PeerServiceTest {
         svc.init();
 
         // registry.add for each peer string
-        verify(reg).add(new Peer("one", 100));
-        verify(reg).add(new Peer("two", 200));
-        verify(kademlia).store(new Peer("one", 100));
-        verify(kademlia).store(new Peer("two", 200));
+        verify(reg).add(new Peer("one", 100, "id"));
+        verify(reg).add(new Peer("two", 200, "id"));
+        verify(kademlia).store(new Peer("one", 100, "id"));
+        verify(kademlia).store(new Peer("two", 200, "id"));
 
         // followPeer called for each peer
-        verify(sync).followPeer(new Peer("one", 100));
-        verify(sync).followPeer(new Peer("two", 200));
+        verify(sync).followPeer(new Peer("one", 100, "id"));
+        verify(sync).followPeer(new Peer("two", 200, "id"));
         verify(libp2p, times(2)).send(any(Peer.class), any(FindNodeDto.class));
 
         // broadcastPeerList at end
