@@ -87,6 +87,11 @@ public class Libp2pService {
         send(peer, PROTOCOL_TX, dto);
     }
 
+    /** Base58-encoded libp2p peer ID of this node. */
+    public String peerId() {
+        return host.getPeerId().toBase58();
+    }
+
     public void broadcastBlocks(java.util.Collection<Peer> peers, NewBlockDto dto) {
         peers.forEach(p -> sendBlock(p, dto));
     }

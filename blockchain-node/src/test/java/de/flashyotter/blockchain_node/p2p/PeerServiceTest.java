@@ -22,7 +22,7 @@ import de.flashyotter.blockchain_node.service.KademliaService;
 import de.flashyotter.blockchain_node.p2p.libp2p.Libp2pService;
 import org.springframework.web.reactive.function.client.WebClient;
 import de.flashyotter.blockchain_node.dto.FindNodeDto;
-import de.flashyotter.blockchain_node.dto.NodeIdDto;
+import de.flashyotter.blockchain_node.dto.PeerIdDto;
 import reactor.core.publisher.Flux;
 
 class PeerServiceTest {
@@ -58,8 +58,8 @@ class PeerServiceTest {
         when(webClient.get()
                 .uri(Mockito.anyString())
                 .retrieve()
-                .bodyToMono(Mockito.eq(NodeIdDto.class)))
-            .thenReturn(reactor.core.publisher.Mono.just(new NodeIdDto("id")));
+                .bodyToMono(Mockito.eq(PeerIdDto.class)))
+            .thenReturn(reactor.core.publisher.Mono.just(new PeerIdDto("id")));
 
         svc = new PeerService(props, sync, reg, broad, kademlia, libp2p, webClient);
     }

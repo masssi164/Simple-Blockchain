@@ -6,6 +6,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import de.flashyotter.blockchain_node.config.NodeProperties;
+import de.flashyotter.blockchain_node.p2p.libp2p.Libp2pService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -19,6 +20,7 @@ class NodeControllerTest {
 
     @Autowired MockMvc mvc;
     @MockBean NodeProperties props;
+    @MockBean Libp2pService libp2p;
 
     @Test
     void exposesId() throws Exception {
@@ -26,5 +28,13 @@ class NodeControllerTest {
         mvc.perform(get("/node/id"))
            .andExpect(status().isOk())
            .andExpect(content().json("{\"nodeId\":\"node-123\"}"));
+    }
+
+    @Test
+    void exposesPeerId() throws Exception {
+        when(libp2p.peerId()).thenReturn("pid-abc");
+        mvc.perform(get("/node/peer-id"))
+           .andExpect(status().isOk())
+           .andExpect(content().json("{\"peerId\":\"pid-abc\"}"));
     }
 }
