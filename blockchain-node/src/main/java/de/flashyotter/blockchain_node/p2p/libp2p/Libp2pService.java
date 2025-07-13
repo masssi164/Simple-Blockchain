@@ -18,12 +18,10 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import java.nio.ByteBuffer;
 import jakarta.annotation.PostConstruct;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class Libp2pService {
 
@@ -34,11 +32,19 @@ public class Libp2pService {
 
     private final PeerRateLimiter rateLimiter = new PeerRateLimiter(50, 50);
 
-    private final Host           host;
+    private final Host host;
     private final NodeProperties props;
-    @org.springframework.context.annotation.Lazy
-    private final NodeService    node;
+    private final NodeService node;
     private final KademliaService kademlia;
+
+    public Libp2pService(Host host, NodeProperties props,
+                         @org.springframework.context.annotation.Lazy NodeService node,
+                         KademliaService kademlia) {
+        this.host = host;
+        this.props = props;
+        this.node = node;
+        this.kademlia = kademlia;
+    }
 
     private volatile String publicAddr;
 

@@ -50,12 +50,23 @@ jobs:
       run: docker run -d --name selenium -p 4444:4444 selenium/standalone-chrome
 
     - name: Build & start multi-node setup
+      id: compose
       run: docker compose -f docker-compose.ci.yml up -d --build --wait
+
+    - name: Dump logs if compose failed
+      if: failure() && steps.compose.outcome == 'failure'
+      run: |
+        docker compose -f docker-compose.ci.yml ps
+        docker compose -f docker-compose.ci.yml logs --no-color
 
     - name: Run end-to-end tests
       run: |
         pip install selenium requests PyJWT behave grpcio protobuf
         behave pipeline-tests/e2e.feature
+
+    - name: Dump logs on test failure
+      if: failure()
+      run: docker compose -f docker-compose.ci.yml logs --no-color
 
     - name: Stop containers
       if: always()
