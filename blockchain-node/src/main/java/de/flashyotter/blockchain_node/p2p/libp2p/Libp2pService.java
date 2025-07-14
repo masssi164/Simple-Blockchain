@@ -152,6 +152,11 @@ public class Libp2pService {
                             try {
                                 if (msg.readableBytes() < 4) return;
                                 int len = msg.readInt();
+                                if (len > 1_000_000) {
+                                    log.warn("libp2p inbound failed: length {} exceeds limit", len);
+                                    ctx.close();
+                                    return;
+                                }
                                 byte[] data = new byte[len];
                                 msg.readBytes(data);
                                 P2PMessage pm = P2PMessage.parseFrom(data);
@@ -197,6 +202,11 @@ public class Libp2pService {
             try {
                 if (msg.readableBytes() < 4) return;
                 int len = msg.readInt();
+                if (len > 1_000_000) {
+                    log.warn("libp2p inbound failed: length {} exceeds limit", len);
+                    ctx.close();
+                    return;
+                }
                 byte[] data = new byte[len];
                 msg.readBytes(data);
                 P2PMessage pm = P2PMessage.parseFrom(data);
@@ -337,6 +347,11 @@ public class Libp2pService {
             try {
                 if (msg.readableBytes() < 4) return;
                 int len = msg.readInt();
+                if (len > 1_000_000) {
+                    log.warn("libp2p inbound failed: length {} exceeds limit", len);
+                    ctx.close();
+                    return;
+                }
                 byte[] data = new byte[len];
                 msg.readBytes(data);
                 P2PMessage pm = P2PMessage.parseFrom(data);
