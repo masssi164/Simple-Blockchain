@@ -8,20 +8,16 @@ services:
         SERVER_PORT: 3333
     environment:
       NODE_LIBP2P_PORT: 4001
-      NODE_PEERS: "host.docker.internal:4002"
+      NODE_PEERS: "backend2:4002"
       NODE_JWT_SECRET: changeMeSuperSecret
       NODE_WALLET_PASSWORD: changeMeSuperSecret
       NODE_GRPC_PORT: 9090
       NODE_DATA_PATH: data1
       CONSENSUS_COINBASE_MATURITY: 0
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     ports:
       - "3333:3333"
       - "4001:4001"
       - "9090:9090"
-    networks:
-      - net1
     volumes:
       - ./data1:/app/data1
       - ./wallet1:/root/.simple-chain
@@ -43,8 +39,6 @@ services:
       - "8081:80"
     depends_on:
       - backend1
-    networks:
-      - net1
 
   backend2:
     build:
@@ -54,20 +48,16 @@ services:
         SERVER_PORT: 3334
     environment:
       NODE_LIBP2P_PORT: 4002
-      NODE_PEERS: "host.docker.internal:4001"
+      NODE_PEERS: "backend1:4001"
       NODE_JWT_SECRET: changeMeSuperSecret
       NODE_WALLET_PASSWORD: changeMeSuperSecret
       NODE_GRPC_PORT: 9091
       NODE_DATA_PATH: data2
       CONSENSUS_COINBASE_MATURITY: 0
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     ports:
       - "3334:3334"
       - "4002:4002"
       - "9091:9091"
-    networks:
-      - net2
     volumes:
       - ./data2:/app/data2
       - ./wallet2:/root/.simple-chain
@@ -89,9 +79,3 @@ services:
       - "8082:80"
     depends_on:
       - backend2
-    networks:
-      - net2
-
-networks:
-  net1:
-  net2:
