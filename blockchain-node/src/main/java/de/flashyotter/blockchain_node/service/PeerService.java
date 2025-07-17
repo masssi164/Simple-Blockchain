@@ -91,7 +91,8 @@ public class PeerService {
                 props.getLibp2pPort()));
     }
 
-    @Scheduled(fixedDelay = 30000)
+    // Retry more aggressively so newly started peers join within a few seconds
+    @Scheduled(fixedDelay = 5000)
     public void retryMissingPeers() {
         long now = System.currentTimeMillis();
         unresolved.forEach((peer, since) -> {
