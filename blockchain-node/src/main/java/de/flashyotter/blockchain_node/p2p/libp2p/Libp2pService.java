@@ -193,7 +193,7 @@ public class Libp2pService {
                 }).join();
             return fut.get(5, java.util.concurrent.TimeUnit.SECONDS);
         } catch (Exception e) {
-            log.warn("libp2p request failed: {}", e.getMessage());
+            log.warn("libp2p request failed", e);
             return new BlocksDto(java.util.List.of());
         }
     }
@@ -342,7 +342,7 @@ public class Libp2pService {
             byte[] data = buf.array();
             fut.thenAccept(s -> s.writeAndFlush(io.netty.buffer.Unpooled.wrappedBuffer(data))).join();
         } catch (Exception e) {
-            log.warn("libp2p send failed: {}", e.getMessage());
+            log.warn("libp2p send failed", e);
         }
     }
 
