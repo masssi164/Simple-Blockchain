@@ -155,7 +155,12 @@ public class Libp2pService {
                         public void messageReceived(ChannelHandlerContext ctx, ByteBuf msg) {
                             try {
                                 if (msg.readableBytes() < 4) return;
+                                msg.markReaderIndex();
                                 int len = msg.readIntLE();
+                                if (msg.readableBytes() < len) {
+                                    msg.resetReaderIndex();
+                                    return;
+                                }
                                 if (len > 1_000_000) {
                                     log.warn("libp2p inbound failed: length {} exceeds limit", len);
                                     ctx.close();
@@ -205,7 +210,12 @@ public class Libp2pService {
             }
             try {
                 if (msg.readableBytes() < 4) return;
+                msg.markReaderIndex();
                 int len = msg.readIntLE();
+                if (msg.readableBytes() < len) {
+                    msg.resetReaderIndex();
+                    return;
+                }
                 if (len > 1_000_000) {
                     log.warn("libp2p inbound failed: length {} exceeds limit", len);
                     ctx.close();
@@ -373,7 +383,12 @@ public class Libp2pService {
             }
             try {
                 if (msg.readableBytes() < 4) return;
+                msg.markReaderIndex();
                 int len = msg.readIntLE();
+                if (msg.readableBytes() < len) {
+                    msg.resetReaderIndex();
+                    return;
+                }
                 if (len > 1_000_000) {
                     log.warn("libp2p inbound failed: length {} exceeds limit", len);
                     ctx.close();
