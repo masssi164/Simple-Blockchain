@@ -26,6 +26,12 @@ class PeerTest {
     }
 
     @Test
+    void multiAddrUsesIp6ForColonAddresses() {
+        Peer p = new Peer("::1", 4001);
+        assertEquals("/ip6/::1/tcp/4001", p.multiAddr());
+    }
+
+    @Test
     void fromStringParsesValid() {
         Peer p = Peer.fromString("host:1234");
         assertEquals("host", p.getHost());
