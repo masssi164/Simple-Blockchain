@@ -117,6 +117,17 @@ The node announces itself on `/simple-blockchain/*`. All handshake data is encod
 - Txs     – raw transaction gossip
 
 Peer discovery uses Kademlia distance metrics plus optional static seeds.
+The SyncService retries block range requests, which improves stability when
+peers temporarily fail to respond.
+
+## CI pipeline
+
+GitHub Actions run Gradle and UI tests on every pull request. A Docker Compose
+setup with two nodes powers the end-to-end tests. The workflow installs JDK and
+Node, caches dependencies and then packages the Spring Boot app with
+`bootJar`. Selenium is started alongside the services for a full integration
+test. Each backend container declares `SERVER_PORT` so the health checks run
+inside Docker Compose succeed.
 
 ## Contributing
 

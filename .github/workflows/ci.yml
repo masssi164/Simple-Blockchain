@@ -26,11 +26,18 @@ jobs:
         java-version: ${{ matrix.java-version }}
         cache: gradle              # enable Gradle build‑cache between runs
 
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+        cache: 'npm'
+        cache-dependency-path: ui/package-lock.json
+
     - name: Make gradlew executable
       run: chmod +x ./gradlew
 
     - name: Build & test (Gradle)
-      run: ./gradlew clean jacocoTestReport --no-daemon
+      run: ./gradlew clean bootJar jacocoTestReport --no-daemon
 
     - name: Upload node JAR (artifact)
       uses: actions/upload-artifact@v4
@@ -46,12 +53,28 @@ jobs:
         name: blockchain-core-jar
         path: blockchain-core/build/libs/**/*.jar
 
+    - name: Install UI dependencies
+      working-directory: ui
+      run: npm ci
+
+    - name: Run UI unit tests
+      working-directory: ui
+      run: npm run test -- --run
+
     - name: Start Selenium container
       run: docker run -d --name selenium -p 4444:4444 selenium/standalone-chrome
 
     - name: Build & start multi-node setup
       id: compose
-      run: docker compose -f docker-compose.ci.yml up -d --build --wait
+      run: |
+        docker compose -f docker-compose.ci.yml up -d --build
+        docker compose -f docker-compose.ci.yml ps
+        for i in {1..30}; do
+          if docker compose -f docker-compose.ci.yml ps | grep -q "healthy"; then
+            break
+          fi
+          sleep 5
+        done
 
     - name: Dump logs if compose failed
       if: failure() && steps.compose.outcome == 'failure'
