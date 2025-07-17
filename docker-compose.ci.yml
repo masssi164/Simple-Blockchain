@@ -1,11 +1,7 @@
 
 services:
   backend1:
-    build:
-      context: .
-      dockerfile: blockchain-node/Dockerfile
-      args:
-        SERVER_PORT: 3333
+    image: simple-blockchain-node:runtime
     environment:
       SERVER_PORT: 3333
       NODE_LIBP2P_PORT: 4001
@@ -43,11 +39,7 @@ services:
         condition: service_healthy
 
   backend2:
-    build:
-      context: .
-      dockerfile: blockchain-node/Dockerfile
-      args:
-        SERVER_PORT: 3334
+    image: simple-blockchain-node:runtime
     environment:
       SERVER_PORT: 3334
       NODE_LIBP2P_PORT: 4002

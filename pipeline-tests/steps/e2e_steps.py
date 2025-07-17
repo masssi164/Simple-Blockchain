@@ -53,7 +53,8 @@ def step_check_sync(context):
     wait_for_grpc(GRPC_PORT2)
     with grpc.insecure_channel(f"localhost:{GRPC_PORT2}") as channel:
         stub = ChainStub(channel)
-        for _ in range(10):
+        deadline = time.time() + 20
+        while time.time() < deadline:
             latest = stub.Latest(Empty())
             if latest.height >= target:
                 context.latest = {
@@ -62,8 +63,8 @@ def step_check_sync(context):
                     "hashHex": ""  # not needed in test
                 }
                 return
-            time.sleep(3)
-    raise AssertionError("Node2 did not sync the mined block")
+            time.sleep(1)
+    raise AssertionError("Node2 did not sync the mined block in time")
 
 @then("node1 should have a positive balance")
 def step_check_balance(context):
