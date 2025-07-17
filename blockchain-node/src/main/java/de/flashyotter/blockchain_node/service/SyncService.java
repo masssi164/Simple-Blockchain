@@ -40,12 +40,20 @@ public class SyncService {
     public Flux<Void> followPeer(Peer peer) {
         return Flux.create(sink -> {
             int height = node.latestBlock().getHeight();
-            while (true) {
+            int emptyCount = 0;
+            while (emptyCount < 3) {
                 BlocksDto resp = libp2p.requestBlocks(peer, new GetBlocksDto(height));
                 if (resp.rawBlocks().isEmpty()) {
-                    sink.complete();
-                    break;
+                    emptyCount++;
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        break;
+                    }
+                    continue;
                 }
+                emptyCount = 0;
                 resp.rawBlocks().forEach(raw -> {
                     try {
                         blockchain.core.model.Block blk = MAPPER.readValue(raw, blockchain.core.model.Block.class);
@@ -56,6 +64,7 @@ public class SyncService {
                 });
                 height = node.latestBlock().getHeight();
             }
+            sink.complete();
         });
     }
 

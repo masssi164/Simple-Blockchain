@@ -69,9 +69,9 @@ public class SyncServiceTest {
         svc.followPeer(peer).collectList().block();
 
         ArgumentCaptor<GetBlocksDto> captor = ArgumentCaptor.forClass(GetBlocksDto.class);
-        verify(libp2p, times(2)).requestBlocks(eq(peer), captor.capture());
+        verify(libp2p, times(4)).requestBlocks(eq(peer), captor.capture());
         org.junit.jupiter.api.Assertions.assertEquals(
-                java.util.List.of(0, 2),
+                java.util.List.of(0, 2, 2, 2),
                 captor.getAllValues().stream().map(GetBlocksDto::fromHeight).toList()
         );
         verify(node, times(2)).acceptExternalBlock(any(Block.class));
