@@ -51,7 +51,7 @@ class Libp2pKademliaHandlerTest {
         ChannelHandlerContext ctx = mock(ChannelHandlerContext.class);
         var msg = P2PProtoMapper.toProto(new FindNodeDto("abc"));
         byte[] arr = msg.toByteArray();
-        ByteBuf buf = Unpooled.buffer(4 + arr.length).writeInt(arr.length).writeBytes(arr);
+        ByteBuf buf = Unpooled.buffer(4 + arr.length).writeIntLE(arr.length).writeBytes(arr);
         when(ctx.writeAndFlush(any())).thenReturn(null);
 
         var method = cls.getDeclaredMethod("messageReceived", ChannelHandlerContext.class, ByteBuf.class);
@@ -62,7 +62,7 @@ class Libp2pKademliaHandlerTest {
         var captor = org.mockito.ArgumentCaptor.forClass(Object.class);
         verify(ctx).writeAndFlush(captor.capture());
         ByteBuf out = (ByteBuf) captor.getValue();
-        int len = out.readInt();
+        int len = out.readIntLE();
         byte[] r = new byte[len];
         out.readBytes(r);
         NodesDto resp = (NodesDto) P2PProtoMapper.fromProto(P2PMessage.parseFrom(r));
