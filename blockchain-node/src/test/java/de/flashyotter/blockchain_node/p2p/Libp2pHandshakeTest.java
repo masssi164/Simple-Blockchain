@@ -53,7 +53,7 @@ class Libp2pHandshakeTest {
         var msg = de.flashyotter.blockchain_node.p2p.P2PProtoMapper.toProto(
                 new HandshakeDto("x","0.0.1",0));
         byte[] data = msg.toByteArray();
-        ByteBuf buf = Unpooled.buffer(4 + data.length).writeInt(data.length).writeBytes(data);
+        ByteBuf buf = Unpooled.buffer(4 + data.length).writeIntLE(data.length).writeBytes(data);
         when(ctx.close()).thenReturn(null);
 
         var method = cls.getDeclaredMethod("messageReceived", ChannelHandlerContext.class, ByteBuf.class);
@@ -99,7 +99,7 @@ class Libp2pHandshakeTest {
         var msg = de.flashyotter.blockchain_node.p2p.P2PProtoMapper.toProto(
                 new HandshakeDto("x","1.0.0",7000));
         byte[] data = msg.toByteArray();
-        ByteBuf buf = Unpooled.buffer(4 + data.length).writeInt(data.length).writeBytes(data);
+        ByteBuf buf = Unpooled.buffer(4 + data.length).writeIntLE(data.length).writeBytes(data);
         when(ctx.close()).thenReturn(null);
 
         var method = cls.getDeclaredMethod("messageReceived", ChannelHandlerContext.class, ByteBuf.class);

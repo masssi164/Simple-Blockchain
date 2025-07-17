@@ -137,7 +137,7 @@ public class Libp2pService {
                 msg = msg.toBuilder().setJwt(jwt).build();
             }
             byte[] payload = msg.toByteArray();
-            ByteBuffer buf = ByteBuffer.allocate(4 + payload.length);
+            ByteBuffer buf = ByteBuffer.allocate(4 + payload.length).order(java.nio.ByteOrder.LITTLE_ENDIAN);
             buf.putInt(payload.length).put(payload).flip();
             io.libp2p.core.multiformats.Multiaddr addr =
                     new io.libp2p.core.multiformats.Multiaddr(peer.multiAddr());
@@ -155,7 +155,7 @@ public class Libp2pService {
                         public void messageReceived(ChannelHandlerContext ctx, ByteBuf msg) {
                             try {
                                 if (msg.readableBytes() < 4) return;
-                                int len = msg.readInt();
+                                int len = msg.readIntLE();
                                 if (len > 1_000_000) {
                                     log.warn("libp2p inbound failed: length {} exceeds limit", len);
                                     ctx.close();
@@ -205,7 +205,7 @@ public class Libp2pService {
             }
             try {
                 if (msg.readableBytes() < 4) return;
-                int len = msg.readInt();
+                int len = msg.readIntLE();
                 if (len > 1_000_000) {
                     log.warn("libp2p inbound failed: length {} exceeds limit", len);
                     ctx.close();
@@ -272,7 +272,7 @@ public class Libp2pService {
                         out = out.toBuilder().setJwt(jwt).build();
                     }
                     byte[] p = out.toByteArray();
-                    ByteBuffer b = ByteBuffer.allocate(4 + p.length);
+                    ByteBuffer b = ByteBuffer.allocate(4 + p.length).order(java.nio.ByteOrder.LITTLE_ENDIAN);
                     b.putInt(p.length).put(p).flip();
                     ctx.writeAndFlush(io.netty.buffer.Unpooled.wrappedBuffer(b.array()));
                 } else if (dto instanceof NodesDto nodes) {
@@ -291,7 +291,7 @@ public class Libp2pService {
                         out = out.toBuilder().setJwt(jwt).build();
                     }
                     byte[] p = out.toByteArray();
-                    ByteBuffer b = ByteBuffer.allocate(4 + p.length);
+                    ByteBuffer b = ByteBuffer.allocate(4 + p.length).order(java.nio.ByteOrder.LITTLE_ENDIAN);
                     b.putInt(p.length).put(p).flip();
                     ctx.writeAndFlush(io.netty.buffer.Unpooled.wrappedBuffer(b.array()));
                 } else if (dto instanceof BlocksDto bd) {
@@ -317,7 +317,7 @@ public class Libp2pService {
                 msg = msg.toBuilder().setJwt(jwt).build();
             }
             byte[] payload = msg.toByteArray();
-            ByteBuffer buf = ByteBuffer.allocate(4 + payload.length);
+            ByteBuffer buf = ByteBuffer.allocate(4 + payload.length).order(java.nio.ByteOrder.LITTLE_ENDIAN);
             buf.putInt(payload.length).put(payload).flip();
             io.libp2p.core.multiformats.Multiaddr addr =
                     new io.libp2p.core.multiformats.Multiaddr(peer.multiAddr());
@@ -373,7 +373,7 @@ public class Libp2pService {
             }
             try {
                 if (msg.readableBytes() < 4) return;
-                int len = msg.readInt();
+                int len = msg.readIntLE();
                 if (len > 1_000_000) {
                     log.warn("libp2p inbound failed: length {} exceeds limit", len);
                     ctx.close();
