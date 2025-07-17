@@ -15,6 +15,7 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import org.apache.tuweni.kademlia.KademliaRoutingTable;
 import org.junit.jupiter.api.Test;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -38,8 +39,9 @@ class Libp2pKademliaHandlerTest {
         PeerRegistry reg = new PeerRegistry();
         KademliaService kad = new KademliaService(table, reg, props);
         kad.store(new Peer("x", 1));
+        WebClient client = WebClient.builder().build();
 
-        Libp2pService svc = new Libp2pService(host, props, node, kad);
+        Libp2pService svc = new Libp2pService(host, props, node, kad, client);
         // instantiate handler via reflection
         var cls = Class.forName(Libp2pService.class.getName() + "$ControlHandler");
         var ctor = cls.getDeclaredConstructor(svc.getClass());
