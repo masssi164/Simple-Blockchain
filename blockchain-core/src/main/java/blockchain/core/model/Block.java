@@ -7,6 +7,8 @@ import java.util.List;
 import blockchain.core.crypto.HashingUtils;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * A full block = immutable header + transaction list.
@@ -28,12 +30,13 @@ public class Block implements java.io.Serializable {
     }
 
     /* ── extended ctor (genesis, determin. tests) ───────────────────── */
-    public Block(int  height,
-                 String prevHashHex,
-                 List<Transaction> txs,
-                 int  compactBits,
-                 long fixedTimeMillis,
-                 int  fixedNonce) {
+    @JsonCreator
+    public Block(@JsonProperty("height") int height,
+                 @JsonProperty("previousHashHex") String prevHashHex,
+                 @JsonProperty("txList") List<Transaction> txs,
+                 @JsonProperty("compactDifficultyBits") int compactBits,
+                 @JsonProperty("timeMillis") long fixedTimeMillis,
+                 @JsonProperty("nonce") int fixedNonce) {
 
         String merkle = HashingUtils.computeMerkleRoot(
                 txs.stream().map(Transaction::calcHashHex).toList());
@@ -56,6 +59,7 @@ public class Block implements java.io.Serializable {
         }
     }
 
+    @com.fasterxml.jackson.annotation.JsonIgnore
     public boolean isProofValid() { return header.isProofValid(); }
 
     /* ── delegates keep external API unchanged ─────────────────────── */

@@ -18,7 +18,8 @@ public final class JsonUtils {
     /** ⚠ MUST remain non-final so it can be swapped at runtime. */
     private static volatile ObjectMapper mapper = new ObjectMapper()
             .findAndRegisterModules()               // picks up all Jackson modules on classpath
-            .disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
+            .disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
+            .configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     private JsonUtils() {
         /* utility class – no instances */
