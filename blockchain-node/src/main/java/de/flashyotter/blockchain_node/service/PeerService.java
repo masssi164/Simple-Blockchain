@@ -30,7 +30,12 @@ public class PeerService {
     /** peers without a resolved id mapped to first-seen timestamp */
     private final java.util.Map<Peer, Long> unresolved =
             new java.util.concurrent.ConcurrentHashMap<>();
-    private static final long RETRY_LIMIT_MS = java.util.concurrent.TimeUnit.MINUTES.toMillis(10);
+
+    /** give up resolving a peer after this many minutes */
+    private static final long RETRY_LIMIT_MS = java.util.concurrent.TimeUnit.MINUTES.toMillis(15);
+
+    /** initial connection attempts during startup */
+    private static final int MAX_INIT_ATTEMPTS = 12;
 
     @PostConstruct
     public void init() {
@@ -40,7 +45,7 @@ public class PeerService {
             String host = sp[0];
             int port = Integer.parseInt(sp[1]);
             Peer peer = new Peer(host, port);
-            if (!resolvePeerId(peer, 60)) {
+            if (!resolvePeerId(peer, MAX_INIT_ATTEMPTS)) {
                 org.slf4j.LoggerFactory.getLogger(PeerService.class)
                         .warn("Failed to resolve peer id for {}:{} after waiting", host, port - offset);
                 unresolved.put(peer, System.currentTimeMillis());
@@ -91,7 +96,8 @@ public class PeerService {
                 props.getLibp2pPort()));
     }
 
-    @Scheduled(fixedDelay = 30000)
+    // Retry more aggressively so newly started peers join within a few seconds
+    @Scheduled(fixedDelay = 5000)
     public void retryMissingPeers() {
         long now = System.currentTimeMillis();
         unresolved.forEach((peer, since) -> {

@@ -133,6 +133,21 @@ inside Docker Compose succeed.
 
 Fork the repo, create a branch, run `./gradlew verify` and open a PR.
 
+## Run CI locally
+
+Execute the same checks that GitHub Actions runs with:
+
+```bash
+make ci-local
+```
+
+This convenience target invokes `scripts/ci-local.sh` which runs unit tests,
+builds the Docker images and executes the end-to-end scenario defined in
+`pipeline-tests/e2e.feature`.
+
+Set the environment variable `FLAKY_RETRY=1` to allow the mining step in the
+Behave tests to retry up to three times if a transient failure occurs.
+
 ## Roadmap
 
 The planned improvements for upcoming releases are outlined in

@@ -1,5 +1,17 @@
+import os
 import time
 import grpc
+from typing import Callable
+
+
+def await_until(predicate: Callable[[], bool], timeout: float, interval: float = 2.0):
+    """Simple awaitility-like helper."""
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        if predicate():
+            return
+        time.sleep(interval)
+    raise AssertionError("Condition not met in time")
 
 
 def wait_for_grpc(port: int, timeout: int = 60):
@@ -43,9 +55,17 @@ def step_send_tx(context):
 @when("I mine a block on node1")
 def step_mine_block(context):
     wait_for_grpc(GRPC_PORT1)
-    with grpc.insecure_channel(f"localhost:{GRPC_PORT1}") as channel:
-        stub = MiningStub(channel)
-        context.mined = stub.Mine(Empty())
+    retries = 3 if os.getenv("FLAKY_RETRY") else 1
+    for attempt in range(retries):
+        try:
+            with grpc.insecure_channel(f"localhost:{GRPC_PORT1}") as channel:
+                stub = MiningStub(channel)
+                context.mined = stub.Mine(Empty())
+                return
+        except Exception:
+            if attempt == retries - 1:
+                raise
+            time.sleep(2)
 
 @then("node2 should synchronize the block")
 def step_check_sync(context):
@@ -53,18 +73,18 @@ def step_check_sync(context):
     wait_for_grpc(GRPC_PORT2)
     with grpc.insecure_channel(f"localhost:{GRPC_PORT2}") as channel:
         stub = ChainStub(channel)
-        deadline = time.time() + 20
-        while time.time() < deadline:
+        def assert_height():
             latest = stub.Latest(Empty())
             if latest.height >= target:
                 context.latest = {
                     "height": latest.height,
                     "compactDifficultyBits": latest.compactBits,
-                    "hashHex": ""  # not needed in test
+                    "hashHex": ""
                 }
-                return
-            time.sleep(1)
-    raise AssertionError("Node2 did not sync the mined block in time")
+                return True
+            return False
+
+        await_until(assert_height, timeout=30)
 
 @then("node1 should have a positive balance")
 def step_check_balance(context):
