@@ -33,8 +33,8 @@ public class PeerService {
             int port = Integer.parseInt(sp[1]);
             PeerIdDto dto = null;
             int httpPort = port - offset;
-            // nodes may take a while to start in CI
-            for (int i = 0; i < 30 && dto == null; i++) {
+            // nodes may take a while to start in CI. wait up to ~60s
+            for (int i = 0; i < 60 && dto == null; i++) {
                 try {
                     dto = webClient.get()
                             .uri("http://" + host + ':' + httpPort + "/node/peer-id")
@@ -51,7 +51,14 @@ public class PeerService {
                 }
             }
 
-            Peer p = new Peer(host, port, dto != null ? dto.peerId() : null);
+            if (dto == null) {
+                // warn so tests can diagnose missing peer-id and skip peer
+                org.slf4j.LoggerFactory.getLogger(PeerService.class)
+                        .warn("Failed to resolve peer id for {}:{} after waiting", host, httpPort);
+                return; // do not add peer without id
+            }
+
+            Peer p = new Peer(host, port, dto.peerId());
             registry.add(p);
             kademlia.store(p);
         });

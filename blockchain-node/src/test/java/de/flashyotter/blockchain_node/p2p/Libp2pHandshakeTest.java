@@ -13,6 +13,7 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import org.apache.tuweni.kademlia.KademliaRoutingTable;
 import org.junit.jupiter.api.Test;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import java.nio.charset.StandardCharsets;
 
@@ -33,8 +34,16 @@ class Libp2pHandshakeTest {
                 p -> p.toString().getBytes(StandardCharsets.UTF_8), p -> 0);
         PeerRegistry reg = new PeerRegistry();
         KademliaService kad = new KademliaService(table, reg, props);
+        org.springframework.web.reactive.function.client.ExchangeFunction fx = req ->
+                reactor.core.publisher.Mono.just(
+                        org.springframework.web.reactive.function.client.ClientResponse
+                                .create(org.springframework.http.HttpStatus.OK)
+                                .header("Content-Type", "application/json")
+                                .body("{\"peerId\":\"id-123\"}")
+                                .build());
+        WebClient client = WebClient.builder().exchangeFunction(fx).build();
 
-        Libp2pService svc = new Libp2pService(host, props, node, kad);
+        Libp2pService svc = new Libp2pService(host, props, node, kad, client);
         var cls = Class.forName(Libp2pService.class.getName() + "$ControlHandler");
         var ctor = cls.getDeclaredConstructor(svc.getClass());
         ctor.setAccessible(true);
@@ -66,8 +75,16 @@ class Libp2pHandshakeTest {
                 p -> p.toString().getBytes(StandardCharsets.UTF_8), p -> 0);
         PeerRegistry reg = new PeerRegistry();
         KademliaService kad = new KademliaService(table, reg, props);
+        org.springframework.web.reactive.function.client.ExchangeFunction fx2 = req ->
+                reactor.core.publisher.Mono.just(
+                        org.springframework.web.reactive.function.client.ClientResponse
+                                .create(org.springframework.http.HttpStatus.OK)
+                                .header("Content-Type", "application/json")
+                                .body("{\"peerId\":\"id-456\"}")
+                                .build());
+        WebClient client = WebClient.builder().exchangeFunction(fx2).build();
 
-        Libp2pService svc = new Libp2pService(host, props, node, kad);
+        Libp2pService svc = new Libp2pService(host, props, node, kad, client);
         var cls = Class.forName(Libp2pService.class.getName() + "$ControlHandler");
         var ctor = cls.getDeclaredConstructor(svc.getClass());
         ctor.setAccessible(true);
@@ -90,6 +107,6 @@ class Libp2pHandshakeTest {
         method.invoke(handler, ctx, buf);
 
         verify(ctx, never()).close();
-        assertTrue(reg.all().contains(new Peer("1.2.3.4", 7000)));
+        assertTrue(reg.all().contains(new Peer("1.2.3.4", 7000, "id-456")));
     }
 }

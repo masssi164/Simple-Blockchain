@@ -25,6 +25,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Disabled;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import java.net.ServerSocket;
 import java.nio.charset.StandardCharsets;
@@ -89,9 +90,10 @@ class Libp2pServiceBroadcastTest {
                 p -> p.toString().getBytes(StandardCharsets.UTF_8), p -> 0);
         KademliaService k1 = new KademliaService(t1, r1, props1);
         KademliaService k2 = new KademliaService(t2, r2, props2);
+        WebClient client = WebClient.builder().build();
 
-        s1 = new Libp2pService(h1, props1, n1, k1);
-        s2 = new Libp2pService(h2, props2, n2, k2);
+        s1 = new Libp2pService(h1, props1, n1, k1, client);
+        s2 = new Libp2pService(h2, props2, n2, k2, client);
         s1.init();
         s2.init();
     }

@@ -10,6 +10,7 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import de.flashyotter.blockchain_node.service.NodeService;
 import de.flashyotter.blockchain_node.service.KademliaService;
+import org.springframework.web.reactive.function.client.WebClient;
 import io.libp2p.core.Host;
 import io.libp2p.etc.SimpleClientHandler;
 import io.libp2p.etc.SimpleClientHandlerKt;
@@ -36,14 +37,17 @@ public class Libp2pService {
     private final NodeProperties props;
     private final NodeService node;
     private final KademliaService kademlia;
+    private final WebClient webClient;
 
     public Libp2pService(Host host, NodeProperties props,
                          @org.springframework.context.annotation.Lazy NodeService node,
-                         KademliaService kademlia) {
+                         KademliaService kademlia,
+                         WebClient webClient) {
         this.host = host;
         this.props = props;
         this.node = node;
         this.kademlia = kademlia;
+        this.webClient = webClient;
     }
 
     private volatile String publicAddr;
@@ -231,7 +235,30 @@ public class Libp2pService {
                     }
                     if (ctx.channel().remoteAddress() instanceof java.net.InetSocketAddress isa) {
                         String host = isa.getAddress().getHostAddress();
-                        kademlia.store(new Peer(host, hs.listenPort()));
+                        String peerId = null;
+                        int httpPort = hs.listenPort() - (props.getLibp2pPort() - props.getPort());
+                        for (int i = 0; i < 5 && peerId == null; i++) {
+                            try {
+                                PeerIdDto dtoId = webClient.get()
+                                        .uri("http://" + host + ':' + httpPort + "/node/peer-id")
+                                        .retrieve()
+                                        .bodyToMono(PeerIdDto.class)
+                                        .block(java.time.Duration.ofSeconds(3));
+                                if (dtoId != null) peerId = dtoId.peerId();
+                            } catch (Exception ex) {
+                                try {
+                                    Thread.sleep(1000);
+                                } catch (InterruptedException ie) {
+                                    Thread.currentThread().interrupt();
+                                    break;
+                                }
+                            }
+                        }
+                        if (peerId == null) {
+                            log.warn("Failed to resolve peer id for {}:{}", host, httpPort);
+                            return;
+                        }
+                        kademlia.store(new Peer(host, hs.listenPort(), peerId));
                     }
                 } else if (dto instanceof FindNodeDto find) {
                     var nearest = kademlia.closest(find.nodeId(), 16)

@@ -10,6 +10,7 @@ import io.libp2p.core.PeerId;
 import io.libp2p.core.multiformats.Multiaddr;
 import org.apache.tuweni.kademlia.KademliaRoutingTable;
 import org.junit.jupiter.api.Test;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -33,8 +34,9 @@ class Libp2pAutoNatTest {
                 p -> p.toString().getBytes(StandardCharsets.UTF_8), p -> 0);
         PeerRegistry reg = new PeerRegistry();
         KademliaService kad = new KademliaService(table, reg, props);
+        WebClient client = WebClient.builder().build();
 
-        Libp2pService svc = new Libp2pService(host, props, node, kad);
+        Libp2pService svc = new Libp2pService(host, props, node, kad, client);
         svc.discoverPublicAddr(new Peer("dummy", 1));
 
         assertEquals(addr.toString(), svc.getPublicAddr());
