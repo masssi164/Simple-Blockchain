@@ -35,7 +35,8 @@ public class PeerService {
     private static final long RETRY_LIMIT_MS = java.util.concurrent.TimeUnit.MINUTES.toMillis(15);
 
     /** initial connection attempts during startup */
-    private static final int MAX_INIT_ATTEMPTS = 12;
+    // allow peers more time to start up before giving up
+    private static final int MAX_INIT_ATTEMPTS = 20;
 
     @PostConstruct
     public void init() {
