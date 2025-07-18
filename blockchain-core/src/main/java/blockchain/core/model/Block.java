@@ -4,6 +4,9 @@ import java.math.BigInteger;
 import java.time.Instant;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import blockchain.core.crypto.HashingUtils;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +20,16 @@ public class Block implements java.io.Serializable {
 
     private final BlockHeader       header;
     private final List<Transaction> txList;
+
+    /* ------------------------------------------------------------------ */
+    /* JSON constructor                                                   */
+    /* ------------------------------------------------------------------ */
+    @JsonCreator
+    public Block(@JsonProperty("header") BlockHeader header,
+                 @JsonProperty("txList") List<Transaction> txList) {
+        this.header = header;
+        this.txList = List.copyOf(txList);
+    }
 
     /* ── public ctor used by code & tests ───────────────────────────── */
     public Block(int height,

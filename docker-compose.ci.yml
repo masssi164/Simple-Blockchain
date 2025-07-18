@@ -61,9 +61,6 @@ services:
       interval: 5s
       timeout: 5s
       retries: 24
-    depends_on:
-      backend1:
-        condition: service_healthy
   frontend2:
     build:
       context: ./ui

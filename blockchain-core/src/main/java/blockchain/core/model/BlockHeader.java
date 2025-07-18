@@ -4,6 +4,9 @@ import java.math.BigInteger;
 import java.time.Instant;
 import java.util.Objects;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import blockchain.core.crypto.HashingUtils;
 
 /**
@@ -34,12 +37,13 @@ public final class BlockHeader implements java.io.Serializable {
              compactBits, Instant.now().toEpochMilli(), 0);
     }
 
-    public BlockHeader(int height,
-                       String prevHashHex,
-                       String merkleRootHex,
-                       int compactBits,
-                       long fixedTimeMillis,
-                       int  fixedNonce) {
+    @JsonCreator
+    public BlockHeader(@JsonProperty("height") int height,
+                       @JsonProperty("previousHashHex") String prevHashHex,
+                       @JsonProperty("merkleRootHex") String merkleRootHex,
+                       @JsonProperty("compactDifficultyBits") int compactBits,
+                       @JsonProperty("timeMillis") long fixedTimeMillis,
+                       @JsonProperty("nonce") int  fixedNonce) {
         this.height                = height;
         this.previousHashHex       = prevHashHex;
         this.merkleRootHex         = merkleRootHex;
