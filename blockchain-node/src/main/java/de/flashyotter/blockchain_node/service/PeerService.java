@@ -10,6 +10,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.scheduling.annotation.Scheduled;
+import reactor.core.scheduler.Schedulers;
 import jakarta.annotation.PostConstruct;          // ← switched to Jakarta namespace
 
 /**
@@ -36,7 +37,8 @@ public class PeerService {
 
     /** initial connection attempts during startup */
     // allow peers more time to start up before giving up
-    private static final int MAX_INIT_ATTEMPTS = 20;
+    // Allow more time for peers to come online before giving up
+    private static final int MAX_INIT_ATTEMPTS = 40;
 
     @PostConstruct
     public void init() {
@@ -89,7 +91,9 @@ public class PeerService {
     }
 
     private void postAdd(Peer p) {
-        syncService.followPeer(p).subscribe();
+        syncService.followPeer(p)
+                .subscribeOn(Schedulers.boundedElastic())
+                .subscribe();
         libp2p.send(p, new FindNodeDto(kademlia.selfId()));
         libp2p.send(p, new HandshakeDto(
                 props.getId(),
