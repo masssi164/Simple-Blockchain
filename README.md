@@ -118,7 +118,8 @@ The node announces itself on `/simple-blockchain/*`. All handshake data is encod
 
 Peer discovery uses Kademlia distance metrics plus optional static seeds.
 The SyncService retries block range requests, which improves stability when
-peers temporarily fail to respond.
+peers temporarily fail to respond. Peer synchronization now runs on a bounded
+elastic scheduler so blocking operations do not interfere with other tasks.
 
 ## CI pipeline
 
@@ -128,6 +129,8 @@ Node, caches dependencies and then packages the Spring Boot app with
 `bootJar`. Selenium is started alongside the services for a full integration
 test. Each backend container declares `SERVER_PORT` so the health checks run
 inside Docker Compose succeed.
+Backend2 now waits for backend1's health endpoint before it starts so the
+initial peer connection is reliable.
 
 ## Contributing
 

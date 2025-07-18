@@ -40,6 +40,10 @@ services:
 
   backend2:
     image: simple-blockchain-node:runtime
+    entrypoint: >-
+      sh -c 'until curl -fs http://backend1:3333/actuator/health >/dev/null; do sleep 2; done; exec java -jar app.jar'
+    depends_on:
+      - backend1
     environment:
       SERVER_PORT: 3334
       NODE_LIBP2P_PORT: 4002

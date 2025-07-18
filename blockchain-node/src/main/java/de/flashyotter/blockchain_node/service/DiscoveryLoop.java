@@ -22,7 +22,9 @@ public class DiscoveryLoop {
         Peer p;
         while ((p = reg.pending().poll()) != null) {
             kademlia.store(p);
-            sync.followPeer(p).subscribe();
+            sync.followPeer(p)
+                    .subscribeOn(reactor.core.scheduler.Schedulers.boundedElastic())
+                    .subscribe();
             libp2p.send(p, new de.flashyotter.blockchain_node.dto.FindNodeDto(kademlia.selfId()));
             libp2p.send(p, new de.flashyotter.blockchain_node.dto.HandshakeDto(
                     kademlia.selfId(),
@@ -39,7 +41,9 @@ public class DiscoveryLoop {
     @Scheduled(fixedDelay = 5000)
     void refreshKnownPeers() {
         for (Peer p : reg.all()) {
-            sync.followPeer(p).subscribe();
+            sync.followPeer(p)
+                    .subscribeOn(reactor.core.scheduler.Schedulers.boundedElastic())
+                    .subscribe();
         }
     }
 }
