@@ -16,21 +16,10 @@ public class SyncService {
 
     private final NodeService  node;
     private final Libp2pService libp2p;
-    private static final com.fasterxml.jackson.databind.ObjectMapper MAPPER = new com.fasterxml.jackson.databind.ObjectMapper()
-            .registerModule(new com.fasterxml.jackson.module.paramnames.ParameterNamesModule())
-            .addMixIn(blockchain.core.model.Block.class, BlockMixIn.class)
-            .configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-            .findAndRegisterModules();
-
-    private abstract static class BlockMixIn {
-        @com.fasterxml.jackson.annotation.JsonCreator
-        BlockMixIn(@com.fasterxml.jackson.annotation.JsonProperty("height") int height,
-                   @com.fasterxml.jackson.annotation.JsonProperty("prevHashHex") String prev,
-                   @com.fasterxml.jackson.annotation.JsonProperty("txs") java.util.List<blockchain.core.model.Transaction> txs,
-                   @com.fasterxml.jackson.annotation.JsonProperty("compactBits") int bits,
-                   @com.fasterxml.jackson.annotation.JsonProperty("fixedTimeMillis") long time,
-                   @com.fasterxml.jackson.annotation.JsonProperty("fixedNonce") int nonce) {}
-    }
+    private static final com.fasterxml.jackson.databind.ObjectMapper MAPPER =
+            new com.fasterxml.jackson.databind.ObjectMapper()
+                    .configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+                    .findAndRegisterModules();
 
     /**
      * Fetch blocks from {@code peer} until no newer blocks are returned.
