@@ -191,7 +191,8 @@ public class Libp2pService {
                     });
                     stream.writeAndFlush(io.netty.buffer.Unpooled.wrappedBuffer(buf.array()));
                 }).join();
-            return fut.get(5, java.util.concurrent.TimeUnit.SECONDS);
+            // Allow more time for peers on CI runners which may be slow
+            return fut.get(10, java.util.concurrent.TimeUnit.SECONDS);
         } catch (Exception e) {
             log.warn("libp2p request failed", e);
             return new BlocksDto(java.util.List.of());

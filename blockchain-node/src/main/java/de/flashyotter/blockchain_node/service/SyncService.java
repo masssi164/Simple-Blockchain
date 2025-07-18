@@ -16,6 +16,9 @@ public class SyncService {
 
     private final NodeService  node;
     private final Libp2pService libp2p;
+    /** Track peers currently being synced to avoid duplicate loops. */
+    private final java.util.Set<Peer> syncing =
+            java.util.concurrent.ConcurrentHashMap.newKeySet();
     private static final com.fasterxml.jackson.databind.ObjectMapper MAPPER =
             new com.fasterxml.jackson.databind.ObjectMapper()
                     .configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
@@ -27,33 +30,39 @@ public class SyncService {
      * {@link BlocksDto} reply.
      */
     public Flux<Void> followPeer(Peer peer) {
-        return Flux.create(sink -> {
-            int height = node.latestBlock().getHeight();
-            int emptyCount = 0;
-            while (emptyCount < 3) {
-                BlocksDto resp = libp2p.requestBlocks(peer, new GetBlocksDto(height));
-                if (resp.rawBlocks().isEmpty()) {
-                    emptyCount++;
-                    try {
-                        Thread.sleep(1000);
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        break;
-                    }
-                    continue;
-                }
-                emptyCount = 0;
-                resp.rawBlocks().forEach(raw -> {
-                    try {
-                        blockchain.core.model.Block blk = MAPPER.readValue(raw, blockchain.core.model.Block.class);
-                        node.acceptExternalBlock(blk);
-                    } catch (Exception e) {
-                        log.warn("failed to parse block from peer: {}", e.getMessage());
-                    }
-                });
-                height = node.latestBlock().getHeight();
+        return Flux.defer(() -> {
+            if (!syncing.add(peer)) {
+                return Flux.empty();
             }
-            sink.complete();
+            return Flux.<Void>create(sink -> {
+                int height = node.latestBlock().getHeight();
+                int emptyCount = 0;
+                while (emptyCount < 3) {
+                    BlocksDto resp = libp2p.requestBlocks(peer, new GetBlocksDto(height));
+                    if (resp.rawBlocks().isEmpty()) {
+                        emptyCount++;
+                        try {
+                            Thread.sleep(1000);
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                            break;
+                        }
+                        continue;
+                    }
+                    emptyCount = 0;
+                    resp.rawBlocks().forEach(raw -> {
+                        try {
+                            blockchain.core.model.Block blk =
+                                    MAPPER.readValue(raw, blockchain.core.model.Block.class);
+                            node.acceptExternalBlock(blk);
+                        } catch (Exception e) {
+                            log.warn("failed to parse block from peer: {}", e.getMessage());
+                        }
+                    });
+                    height = node.latestBlock().getHeight();
+                }
+                sink.complete();
+            }).doFinally(sig -> syncing.remove(peer));
         });
     }
 
