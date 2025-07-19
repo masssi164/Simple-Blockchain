@@ -22,3 +22,20 @@ def step_run(context, cmd):
 def step_success(context):
     if context.result.returncode != 0:
         raise AssertionError(context.output)
+
+import yaml
+
+@when('I load the CI compose file')
+def step_load_compose(context):
+    with open('docker-compose.ci.yml') as f:
+        context.compose = yaml.safe_load(f)
+
+@then('backend2 should configure NODE_PEERS')
+def step_check_peers(context):
+    services = context.compose.get('services', {})
+    backend2 = services.get('backend2', {})
+    env = backend2.get('environment', {})
+    value = env.get('NODE_PEERS', '')
+    if not value or 'backend1' not in value:
+        raise AssertionError(f"NODE_PEERS not configured correctly: {value}")
+
