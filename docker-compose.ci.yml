@@ -19,10 +19,10 @@ services:
       - ./data1:/app/data1
       - ./wallet1:/root/.simple-chain
     healthcheck:
-      test: ["CMD-SHELL", "curl -fs http://localhost:$$SERVER_PORT/actuator/health/p2p >/dev/null"]
+      test: ["CMD", "curl", "-fs", "http://localhost:3333/actuator/health"]
       interval: 5s
       timeout: 5s
-      retries: 24
+      retries: 12
   frontend1:
     build:
       context: ./ui
@@ -40,10 +40,9 @@ services:
 
   backend2:
     image: simple-blockchain-node:runtime
-    entrypoint: >-
-      sh -c 'until curl -fs http://backend1:3333/actuator/health/p2p >/dev/null; do sleep 2; done; exec java -jar app.jar'
     depends_on:
-      - backend1
+      backend1:
+        condition: service_healthy
     environment:
       SERVER_PORT: 3334
       NODE_LIBP2P_PORT: 4002
@@ -61,10 +60,10 @@ services:
       - ./data2:/app/data2
       - ./wallet2:/root/.simple-chain
     healthcheck:
-      test: ["CMD-SHELL", "curl -fs http://localhost:$$SERVER_PORT/actuator/health/p2p >/dev/null"]
+      test: ["CMD", "curl", "-fs", "http://localhost:3334/actuator/health"]
       interval: 5s
       timeout: 5s
-      retries: 24
+      retries: 12
   frontend2:
     build:
       context: ./ui
