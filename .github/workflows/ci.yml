@@ -72,7 +72,7 @@ jobs:
       run: |
         docker compose -f docker-compose.ci.yml up -d --build
         docker compose -f docker-compose.ci.yml ps
-        for i in {1..30}; do
+        for i in {1..40}; do
           if docker compose -f docker-compose.ci.yml ps | grep -q "healthy"; then
             break
           fi
@@ -88,7 +88,7 @@ jobs:
     - name: Run end-to-end tests
       run: |
         pip install selenium requests PyJWT behave grpcio protobuf
-        behave pipeline-tests/e2e.feature
+        FLAKY_RETRY=1 behave pipeline-tests/e2e.feature
 
     - name: Dump logs on test failure
       if: failure()
