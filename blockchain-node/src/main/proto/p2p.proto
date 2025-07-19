@@ -9,8 +9,10 @@ import "node.proto";
 
 message Handshake {
   string nodeId = 1;
-  string protocolVersion = 2;
-  int32 listenPort = 3;
+  string peerId = 2;
+  string protocolVersion = 3;
+  int32 listenPort = 4;
+  int32 restPort = 5;
 }
 
 message NewBlock {

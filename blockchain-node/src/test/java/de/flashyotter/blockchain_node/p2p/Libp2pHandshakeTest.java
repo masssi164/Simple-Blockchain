@@ -41,9 +41,9 @@ class Libp2pHandshakeTest {
                                 .header("Content-Type", "application/json")
                                 .body("{\"peerId\":\"id-123\"}")
                                 .build());
-        WebClient client = WebClient.builder().exchangeFunction(fx).build();
+        WebClient client = WebClient.builder().exchangeFunction(fx).build(); // unused
 
-        Libp2pService svc = new Libp2pService(host, props, node, kad, client);
+        Libp2pService svc = new Libp2pService(host, props, node, kad);
         var cls = Class.forName(Libp2pService.class.getName() + "$ControlHandler");
         var ctor = cls.getDeclaredConstructor(svc.getClass());
         ctor.setAccessible(true);
@@ -51,7 +51,7 @@ class Libp2pHandshakeTest {
 
         ChannelHandlerContext ctx = mock(ChannelHandlerContext.class);
         var msg = de.flashyotter.blockchain_node.p2p.P2PProtoMapper.toProto(
-                new HandshakeDto("x","0.0.1",0));
+                new HandshakeDto("x","peer1","0.0.1",0,0));
         byte[] data = msg.toByteArray();
         ByteBuf buf = Unpooled.buffer(4 + data.length).writeIntLE(data.length).writeBytes(data);
         when(ctx.close()).thenReturn(null);
@@ -82,9 +82,9 @@ class Libp2pHandshakeTest {
                                 .header("Content-Type", "application/json")
                                 .body("{\"peerId\":\"id-456\"}")
                                 .build());
-        WebClient client = WebClient.builder().exchangeFunction(fx2).build();
+        WebClient client = WebClient.builder().exchangeFunction(fx2).build(); // unused
 
-        Libp2pService svc = new Libp2pService(host, props, node, kad, client);
+        Libp2pService svc = new Libp2pService(host, props, node, kad);
         var cls = Class.forName(Libp2pService.class.getName() + "$ControlHandler");
         var ctor = cls.getDeclaredConstructor(svc.getClass());
         ctor.setAccessible(true);
@@ -97,7 +97,7 @@ class Libp2pHandshakeTest {
         when(ch.remoteAddress()).thenReturn(addr);
 
         var msg = de.flashyotter.blockchain_node.p2p.P2PProtoMapper.toProto(
-                new HandshakeDto("x","1.0.0",7000));
+                new HandshakeDto("x","peer2","1.0.0",7000,7001));
         byte[] data = msg.toByteArray();
         ByteBuf buf = Unpooled.buffer(4 + data.length).writeIntLE(data.length).writeBytes(data);
         when(ctx.close()).thenReturn(null);
@@ -107,6 +107,6 @@ class Libp2pHandshakeTest {
         method.invoke(handler, ctx, buf);
 
         verify(ctx, never()).close();
-        assertTrue(reg.all().contains(new Peer("1.2.3.4", 7000, "id-456")));
+        assertTrue(reg.all().contains(new Peer("1.2.3.4", 7000, "peer2")));
     }
 }
