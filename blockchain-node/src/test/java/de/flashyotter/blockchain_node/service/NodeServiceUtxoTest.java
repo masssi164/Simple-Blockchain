@@ -12,6 +12,7 @@ import org.mockito.Mockito;
 import blockchain.core.consensus.Chain;
 import blockchain.core.model.TxOutput;
 import de.flashyotter.blockchain_node.storage.InMemoryBlockStore;
+import de.flashyotter.blockchain_node.config.NodeProperties;
 
 /** Verifies that currentUtxo() reconstructs the full history (incl. genesis). */
 class NodeServiceUtxoTest {
@@ -23,9 +24,10 @@ class NodeServiceUtxoTest {
         Chain chain = new Chain();                       // contains genesis only
         svc = new NodeService(
                 chain,
-                Mockito.mock(MempoolService.class),      // ↙ neue Reihenfolge
+                Mockito.mock(MempoolService.class),
                 Mockito.mock(MiningService.class),
                 Mockito.mock(P2PBroadcastService.class),
+                new NodeProperties(),
                 new InMemoryBlockStore(),
                 new io.micrometer.core.instrument.simple.SimpleMeterRegistry()
         );

@@ -36,6 +36,8 @@ The Docker image is under 120&nbsp;MB and starts in less than two seconds on a l
 
 **Requirements** – Docker&nbsp;24+ and Docker Compose.
 
+Nodes automatically push new blocks to peers when `P2P_PUSH_ENABLED` is true (default). Missing pushes are fetched on demand within `SYNC_TIMEOUT_MS`.
+
 ### 1. Environment
 
 Create a `.env` file in the repo root with values similar to:

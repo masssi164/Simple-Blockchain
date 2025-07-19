@@ -61,6 +61,12 @@ public class NodeProperties {
     /** How many recent blocks to keep in memory and on disk */
     private int historyDepth = 1000;
 
+    /** Whether peers push new blocks immediately after mining */
+    private boolean p2pPushEnabled = true;
+
+    /** Timeout in milliseconds for block sync requests */
+    private int syncTimeoutMs = 10000;
+
     @PostConstruct
     private void init() throws IOException {
         String peersEnv = System.getenv("NODE_PEERS");

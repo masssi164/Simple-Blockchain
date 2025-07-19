@@ -13,6 +13,7 @@ import blockchain.core.consensus.Chain;
 import blockchain.core.crypto.AddressUtils;
 import blockchain.core.model.Block;
 import blockchain.core.model.Transaction;
+import de.flashyotter.blockchain_node.config.NodeProperties;
 import blockchain.core.model.TxInput;
 import blockchain.core.model.TxOutput;
 import blockchain.core.model.Wallet;
@@ -29,6 +30,7 @@ class NodeServiceWalletHistoryTest {
                 Mockito.mock(MempoolService.class),
                 Mockito.mock(MiningService.class),
                 Mockito.mock(P2PBroadcastService.class),
+                new NodeProperties(),
                 Mockito.mock(de.flashyotter.blockchain_node.storage.BlockStore.class),
                 new io.micrometer.core.instrument.simple.SimpleMeterRegistry());
     }

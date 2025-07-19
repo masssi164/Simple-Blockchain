@@ -15,6 +15,7 @@ import blockchain.core.model.Transaction;
 import blockchain.core.model.TxInput;
 import blockchain.core.model.TxOutput;
 import blockchain.core.model.Wallet;
+import de.flashyotter.blockchain_node.config.NodeProperties;
 
 /**
  * Unit test for the NodeService.currentUtxoIncludingPending method.
@@ -35,6 +36,7 @@ class NodeServicePendingUtxoTest {
             mempool,
             Mockito.mock(MiningService.class),
             Mockito.mock(P2PBroadcastService.class),
+            new NodeProperties(),
             Mockito.mock(de.flashyotter.blockchain_node.storage.BlockStore.class),
             new io.micrometer.core.instrument.simple.SimpleMeterRegistry()
         );
