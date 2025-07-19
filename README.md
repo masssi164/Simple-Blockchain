@@ -112,7 +112,7 @@ Set `NODE_GRPC_PORT` to expose the same endpoints over gRPC (defaults to `9090`)
 
 ## P2P protocol
 
-The node announces itself on `/simple-blockchain/*`. All handshake data is encoded using the protobuf definitions in `p2p.proto`.
+The node announces itself on `/simple-blockchain/*`. All handshake data is encoded using the protobuf definitions in `p2p.proto`. Handshakes now include the libp2p peer ID and REST port so peers can connect without extra HTTP lookups.
 
 - Control – peer list, find-node, range sync
 - Blocks  – single block messages

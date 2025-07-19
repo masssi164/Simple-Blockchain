@@ -34,9 +34,9 @@ class Libp2pAutoNatTest {
                 p -> p.toString().getBytes(StandardCharsets.UTF_8), p -> 0);
         PeerRegistry reg = new PeerRegistry();
         KademliaService kad = new KademliaService(table, reg, props);
-        WebClient client = WebClient.builder().build();
+        WebClient client = WebClient.builder().build(); // unused
 
-        Libp2pService svc = new Libp2pService(host, props, node, kad, client);
+        Libp2pService svc = new Libp2pService(host, props, node, kad);
         svc.discoverPublicAddr(new Peer("dummy", 1));
 
         assertEquals(addr.toString(), svc.getPublicAddr());
