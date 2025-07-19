@@ -12,6 +12,10 @@ npm ci
 npm run test -- --run
 popd > /dev/null
 
+# Run lightweight regression checks
+pip install behave PyYAML >/tmp/pip.log
+behave pipeline-tests/compose_config.feature pipeline-tests/regression.feature
+
 # Build runtime image and start multi-node setup
 docker build -t simple-blockchain-node:runtime -f Dockerfile.backend .
 COMPOSE_FILE=docker-compose.ci.yml
