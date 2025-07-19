@@ -1,6 +1,7 @@
 import os
 import time
 import grpc
+import subprocess
 from typing import Callable
 
 
@@ -38,6 +39,11 @@ from behave import given, when, then
 GRPC_PORT1 = 9090
 GRPC_PORT2 = 9091
 
+
+@given("docker compose services are healthy")
+def step_compose_healthy(context):
+    subprocess.run(["./scripts/check_compose_health.sh"], check=True)
+
 @given("two nodes are running")
 def step_nodes_running(context):
     # nodes are started by docker-compose in the pipeline
@@ -55,17 +61,9 @@ def step_send_tx(context):
 @when("I mine a block on node1")
 def step_mine_block(context):
     wait_for_grpc(GRPC_PORT1)
-    retries = 3 if os.getenv("FLAKY_RETRY") else 1
-    for attempt in range(retries):
-        try:
-            with grpc.insecure_channel(f"localhost:{GRPC_PORT1}") as channel:
-                stub = MiningStub(channel)
-                context.mined = stub.Mine(Empty())
-                return
-        except Exception:
-            if attempt == retries - 1:
-                raise
-            time.sleep(2)
+    with grpc.insecure_channel(f"localhost:{GRPC_PORT1}") as channel:
+        stub = MiningStub(channel)
+        context.mined = stub.Mine(Empty())
 
 @then("node2 should synchronize the block")
 def step_check_sync(context):

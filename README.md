@@ -130,11 +130,9 @@ Node, caches dependencies and then packages the Spring Boot app with
 `bootJar`. Selenium is started alongside the services for a full integration
 test. Each backend container declares `SERVER_PORT` so the health checks run
 inside Docker Compose succeed.
-Backend2 now waits for backend1's health endpoint before it starts so the
-initial peer connection is reliable.
-The workflow waits up to forty health checks before running end-to-end tests
-to accommodate slow CI runners. If mining occasionally times out, the tests
-retry when the `FLAKY_RETRY=1` environment variable is set.
+Backend2 now relies on Compose's `service_healthy` condition, removing the
+custom wait loop. The workflow waits for all containers to report `healthy`
+using `scripts/check_compose_health.sh` before executing the end-to-end tests.
 
 ## Contributing
 
@@ -147,9 +145,8 @@ Execute the same checks that GitHub Actions runs with:
 ```bash
 make ci-local
 ```
-The script builds the runtime image, starts the Compose setup and sets
-`FLAKY_RETRY=1` so the end-to-end scenario is resilient to transient mining
-timeouts.
+The script builds the runtime image, starts the Compose setup and runs the
+pipeline tests without additional retries.
 
 ## Roadmap
 
