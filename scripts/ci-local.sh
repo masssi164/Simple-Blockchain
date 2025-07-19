@@ -15,8 +15,13 @@ popd > /dev/null
 # Build runtime image and start multi-node setup
 docker build -t simple-blockchain-node:runtime -f Dockerfile.backend .
 COMPOSE_FILE=docker-compose.ci.yml
-docker compose -f $COMPOSE_FILE up -d --build
-# Wait for containers to become healthy
+# Start first node and frontend
+docker compose -f $COMPOSE_FILE up -d --build backend1 frontend1
+./scripts/check_compose_health.sh
+# Query peer ID of backend1 and start second node
+PEER_ID=$(curl -s http://localhost:3333/node/peer-id | jq -r .peerId)
+BACKEND1_MULTIADDR="/dns4/backend1/tcp/4001/p2p/${PEER_ID}"
+BACKEND1_MULTIADDR="$BACKEND1_MULTIADDR" docker compose -f $COMPOSE_FILE up -d backend2 frontend2
 ./scripts/check_compose_health.sh
 
 # Run end-to-end tests

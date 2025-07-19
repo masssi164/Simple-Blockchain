@@ -67,15 +67,26 @@ jobs:
     - name: Start Selenium container
       run: docker run -d --name selenium -p 4444:4444 selenium/standalone-chrome
 
-    - name: Build & start multi-node setup
-      id: compose
+    - name: Start backend1 and frontend1
+      id: compose1
       run: |
-        docker compose -f docker-compose.ci.yml up -d --build
+        docker compose -f docker-compose.ci.yml up -d --build backend1 frontend1
+        ./scripts/check_compose_health.sh
+
+    - name: Fetch peer id
+      run: |
+        PEER_ID=$(curl -s http://localhost:3333/node/peer-id | jq -r .peerId)
+        echo "BACKEND1_MULTIADDR=/dns4/backend1/tcp/4001/p2p/${PEER_ID}" >> $GITHUB_ENV
+
+    - name: Start backend2 and frontend2
+      id: compose2
+      run: |
+        docker compose -f docker-compose.ci.yml up -d backend2 frontend2
         docker compose -f docker-compose.ci.yml ps
         ./scripts/check_compose_health.sh
 
     - name: Dump logs if compose failed
-      if: failure() && steps.compose.outcome == 'failure'
+      if: failure() && steps.compose2.outcome == 'failure'
       run: |
         docker compose -f docker-compose.ci.yml ps
         docker compose -f docker-compose.ci.yml logs --no-color
