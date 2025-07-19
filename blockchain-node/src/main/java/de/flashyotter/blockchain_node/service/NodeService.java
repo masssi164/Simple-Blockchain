@@ -8,6 +8,7 @@ import blockchain.core.model.TxOutput;
 import de.flashyotter.blockchain_node.dto.NewBlockDto;
 import de.flashyotter.blockchain_node.dto.NewTxDto;
 import de.flashyotter.blockchain_node.config.MetricsConfig;
+import de.flashyotter.blockchain_node.config.NodeProperties;
 import lombok.RequiredArgsConstructor;
 import blockchain.core.exceptions.BlockchainException;
 import org.springframework.stereotype.Service;
@@ -31,6 +32,7 @@ public class NodeService {
     private final MempoolService               mempool;
     private final MiningService                mining;
     private final P2PBroadcastService          broadcaster;
+    private final de.flashyotter.blockchain_node.config.NodeProperties props;
     private final de.flashyotter.blockchain_node.storage.BlockStore store;
     private final MeterRegistry metrics;
 
@@ -196,5 +198,9 @@ public class NodeService {
         }
 
         chainSnapshot = new java.util.ArrayList<>(current);
+    }
+
+    public de.flashyotter.blockchain_node.config.NodeProperties getProps() {
+        return props;
     }
 }

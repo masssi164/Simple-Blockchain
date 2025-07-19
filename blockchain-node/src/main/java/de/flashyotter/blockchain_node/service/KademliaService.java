@@ -54,4 +54,9 @@ public class KademliaService {
     public String selfId() {
         return props.getId();
     }
+
+    /** Number of peers currently stored in the routing table */
+    public int peerCount() {
+        return registry.all().size();
+    }
 }

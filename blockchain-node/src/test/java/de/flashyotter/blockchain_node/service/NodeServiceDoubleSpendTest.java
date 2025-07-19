@@ -41,6 +41,7 @@ class NodeServiceDoubleSpendTest {
                 mempool,
                 Mockito.mock(MiningService.class),
                 Mockito.mock(P2PBroadcastService.class),
+                props,
                 new InMemoryBlockStore(),
                 new io.micrometer.core.instrument.simple.SimpleMeterRegistry()
         );

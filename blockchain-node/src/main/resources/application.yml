@@ -27,6 +27,8 @@ node:
   libp2p-encrypted: ${NODE_LIBP2P_ENCRYPTED:true}
   snapshot-interval-sec: ${NODE_SNAPSHOT_INTERVAL_SEC:300}
   history-depth: ${NODE_HISTORY_DEPTH:1000}
+  p2p-push-enabled: ${P2P_PUSH_ENABLED:true}
+  sync-timeout-ms: ${SYNC_TIMEOUT_MS:10000}
 
 wallet:
   store-path: .simple-chain/wallet.p12

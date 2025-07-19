@@ -110,6 +110,9 @@ public class Libp2pService {
     /** Protocol version sent in handshakes */
     public String protocolVersion() { return PROTOCOL_VERSION; }
 
+    /** Number of known peers */
+    public int peerCount() { return kademlia.peerCount(); }
+
     /**
      * Dial {@code peer} using the AutoNAT protocol and remember the
      * externally visible multiaddress.
@@ -197,6 +200,16 @@ public class Libp2pService {
             log.warn("libp2p request failed", e);
             return new BlocksDto(java.util.List.of());
         }
+    }
+
+    /** Reactive variant of {@link #requestBlocks(Peer, GetBlocksDto)} with retry. */
+    public reactor.core.publisher.Mono<BlocksDto> requestBlocksReactive(Peer peer, GetBlocksDto req, long timeoutMs) {
+        return reactor.core.publisher.Mono.fromCallable(() -> requestBlocks(peer, req))
+                .subscribeOn(reactor.core.scheduler.Schedulers.boundedElastic())
+                .timeout(java.time.Duration.ofMillis(timeoutMs))
+                .retryWhen(reactor.util.retry.Retry.backoff(3, java.time.Duration.ofMillis(200))
+                        .maxBackoff(java.time.Duration.ofSeconds(5)))
+                .onErrorResume(ex -> reactor.core.publisher.Mono.just(new BlocksDto(java.util.List.of())));
     }
 
     /** Handles peer discovery messages (FIND_NODE/NODES). */

@@ -11,6 +11,7 @@ import org.mockito.Mockito;
 
 import blockchain.core.consensus.Chain;
 import blockchain.core.model.Block;
+import de.flashyotter.blockchain_node.config.NodeProperties;
 
 class NodeServicePageTest {
 
@@ -24,6 +25,7 @@ class NodeServicePageTest {
                 Mockito.mock(MempoolService.class),
                 Mockito.mock(MiningService.class),
                 Mockito.mock(P2PBroadcastService.class),
+                new NodeProperties(),
                 Mockito.mock(de.flashyotter.blockchain_node.storage.BlockStore.class),
                 new io.micrometer.core.instrument.simple.SimpleMeterRegistry());
     }

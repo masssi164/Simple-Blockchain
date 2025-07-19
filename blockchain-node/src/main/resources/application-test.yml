@@ -1,6 +1,8 @@
 node:
   wallet-password: test
   data-path: data
+  p2p-push-enabled: true
+  sync-timeout-ms: 5000
 
 wallet:
   store-path: .simple-chain/wallet.p12

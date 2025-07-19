@@ -34,36 +34,29 @@ public class SyncService {
             if (!syncing.add(peer)) {
                 return Flux.empty();
             }
-            return Flux.<Void>create(sink -> {
-                int height = node.latestBlock().getHeight();
-                int emptyCount = 0;
-                while (emptyCount < 3) {
-                    BlocksDto resp = libp2p.requestBlocks(peer, new GetBlocksDto(height));
-                    if (resp.rawBlocks().isEmpty()) {
-                        emptyCount++;
-                        try {
-                            Thread.sleep(1000);
-                        } catch (InterruptedException e) {
-                            Thread.currentThread().interrupt();
-                            break;
-                        }
-                        continue;
-                    }
-                    emptyCount = 0;
-                    resp.rawBlocks().forEach(raw -> {
-                        try {
-                            blockchain.core.model.Block blk =
-                                    MAPPER.readValue(raw, blockchain.core.model.Block.class);
-                            node.acceptExternalBlock(blk);
-                        } catch (Exception e) {
-                            log.warn("failed to parse block from peer: {}", e.getMessage());
-                        }
-                    });
-                    height = node.latestBlock().getHeight();
-                }
-                sink.complete();
-            }).doFinally(sig -> syncing.remove(peer));
+            return fetchLoop(peer, node.latestBlock().getHeight())
+                    .doFinally(sig -> syncing.remove(peer));
         });
+    }
+
+    private Flux<Void> fetchLoop(Peer peer, int fromHeight) {
+        return libp2p.requestBlocksReactive(peer, new GetBlocksDto(fromHeight), node.getProps().getSyncTimeoutMs())
+                .flatMapMany(dto -> {
+                    if (dto.rawBlocks().isEmpty()) {
+                        return Flux.empty();
+                    }
+                    return Flux.fromIterable(dto.rawBlocks())
+                            .doOnNext(raw -> {
+                                try {
+                                    blockchain.core.model.Block blk = MAPPER.readValue(raw, blockchain.core.model.Block.class);
+                                    node.acceptExternalBlock(blk);
+                                } catch (Exception e) {
+                                    log.warn("failed to parse block from peer: {}", e.getMessage());
+                                }
+                            })
+                            .thenMany(fetchLoop(peer, node.latestBlock().getHeight()));
+                })
+                .onErrorResume(e -> Flux.empty());
     }
 
 }

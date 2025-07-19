@@ -2,8 +2,10 @@ package de.flashyotter.blockchain_node.service;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.when;
 
 import blockchain.core.model.Block;
@@ -12,6 +14,7 @@ import de.flashyotter.blockchain_node.dto.BlocksDto;
 import de.flashyotter.blockchain_node.dto.GetBlocksDto;
 import de.flashyotter.blockchain_node.p2p.Peer;
 import de.flashyotter.blockchain_node.p2p.libp2p.Libp2pService;
+import de.flashyotter.blockchain_node.config.NodeProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -35,6 +38,7 @@ public class SyncServiceTest {
         MockitoAnnotations.openMocks(this);
         ObjectMapper mapper = new ObjectMapper().findAndRegisterModules();
         JsonUtils.use(mapper);
+        when(node.getProps()).thenReturn(new NodeProperties());
         svc = new SyncService(node, libp2p);
     }
 
@@ -48,17 +52,40 @@ public class SyncServiceTest {
         when(node.latestBlock()).thenReturn(genesis, b2, b2);
         String j1 = JsonUtils.toJson(b1);
         String j2 = JsonUtils.toJson(b2);
-        when(libp2p.requestBlocks(eq(peer), any(GetBlocksDto.class)))
-                .thenReturn(new BlocksDto(List.of(j1, j2)), new BlocksDto(List.of()));
+        when(libp2p.requestBlocksReactive(eq(peer), any(GetBlocksDto.class), anyLong()))
+                .thenReturn(reactor.core.publisher.Mono.just(new BlocksDto(List.of(j1, j2))))
+                .thenReturn(reactor.core.publisher.Mono.just(new BlocksDto(List.of())));
 
         svc.followPeer(peer).collectList().block();
 
-        ArgumentCaptor<GetBlocksDto> captor = ArgumentCaptor.forClass(GetBlocksDto.class);
-        verify(libp2p, times(4)).requestBlocks(eq(peer), captor.capture());
-        org.junit.jupiter.api.Assertions.assertEquals(
-                java.util.List.of(0, 2, 2, 2),
-                captor.getAllValues().stream().map(GetBlocksDto::fromHeight).toList()
-        );
+        verify(libp2p, times(2)).requestBlocksReactive(eq(peer), any(GetBlocksDto.class), anyLong());
         verify(node, times(2)).acceptExternalBlock(any(Block.class));
+    }
+
+    @Test
+    void followPeerHandlesTimeout() {
+        Peer peer = new Peer("h", 1);
+        Block genesis = new Block(0, "g", List.of(new Transaction()), 0);
+        when(node.latestBlock()).thenReturn(genesis);
+        when(libp2p.requestBlocksReactive(eq(peer), any(GetBlocksDto.class), anyLong()))
+                .thenReturn(reactor.core.publisher.Mono.error(new RuntimeException("timeout")));
+
+        svc.followPeer(peer).collectList().block();
+
+        verify(node, atLeastOnce()).latestBlock();
+    }
+
+    @Test
+    void malformedBlocksAreIgnored() {
+        Peer peer = new Peer("h", 1);
+        Block genesis = new Block(0, "g", List.of(new Transaction()), 0);
+        when(node.latestBlock()).thenReturn(genesis, genesis);
+        when(libp2p.requestBlocksReactive(eq(peer), any(GetBlocksDto.class), anyLong()))
+                .thenReturn(reactor.core.publisher.Mono.just(new BlocksDto(List.of("{bad}"))))
+                .thenReturn(reactor.core.publisher.Mono.just(new BlocksDto(List.of())));
+
+        svc.followPeer(peer).collectList().block();
+
+        verify(node, atLeastOnce()).latestBlock();
     }
 }

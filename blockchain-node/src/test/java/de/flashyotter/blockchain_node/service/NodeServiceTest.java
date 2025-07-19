@@ -25,6 +25,7 @@ import blockchain.core.model.TxOutput;
 import de.flashyotter.blockchain_node.dto.NewBlockDto;
 import de.flashyotter.blockchain_node.dto.NewTxDto;
 import de.flashyotter.blockchain_node.storage.BlockStore;
+import de.flashyotter.blockchain_node.config.NodeProperties;
 import reactor.core.publisher.Mono;
 
 class NodeServiceTest {
@@ -49,7 +50,8 @@ class NodeServiceTest {
         when(chain.getBlocks()).thenReturn(List.of());
         when(mempool.take(Integer.MAX_VALUE)).thenReturn(List.of());
 
-        svc = new NodeService(chain, mempool, mining, broadcaster, store, metrics);
+        NodeProperties props = new NodeProperties();
+        svc = new NodeService(chain, mempool, mining, broadcaster, props, store, metrics);
     }
 
     @Test

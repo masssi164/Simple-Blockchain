@@ -16,6 +16,7 @@ import blockchain.core.model.Transaction;
 import blockchain.core.model.TxOutput;
 import blockchain.core.model.Wallet;
 import de.flashyotter.blockchain_node.storage.InMemoryBlockStore;
+import de.flashyotter.blockchain_node.config.NodeProperties;
 
 /**
  * Walks through:  ▸ genesis  ▸ +1 mined block
@@ -42,9 +43,10 @@ class NodeServiceUtxoRebuildIT {
         /* wire up NodeService exactly like the real node --------------- */
         NodeService node = new NodeService(
                 chain,
-                Mockito.mock(MempoolService.class),      // ↙ neue Reihenfolge
+                Mockito.mock(MempoolService.class),
                 Mockito.mock(MiningService.class),
                 Mockito.mock(P2PBroadcastService.class),
+                new NodeProperties(),
                 new InMemoryBlockStore(),
                 new io.micrometer.core.instrument.simple.SimpleMeterRegistry());
 
