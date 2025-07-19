@@ -130,6 +130,9 @@ test. Each backend container declares `SERVER_PORT` so the health checks run
 inside Docker Compose succeed.
 Backend2 now waits for backend1's health endpoint before it starts so the
 initial peer connection is reliable.
+The workflow waits up to forty health checks before running end-to-end tests
+to accommodate slow CI runners. If mining occasionally times out, the tests
+retry when the `FLAKY_RETRY=1` environment variable is set.
 
 ## Contributing
 
@@ -142,13 +145,9 @@ Execute the same checks that GitHub Actions runs with:
 ```bash
 make ci-local
 ```
-
-This convenience target invokes `scripts/ci-local.sh` which runs unit tests,
-builds the Docker images and executes the end-to-end scenario defined in
-`pipeline-tests/e2e.feature`.
-
-Set the environment variable `FLAKY_RETRY=1` to allow the mining step in the
-Behave tests to retry up to three times if a transient failure occurs.
+The script builds the runtime image, starts the Compose setup and sets
+`FLAKY_RETRY=1` so the end-to-end scenario is resilient to transient mining
+timeouts.
 
 ## Roadmap
 

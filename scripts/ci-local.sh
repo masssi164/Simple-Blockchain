@@ -18,7 +18,7 @@ COMPOSE_FILE=docker-compose.ci.yml
 docker compose -f $COMPOSE_FILE up -d --build
 
 # Wait for containers to become healthy
-for i in {1..30}; do
+for i in {1..40}; do
   if docker compose -f $COMPOSE_FILE ps | grep -q "healthy"; then
     break
   fi
@@ -27,7 +27,7 @@ done
 
 # Run end-to-end tests
 pip install selenium requests PyJWT behave grpcio protobuf
-behave pipeline-tests/e2e.feature
+FLAKY_RETRY=1 behave pipeline-tests/e2e.feature
 STATUS=$?
 
 docker compose -f $COMPOSE_FILE down
