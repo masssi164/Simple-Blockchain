@@ -1,4 +1,5 @@
 plugins {
+    id 'base'
     id 'com.avast.gradle.docker-compose' version '0.17.12'
 }
 
@@ -9,4 +10,29 @@ dockerCompose {
     projectName     = 'simple-blockchain'
     // Compose darf die Images selbst bauen
     buildBeforeUp   = true
+}
+
+tasks.register('installDocker', Exec) {
+    group = 'docker'
+    description = 'Install Docker Engine using the official convenience script if missing'
+    commandLine 'sh', '-c', "command -v docker >/dev/null || curl -fsSL https://get.docker.com | sh"
+}
+
+tasks.register('ciLocal') {
+    group = 'verification'
+    description = 'Run pipeline tests with Docker Compose'
+    dependsOn 'installDocker', 'composeUp'
+    finalizedBy 'composeDown'
+}
+
+tasks.named('build') {
+    dependsOn 'installDocker'
+}
+
+tasks.named('composeUp') {
+    dependsOn 'installDocker'
+}
+
+tasks.named('composeBuild') {
+    dependsOn 'installDocker'
 }

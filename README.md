@@ -140,13 +140,15 @@ Fork the repo, create a branch, run `./gradlew verify` and open a PR.
 
 ## Run CI locally
 
-Execute the same checks that GitHub Actions runs with:
+Execute the same checks that GitHub Actions runs with. Gradle installs Docker if
+necessary (also automatically when running `./gradlew build`) and then launches
+the Compose setup:
 
 ```bash
-make ci-local
+./gradlew ciLocal
 ```
-The script builds the runtime image, starts the Compose setup and runs the
-pipeline tests without additional retries.
+The task builds the runtime image, starts the containers and runs the pipeline
+tests without additional retries.
 
 ## Roadmap
 
