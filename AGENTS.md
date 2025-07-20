@@ -43,14 +43,22 @@ Documentation tags
 - `[CI_MISMATCH]` - README mentions GitHub Actions but `.github/AGENTS.md` states none.
 - `[CI_REDUNDANT]` - Local CI described via `./scripts/ci-local.sh` here but `README.md` references `./gradlew ciLocal`.
 - `[DOC_BAD_TASK]` - README instructs running `./gradlew verify` which is not a defined Gradle task.
+- `[DOC_BAD_ENV]`  - `.env` uses `MINING_THREADS` but the code expects `NODE_MINING_THREADS`.
+- `[DOC_BAD_ADDR]` - README says `NODE_PEERS` accepts multiaddresses but the code expects `host:port` pairs.
 
 Error categories
 ----------------
 | Category | Tags | Description |
 |---------|------|-------------|
 | CI | `CI_MISMATCH`, `CI_REDUNDANT` | Inconsistent or duplicate CI documentation |
-| DOC | `DOC_BAD_TASK` | Invalid or outdated instructions |
+| DOC | `DOC_BAD_TASK`, `DOC_BAD_ENV`, `DOC_BAD_ADDR` | Invalid or outdated instructions |
+| LOGIC | `LOGIC_BAD_CHECK`, `LOGIC_BAD_HASH`, `LOGIC_RESOURCE_LEAK`, `LOGIC_BAD_ORDER`, `LOGIC_MINING_LOOP`, `LOGIC_BAD_ADDR` | Flawed or inconsistent code logic |
 
 Principles
 ----------
 Record mismatching, redundant or logically incorrect guidance with one of the tags above in the `AGENTS.md` located next to the offending file. Reuse existing categories where possible so the registry stays manageable.
+
+Errors
+------
+- `[DOC_BAD_ENV]` - .env uses MINING_THREADS instead of NODE_MINING_THREADS.
+- `[DOC_BAD_ADDR]` - README claims NODE_PEERS accepts multiaddresses but NodeProperties expects host:port.
