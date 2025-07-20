@@ -10,7 +10,8 @@ Packages under `src/main/java/blockchain/core`:
 - `serialization` – JSON helpers (`JsonUtils`).
 - `exceptions` – custom runtime `BlockchainException`.
 
-Proto definitions in `blockchain-node/src/main/proto` map these models for gRPC.
+Unit tests live under `src/test/java/simple/blockchain` mirroring these packages.
+They cover consensus rules, wallet operations and mempool edge cases.
 
-Tests in `src/test/java` mirror these packages. Build logic resides in
-`build.gradle`.
+`build.gradle` configures JDK 21 toolchains and generates JaCoCo reports.
+Proto definitions in `blockchain-node/src/main/proto` map these models for gRPC.
