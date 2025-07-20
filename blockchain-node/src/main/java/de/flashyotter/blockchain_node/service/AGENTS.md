@@ -15,3 +15,14 @@ NodeService -> MempoolService: submitTx()
 NodeService -> P2PBroadcastService: broadcast()
 @enduml
 ```
+
+Errors
+------
+- `[LOGIC_RESOURCE_LEAK]` - `SnapshotService.compactSnapshots` does not close
+  the directory stream returned by `Files.list`, leaking file handles.
+- `[LOGIC_BAD_ORDER]` - `NodeService.blockPage` returns pages in ascending order
+  despite claiming a descending view.
+- `[LOGIC_MINING_LOOP]` - `MiningService.mine` increments the nonce several
+  times before re-checking the proof, skipping candidate hashes.
+- `[LOGIC_BAD_CHECK]` - `PeerRegistry.addAll` adds peers without marking them
+  pending for dialing.
