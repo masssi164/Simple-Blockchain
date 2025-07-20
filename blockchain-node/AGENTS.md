@@ -11,8 +11,13 @@ Important paths under `src/main/java/de/flashyotter/blockchain_node`:
 - `wallet/` – wallet and keystore utilities.
 - `grpc/` – service implementations from `src/main/proto`.
 
-Resources in `src/main/resources` define application defaults. Tests in
-`src/test` cover controllers, services and networking.
+gRPC and P2P message schemas are defined in `src/main/proto`. The module
+produces a runnable Spring Boot JAR via `build.gradle` which also configures
+protobuf code generation.
+
+Tests under `src/test` exercise REST controllers, services and networking
+components.
+
 
 ```plantuml
 @startuml

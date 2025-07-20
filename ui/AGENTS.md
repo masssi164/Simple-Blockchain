@@ -9,4 +9,7 @@ Key files:
 - `tsconfig*.json` – TypeScript compiler settings.
 - Communicates with the backend via REST and gRPC clients.
 
+Unit tests under `src/__tests__` run with Vitest. A Gradle task delegates to
+`npm test` so backend and frontend tests can be executed together.
+
 Run `npm install` then `npm run dev` in this directory to start the dev server.
