@@ -11,6 +11,8 @@ import io.libp2p.protocol.autonat.AutonatProtocol;
 import io.libp2p.protocol.autonat.AutonatProtocol.Binding;
 import org.apache.tuweni.kademlia.KademliaRoutingTable;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import de.flashyotter.blockchain_node.p2p.Peer;
 import io.libp2p.security.noise.NoiseXXSecureChannel;
 import io.libp2p.security.plaintext.PlaintextInsecureChannel;
@@ -30,9 +32,25 @@ public class Libp2pConfig {
                 io.libp2p.core.security.SecureChannel> secureFactory =
                 props.isLibp2pEncrypted() ? NoiseXXSecureChannel::new : PlaintextInsecureChannel::new;
 
+        Path keyFile = java.nio.file.Path.of(props.getLibp2pKeyPath());
+        io.libp2p.core.crypto.PrivKey priv;
+        try {
+            if (java.nio.file.Files.exists(keyFile)) {
+                byte[] raw = java.nio.file.Files.readAllBytes(keyFile);
+                priv = Secp256k1Kt.unmarshalSecp256k1PrivateKey(raw);
+            } else {
+                var pair = Secp256k1Kt.generateSecp256k1KeyPair();
+                priv = pair.component1();
+                Path dir = keyFile.getParent();
+                if (dir != null) java.nio.file.Files.createDirectories(dir);
+                java.nio.file.Files.write(keyFile, priv.bytes());
+            }
+        } catch (java.io.IOException e) {
+            throw new RuntimeException("Failed to load libp2p key", e);
+        }
+
         Host host = new HostBuilder()
-                .builderModifier(b -> b.getIdentity().setFactory(() ->
-                        Secp256k1Kt.generateSecp256k1KeyPair().component1()))
+                .builderModifier(b -> b.getIdentity().setFactory(() -> priv))
                 .transport(TcpTransport::new)
                 .secureChannel(secureFactory)
                 .muxer(StreamMuxerProtocol::getYamux)
