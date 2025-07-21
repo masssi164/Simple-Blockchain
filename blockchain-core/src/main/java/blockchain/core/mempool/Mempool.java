@@ -101,6 +101,8 @@ public class Mempool {
             inSum += utxo.get(in.getReferencedOutputId()).value();
         }
         double outSum = tx.getOutputs().stream().mapToDouble(TxOutput::value).sum();
+        if (outSum > inSum)
+            throw new BlockchainException("outputs exceed inputs");
         return inSum - outSum;
     }
 

@@ -132,7 +132,7 @@ public class Chain {
             throw new BlockchainException("oversized block", e);
         }
         if (blockBytes > ConsensusParams.MAX_BLOCK_SIZE_BYTES
-            || b.getTxList().size() > ConsensusParams.MAX_BLOCK_SIZE_BYTES)
+            || b.getTxList().size() > ConsensusParams.MAX_TXS_PER_BLOCK)
             throw new BlockchainException("oversized block");
 
         indexBlock(b);

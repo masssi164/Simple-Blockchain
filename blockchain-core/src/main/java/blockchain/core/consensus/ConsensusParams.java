@@ -5,6 +5,8 @@ public final class ConsensusParams {
     public static final long   TARGET_BLOCK_INTERVAL_MS = 60_000;
     public static final int    DIFFICULTY_WINDOW        = 10;
     public static final int    MAX_BLOCK_SIZE_BYTES     = 1_000_000;
+    /** Maximum number of transactions allowed in a single block. */
+    public static final int    MAX_TXS_PER_BLOCK        = 1000;
     /**
      * Blocks that must be mined before a coinbase output becomes spendable.
      * The default is {@code 100} but it can be overridden via the system
