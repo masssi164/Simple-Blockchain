@@ -8,3 +8,4 @@
   use these running services.
 - Added a Gradle build step in the workflow to ensure the project compiles
   before launching the Compose services.
+- Added curl to the runtime Docker image so health checks succeed.
