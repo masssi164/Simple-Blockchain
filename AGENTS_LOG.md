@@ -9,3 +9,8 @@
 - Added a Gradle build step in the workflow to ensure the project compiles
   before launching the Compose services.
 - Added curl to the runtime Docker image so health checks succeed.
+- Removed Compose health checks and the corresponding workflow step.
+- Runtime Docker image no longer installs curl.
+- CI now dumps `docker compose` logs after running tests.
+- Removed obsolete Behave tests and updated Makefile to run only pytest.
+- Documented pipeline planning guidelines in pipeline/AGENTS.md.
