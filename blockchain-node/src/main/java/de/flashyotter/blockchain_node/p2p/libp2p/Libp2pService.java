@@ -255,7 +255,7 @@ public class Libp2pService {
                     }
                     if (ctx.channel().remoteAddress() instanceof java.net.InetSocketAddress isa) {
                         String host = isa.getAddress().getHostAddress();
-                        kademlia.store(new Peer(host, hs.listenPort(), hs.peerId()));
+                        kademlia.store(new Peer(host, hs.restPort(), hs.listenPort(), hs.peerId()));
                     }
                 } else if (dto instanceof FindNodeDto find) {
                     var nearest = kademlia.closest(find.nodeId(), 16)
