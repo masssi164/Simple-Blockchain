@@ -2,11 +2,25 @@ import subprocess
 import time
 import requests
 import grpc
+import pytest
 
 from .node_pb2 import Empty
 from .node_pb2_grpc import MiningStub, ChainStub, WalletStub
 
 COMPOSE_FILE = 'docker-compose.ci.yml'
+
+
+def _docker_available():
+    try:
+        subprocess.run(['docker', 'info'], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        return True
+    except Exception:
+        return False
+
+
+if not _docker_available():
+    pytest.skip('Docker not available', allow_module_level=True)
+
 BACKEND1_GRPC = 9090
 BACKEND2_GRPC = 9091
 BACKEND1_REST = 'http://localhost:3333'
