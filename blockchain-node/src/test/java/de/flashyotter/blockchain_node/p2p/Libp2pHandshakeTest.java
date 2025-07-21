@@ -107,6 +107,6 @@ class Libp2pHandshakeTest {
         method.invoke(handler, ctx, buf);
 
         verify(ctx, never()).close();
-        assertTrue(reg.all().contains(new Peer("1.2.3.4", 7000, "peer2")));
+        assertTrue(reg.all().contains(new Peer("1.2.3.4", 7001, 7000, "peer2")));
     }
 }

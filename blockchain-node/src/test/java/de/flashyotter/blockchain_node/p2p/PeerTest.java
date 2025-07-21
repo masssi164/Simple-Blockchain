@@ -15,19 +15,19 @@ class PeerTest {
 
     @Test
     void multiAddrUsesDnsForHostnames() {
-        Peer p = new Peer("example.com", 4001);
+        Peer p = new Peer("example.com", 0, 4001);
         assertEquals("/dns4/example.com/tcp/4001", p.multiAddr());
     }
 
     @Test
     void multiAddrUsesIp4ForNumericHosts() {
-        Peer p = new Peer("1.2.3.4", 4001);
+        Peer p = new Peer("1.2.3.4", 0, 4001);
         assertEquals("/ip4/1.2.3.4/tcp/4001", p.multiAddr());
     }
 
     @Test
     void multiAddrUsesIp6ForColonAddresses() {
-        Peer p = new Peer("::1", 4001);
+        Peer p = new Peer("::1", 0, 4001);
         assertEquals("/ip6/::1/tcp/4001", p.multiAddr());
     }
 
@@ -35,7 +35,7 @@ class PeerTest {
     void fromStringParsesValid() {
         Peer p = Peer.fromString("host:1234");
         assertEquals("host", p.getHost());
-        assertEquals(1234, p.getPort());
+        assertEquals(1234, p.getRestPort());
     }
 
     @Test

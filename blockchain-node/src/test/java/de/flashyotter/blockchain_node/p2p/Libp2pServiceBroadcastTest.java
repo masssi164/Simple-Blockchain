@@ -106,7 +106,7 @@ class Libp2pServiceBroadcastTest {
 
     @Test
     void broadcastTransaction() {
-        Peer p2 = new Peer("127.0.0.1", props2.getLibp2pPort(), h2.getPeerId().toBase58());
+        Peer p2 = new Peer("127.0.0.1", 0, props2.getLibp2pPort(), h2.getPeerId().toBase58());
         Transaction tx = new Transaction();
         tx.getOutputs().add(new TxOutput(1.0, "addr"));
         NewTxDto dto = new NewTxDto(JsonUtils.toJson(tx));
@@ -118,7 +118,7 @@ class Libp2pServiceBroadcastTest {
 
     @Test
     void broadcastBlock() {
-        Peer p2 = new Peer("127.0.0.1", props2.getLibp2pPort(), h2.getPeerId().toBase58());
+        Peer p2 = new Peer("127.0.0.1", 0, props2.getLibp2pPort(), h2.getPeerId().toBase58());
         Transaction coin = new Transaction();
         coin.getOutputs().add(new TxOutput(50.0, "miner"));
         blockchain.core.model.Block blk = new blockchain.core.model.Block(1, "prev", List.of(coin), 1);
