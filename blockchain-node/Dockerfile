@@ -35,7 +35,6 @@ RUN gradle :blockchain-node:bootJar --no-daemon
 # 2) Runtime Stage: slim JRE with the built JAR
 # ------------------------------------------------
 FROM eclipse-temurin:21-jre
-RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
 # Build-time port is passed from docker-compose
 ARG SERVER_PORT=3333

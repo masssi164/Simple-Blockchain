@@ -21,11 +21,6 @@ services:
     volumes:
       - ./data1:/app/data1
       - ./wallet1:/root/.simple-chain
-    healthcheck:
-      test: ["CMD", "curl", "-fs", "http://localhost:3333/actuator/health"]
-      interval: 5s
-      timeout: 5s
-      retries: 12
   frontend1:
     build:
       context: ./ui
@@ -38,8 +33,7 @@ services:
     ports:
       - "8081:80"
     depends_on:
-      backend1:
-        condition: service_healthy
+      - backend1
 
   backend2:
     image: simple-blockchain-node:runtime
@@ -47,8 +41,7 @@ services:
       context: .
       dockerfile: Dockerfile.backend
     depends_on:
-      backend1:
-        condition: service_healthy
+      - backend1
     environment:
       SERVER_PORT: 3334
       NODE_LIBP2P_PORT: 4002
@@ -65,11 +58,6 @@ services:
     volumes:
       - ./data2:/app/data2
       - ./wallet2:/root/.simple-chain
-    healthcheck:
-      test: ["CMD", "curl", "-fs", "http://localhost:3334/actuator/health"]
-      interval: 5s
-      timeout: 5s
-      retries: 12
   frontend2:
     build:
       context: ./ui
@@ -82,5 +70,4 @@ services:
     ports:
       - "8082:80"
     depends_on:
-      backend2:
-        condition: service_healthy
+      - backend2
