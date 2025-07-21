@@ -15,8 +15,8 @@ Directories and notable files
   - `src` holds React components and API helpers.
 - `gradle/` – Gradle wrapper and version catalog `libs.versions.toml`.
 - `data/` – runtime LevelDB store for blocks and wallet.
-- `pipeline-tests/` – Behave features validating multi-node sync and regression.
-- `scripts/` – local CI (`ci-local.sh`) and Docker health check scripts.
+- `tests/` – Python regression tests executed in CI.
+- `scripts/` – auxiliary scripts removed in favour of `make ci`.
 - `.github/` – GitHub Actions workflow; see its `AGENTS.md`.
 - `.vscode/` – launch configuration for developing in VS Code.
 - `settings.gradle` – lists included modules.
@@ -36,7 +36,7 @@ UI --> "blockchain-node": REST/WS calls
 ```
 
 Each module creates a `build/` directory with compiled classes and test reports after running Gradle. These outputs are not tracked in version control.
-Run `./scripts/ci-local.sh` to perform a full local build and execute the Behave scenarios under `pipeline-tests/`.
+Run `make ci` to execute the Java, Node and Python tests locally.
 
 Documentation tags
 -------------------

@@ -6,10 +6,8 @@ Dieser Plan fasst die End-to-End und Regressionstests zusammen, die die alte Git
 - **Integrationstests**
   - *blockchain-node*: startet den Spring Boot Kontext und ruft `/actuator/health` auf.
   - *ui*: führt den Produktionsbuild mittels `npm run build` aus.
-- **E2E-Tests**
-  - Behave Features unter `pipeline-tests/` orchestrieren zwei Container sowie Selenium und pruefen Block-Synchronisation.
 - **Regressionstests**
-  - Das Feature `regression.feature` stellt sicher, dass `./gradlew` und `npm` Befehle funktionieren.
+  - Python Tests im Verzeichnis `tests` prüfen Docker Compose und die Toolchain.
 
 ## Wichtige Mechanismen
 1. Starten und Health-Check des Nodes.
@@ -17,7 +15,7 @@ Dieser Plan fasst die End-to-End und Regressionstests zusammen, die die alte Git
 3. Synchronisation zweier Nodes inklusive Mining und Transaktionen.
 4. Ausfuehren von `./gradlew help` sowie `npm test` als Sanity-Check fuer die Toolchain.
 
-Die Tests werden lokal mit `behave` oder ueber die Gradle/Vitest Tasks ausgefuehrt.
+Die Tests werden lokal mit `make ci` ausgeführt.
 - **Auth-Tests**
   - Integrationstest prueft, dass REST Endpunkte ein gueltiges JWT benoetigen.
 - **gRPC-Tests**
