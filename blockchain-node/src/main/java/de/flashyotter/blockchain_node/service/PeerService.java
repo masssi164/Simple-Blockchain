@@ -30,10 +30,7 @@ public class PeerService {
     @PostConstruct
     public void init() {
         props.getPeers().forEach(addr -> {
-            var sp = addr.split(":");
-            String host = sp[0];
-            int port = Integer.parseInt(sp[1]);
-            Peer peer = new Peer(host, port);
+            Peer peer = de.flashyotter.blockchain_node.p2p.Peer.parse(addr);
             registry.add(peer);
             kademlia.store(peer);
             postAdd(peer);

@@ -138,9 +138,8 @@ public class SnapshotService {
     private void compactSnapshots() {
         Path dir = Path.of(props.getDataPath(), "snapshots");
         if (!Files.isDirectory(dir)) return;
-        try {
-            List<Path> snaps = Files.list(dir)
-                    .filter(p -> p.toString().endsWith(".json.gz"))
+        try (java.util.stream.Stream<Path> s = Files.list(dir)) {
+            List<Path> snaps = s.filter(p -> p.toString().endsWith(".json.gz"))
                     .sorted()
                     .toList();
             int keep = 5;

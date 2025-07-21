@@ -45,6 +45,22 @@ public class Peer {
         return new Peer(parts[0], Integer.parseInt(parts[1]));
     }
 
+    /** Parse either host:port or multiaddress notation. */
+    public static Peer parse(String s) {
+        if (s.startsWith("/")) {
+            String[] tokens = s.split("/");
+            String host = tokens.length > 2 ? tokens[2] : "";
+            int idx = java.util.Arrays.asList(tokens).indexOf("tcp");
+            int port = idx > 0 && idx + 1 < tokens.length ? Integer.parseInt(tokens[idx + 1]) : 0;
+            String id = null;
+            for (int i = idx + 2; i < tokens.length - 1; i++) {
+                if ("p2p".equals(tokens[i])) { id = tokens[i + 1]; break; }
+            }
+            return new Peer(host, port, id);
+        }
+        return fromString(s);
+    }
+
     @Override
     public String toString() {
         return host + ':' + port;

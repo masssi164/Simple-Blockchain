@@ -85,7 +85,8 @@ Use `data2`/`wallet2` etc. for additional nodes.
 
 ### 3. Connect peers
 
-Set `NODE_PEERS` to a comma-separated list of multiaddresses and expose `NODE_LIBP2P_PORT` so others can dial your node.
+Set `NODE_PEERS` to a comma-separated list of `host:port` pairs and expose
+`NODE_LIBP2P_PORT` so others can dial your node.
 
 ### 4. Stop
 
@@ -136,18 +137,18 @@ using `scripts/check_compose_health.sh` before executing the end-to-end tests.
 
 ## Contributing
 
-Fork the repo, create a branch, run `./gradlew verify` and open a PR.
+Fork the repo, create a branch, run `./scripts/ci-local.sh` and open a PR.
 
 ## Run CI locally
 
-Execute the same checks that GitHub Actions runs with. Gradle installs Docker if
-necessary (also automatically when running `./gradlew build`) and then launches
-the Compose setup:
+Execute the same checks that GitHub Actions runs with. The helper script will
+build the backend and UI, start the Docker Compose environment and run the
+Behave scenarios:
 
 ```bash
-./gradlew ciLocal
+./scripts/ci-local.sh
 ```
-The task builds the runtime image, starts the containers and runs the pipeline
+The script builds the runtime image, starts the containers and runs the pipeline
 tests without additional retries.
 
 ## Roadmap

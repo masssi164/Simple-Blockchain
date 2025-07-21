@@ -5,7 +5,3 @@ Data model classes.
 - `Wallet` — simple key pair wrapper.
 - `Block.java.agent.md` — explanation of mining helper.
 
-Errors
-------
-- `[LOGIC_BAD_HASH]` - `Transaction` concatenates fields without delimiters
-  when computing the hash, leading to potential collisions.

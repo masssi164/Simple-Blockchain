@@ -45,10 +45,10 @@ class NodeServicePageTest {
 
         List<Block> page0 = svc.blockPage(0, 5);
         assertEquals(5, page0.size());
-        assertEquals(2, page0.get(0).getHeight());
+        assertEquals(6, page0.get(0).getHeight());
 
         List<Block> page1 = svc.blockPage(1, 5);
         assertEquals(2, page1.size());
-        assertEquals(0, page1.get(0).getHeight());
+        assertEquals(1, page1.get(0).getHeight());
     }
 }

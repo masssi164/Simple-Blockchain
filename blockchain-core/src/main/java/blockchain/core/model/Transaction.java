@@ -83,12 +83,13 @@ public class Transaction implements java.io.Serializable {
 /* -------- internal -------- */
 private String computeTxHashHex() {
     StringBuilder sb = new StringBuilder();
-    inputs .forEach(i -> sb.append(i.getReferencedOutputId()));
+    inputs.forEach(i -> sb.append(i.getReferencedOutputId()).append('|'));
     // NOTE: recipientAddress(), not recipient()
-    outputs.forEach(o -> sb.append(o.recipientAddress()).append(o.value()));
-    if (isCoinbase()) {
-        if (coinbaseNonce != null) sb.append(coinbaseNonce);
-    }
+    outputs.forEach(o -> sb.append(o.recipientAddress())
+                           .append(':')
+                           .append(o.value())
+                           .append('|'));
+    if (isCoinbase() && coinbaseNonce != null) sb.append(coinbaseNonce);
     return HashingUtils.computeSha256Hex(sb.toString());
 }
 

@@ -60,9 +60,9 @@ public class Libp2pService {
                 PROTOCOL_TX.get(0), TxHandler::new));
 
         if (!props.getPeers().isEmpty()) {
-            var sp = props.getPeers().get(0).split(":");
             try {
-                discoverPublicAddr(new Peer(sp[0], Integer.parseInt(sp[1])));
+                Peer first = Peer.parse(props.getPeers().get(0));
+                discoverPublicAddr(first);
             } catch (Exception e) {
                 log.warn("AutoNAT discovery failed: {}", e.getMessage());
             }

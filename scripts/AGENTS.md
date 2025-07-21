@@ -10,4 +10,5 @@ The `scripts` directory contains helper shell scripts used during development an
 Both scripts assume Docker and the compose files at the repository root are
 available on the host.
 
-`[CI_REDUNDANT]` - Script used by `make ci-local`; README instead documents a Gradle task.
+The README now documents `scripts/ci-local.sh` as the recommended way to run
+the full pipeline locally.

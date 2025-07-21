@@ -139,10 +139,12 @@ public class NodeService {
      */
     public List<Block> blockPage(int page, int size) {
         List<Block> all = chain.getBlocks();
-        int end   = all.size() - page * size;
-        if (end <= 0) return List.of();
-        int start = Math.max(0, end - size);
-        return all.subList(start, end);
+        int startIdx = all.size() - 1 - page * size;
+        if (startIdx < 0) return List.of();
+        int endIdx = Math.max(0, startIdx - size + 1);
+        java.util.List<Block> slice = new java.util.ArrayList<>(all.subList(endIdx, startIdx + 1));
+        java.util.Collections.reverse(slice);
+        return slice;
     }
 
     /**

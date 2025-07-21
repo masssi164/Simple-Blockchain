@@ -91,9 +91,7 @@ public class MiningService {
                         result.compareAndSet(null, work);
                         break;
                     }
-                    for (int i = 0; i < threads && result.get() == null; i++) {
-                        work.getHeader().incrementNonce();
-                    }
+                    work.getHeader().incrementNonce();
                 }
             })).get();
         } catch (InterruptedException | ExecutionException e) {

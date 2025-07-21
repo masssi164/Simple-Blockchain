@@ -40,11 +40,6 @@ Run `./scripts/ci-local.sh` to perform a full local build and execute the Behave
 
 Documentation tags
 -------------------
-- `[CI_MISMATCH]` - README mentions GitHub Actions but `.github/AGENTS.md` states none.
-- `[CI_REDUNDANT]` - Local CI described via `./scripts/ci-local.sh` here but `README.md` references `./gradlew ciLocal`.
-- `[DOC_BAD_TASK]` - README instructs running `./gradlew verify` which is not a defined Gradle task.
-- `[DOC_BAD_ENV]`  - `.env` uses `MINING_THREADS` but the code expects `NODE_MINING_THREADS`.
-- `[DOC_BAD_ADDR]` - README says `NODE_PEERS` accepts multiaddresses but the code expects `host:port` pairs.
 
 Error categories
 ----------------
@@ -58,7 +53,3 @@ Principles
 ----------
 Record mismatching, redundant or logically incorrect guidance with one of the tags above in the `AGENTS.md` located next to the offending file. Reuse existing categories where possible so the registry stays manageable.
 
-Errors
-------
-- `[DOC_BAD_ENV]` - .env uses MINING_THREADS instead of NODE_MINING_THREADS.
-- `[DOC_BAD_ADDR]` - README claims NODE_PEERS accepts multiaddresses but NodeProperties expects host:port.
