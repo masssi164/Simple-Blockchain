@@ -1,0 +1,1 @@
+Loads application.yml and environment variables into a POJO. Provides configuration such as ports, snapshot settings and wallet password. Recent P2P updates introduced `libp2pKeyPath` which stores the libp2p private key on disk and is resolved relative to `dataPath`.

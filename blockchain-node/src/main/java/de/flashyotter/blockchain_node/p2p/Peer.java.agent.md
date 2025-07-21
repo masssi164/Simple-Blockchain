@@ -1,3 +1,4 @@
-Represents a remote blockchain node. Provides the `wsUrl()` helper to build the
-WebSocket endpoint and a `fromString` factory to parse `host:port` pairs. Used by
-`PeerService` and networking tests.
+Represents a remote blockchain node. Stores both the REST API port and the
+libp2p port plus an optional peer ID. `wsUrl()` builds the WebSocket endpoint
+using the REST port while `multiAddr()` derives the libp2p multiaddress.
+`fromString` still parses the canonical `host:port` form for convenience.
