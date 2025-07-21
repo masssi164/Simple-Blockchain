@@ -17,5 +17,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+      - name: Build project
+        run: ./gradlew build --no-daemon
+      - name: Start services
+        run: docker compose -f docker-compose.ci.yml up -d
+      - name: Wait for health
+        run: scripts/check_compose_health.sh
       - name: Run pipeline
         run: make ci
+      - name: Stop services
+        if: always()
+        run: docker compose -f docker-compose.ci.yml down -v
