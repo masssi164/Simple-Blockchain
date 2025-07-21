@@ -128,8 +128,10 @@ peers temporarily fail to respond.
 ## CI pipeline
 
 GitHub Actions runs the Java, Node and Python tests on every pull request using
-the `make ci` target. The workflow installs JDK, Node and the required Python
-packages before executing the build and unit tests.
+the `make ci` target. The workflow first builds the project via Gradle, then
+starts the containers defined in `docker-compose.ci.yml` and waits until they
+are healthy. The Python end-to-end tests simply connect to these running
+services instead of managing Docker Compose themselves.
 
 ## Contributing
 
