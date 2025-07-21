@@ -18,8 +18,6 @@ jobs:
         with:
           node-version: '20'
       - name: Install Python deps
-        run: |
-          pip install behave PyYAML grpcio selenium requests PyJWT protobuf
-      - name: Run CI script
-        run: |
-          make ci-local
+        run: pip install pytest PyYAML
+      - name: Run pipeline
+        run: make ci

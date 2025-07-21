@@ -7,8 +7,7 @@ Thank you for your interest in improving this project!
 Run the same checks as GitHub Actions locally with:
 
 ```bash
-./scripts/ci-local.sh
+make ci
 ```
 
-The script runs unit tests, builds a reusable runtime image and executes the
-end-to-end scenario defined in `pipeline-tests/e2e.feature`.
+This command executes the Java, Node and Python tests.

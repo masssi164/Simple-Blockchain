@@ -1,4 +1,3 @@
 This directory hosts the GitHub Actions workflow defined in
-`workflows/ci.yml`. Local integration and regression tests under
-`pipeline-tests/` can be executed with `behave`.
+`workflows/ci.yml`. The workflow invokes `make ci` to run all tests.
 

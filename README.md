@@ -125,31 +125,21 @@ peers temporarily fail to respond.
 
 ## CI pipeline
 
-GitHub Actions run Gradle and UI tests on every pull request. A Docker Compose
-setup with two nodes powers the end-to-end tests. The workflow installs JDK and
-Node, caches dependencies and then packages the Spring Boot app with
-`bootJar`. Selenium is started alongside the services for a full integration
-test. Each backend container declares `SERVER_PORT` so the health checks run
-inside Docker Compose succeed.
-Backend2 now relies on Compose's `service_healthy` condition, removing the
-custom wait loop. The workflow waits for all containers to report `healthy`
-using `scripts/check_compose_health.sh` before executing the end-to-end tests.
+GitHub Actions runs the Java, Node and Python tests on every pull request using
+the `make ci` target. The workflow installs JDK, Node and the required Python
+packages before executing the build and unit tests.
 
 ## Contributing
 
-Fork the repo, create a branch, run `./scripts/ci-local.sh` and open a PR.
+Fork the repo, create a branch, run `make ci` and open a PR.
 
 ## Run CI locally
 
-Execute the same checks that GitHub Actions runs with. The helper script will
-build the backend and UI, start the Docker Compose environment and run the
-Behave scenarios:
+Execute the same checks that GitHub Actions runs with:
 
 ```bash
-./scripts/ci-local.sh
+make ci
 ```
-The script builds the runtime image, starts the containers and runs the pipeline
-tests without additional retries.
 
 ## Roadmap
 
