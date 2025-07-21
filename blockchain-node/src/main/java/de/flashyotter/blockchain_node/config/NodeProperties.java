@@ -37,6 +37,9 @@ public class NodeProperties {
     /** Enable Noise encryption for libp2p connections */
     private boolean libp2pEncrypted = true;
 
+    /** File storing the persistent libp2p private key */
+    private String libp2pKeyPath = "libp2p.key";
+
     /** HTTP/WebSocket server port */
     @Value("${server.port:0}")
     private int port;
@@ -72,6 +75,10 @@ public class NodeProperties {
         String peersEnv = System.getenv("NODE_PEERS");
         if ((peers == null || peers.isEmpty()) && peersEnv != null && !peersEnv.isBlank()) {
             peers = Arrays.asList(peersEnv.split(","));
+        }
+
+        if (!java.nio.file.Path.of(libp2pKeyPath).isAbsolute()) {
+            libp2pKeyPath = java.nio.file.Path.of(dataPath, libp2pKeyPath).toString();
         }
 
         if (id != null && !id.isBlank()) return;

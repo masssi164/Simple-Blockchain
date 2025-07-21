@@ -92,6 +92,16 @@ public class Libp2pService {
         return host.getPeerId().toBase58();
     }
 
+    /** Simple ENR string composed of the public address and peer ID */
+    public String enr() {
+        String addr = getPublicAddr();
+        if (addr == null && !host.listenAddresses().isEmpty()) {
+            addr = host.listenAddresses().get(0).toString();
+        }
+        if (addr == null) addr = "";
+        return addr + "/p2p/" + peerId();
+    }
+
     public void broadcastBlocks(java.util.Collection<Peer> peers, NewBlockDto dto) {
         peers.forEach(p -> sendBlock(p, dto));
     }

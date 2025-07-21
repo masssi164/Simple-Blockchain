@@ -37,4 +37,12 @@ class NodeControllerTest {
            .andExpect(status().isOk())
            .andExpect(content().json("{\"peerId\":\"pid-abc\"}"));
     }
+
+    @Test
+    void exposesEnr() throws Exception {
+        when(libp2p.enr()).thenReturn("/ip4/127.0.0.1/tcp/1/p2p/abc");
+        mvc.perform(get("/node/enr"))
+           .andExpect(status().isOk())
+           .andExpect(content().json("{\"enr\":\"/ip4/127.0.0.1/tcp/1/p2p/abc\"}"));
+    }
 }
