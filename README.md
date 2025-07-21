@@ -13,6 +13,8 @@ A lean Java&nbsp;21 and Spring Boot&nbsp;3 blockchain node demonstrating a moder
 - Prometheus metrics exported at `/actuator/prometheus`
 - gRPC API for chain, wallet and mining operations
 - Compose tasks `composeUp` and `composeDown` manage Docker
+- If the runtime image `simple-blockchain-node:runtime` doesn't exist
+  locally, Compose builds it automatically from `Dockerfile.backend`.
 - Write-ahead log for replay-safe LevelDB storage
 - Compressed UTXO snapshots tracked via manifest
 - Structured JSON logging with Prometheus metrics
