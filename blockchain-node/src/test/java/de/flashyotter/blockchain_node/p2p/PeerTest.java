@@ -43,4 +43,12 @@ class PeerTest {
         assertThrows(IllegalArgumentException.class,
             () -> Peer.fromString("notvalid"));
     }
+
+    @Test
+    void parseUsesLibp2pPort() {
+        Peer p = Peer.parse("peer.example:4001");
+        assertEquals("peer.example", p.getHost());
+        assertEquals(0, p.getRestPort());
+        assertEquals(4001, p.getLibp2pPort());
+    }
 }
