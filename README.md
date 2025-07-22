@@ -87,8 +87,9 @@ Use `data2`/`wallet2` etc. for additional nodes.
 
 ### 3. Connect peers
 
-Set `NODE_PEERS` to a comma-separated list of `host:port` pairs and expose
-`NODE_LIBP2P_PORT` so others can dial your node.
+Set `NODE_PEERS` to a comma-separated list of `host:restPort` pairs (the REST
+API port of each peer) and expose your own `NODE_LIBP2P_PORT` so others can
+dial your node.
 
 ### 4. Stop
 
@@ -132,6 +133,7 @@ the `make ci` target. The workflow first builds the project via Gradle, then
 starts the containers defined in `docker-compose.ci.yml` and waits until they
 are healthy. The Python end-to-end tests simply connect to these running
 services instead of managing Docker Compose themselves.
+When Docker is not available, those e2e tests are skipped automatically.
 
 ## Contributing
 
