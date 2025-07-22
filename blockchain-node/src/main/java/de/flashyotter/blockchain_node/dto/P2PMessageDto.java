@@ -16,4 +16,14 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
         @JsonSubTypes.Type(FindNodeDto.class),
         @JsonSubTypes.Type(NodesDto.class)
 })
-public interface P2PMessageDto { }
+public interface P2PMessageDto extends JwtEnabledDto {
+    /**
+     * Default implementation for JWT.
+     * Can be overridden by implementing classes.
+     */
+    @Override
+    default String jwt() {
+        // Default implementation returns null
+        return null;
+    }
+}

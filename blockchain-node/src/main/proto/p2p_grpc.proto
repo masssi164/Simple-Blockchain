@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package de.flashyotter.blockchain_node.grpc.p2p;
+
+option java_package = "de.flashyotter.blockchain_node.grpc.p2p";
+option java_multiple_files = true;
+option java_outer_classname = "P2PGrpcProto";
+
+message P2PMessageRequest {
+  bytes p2p_message_bytes = 1;
+}
+
+message P2PMessageResponse {
+  bytes p2p_message_bytes = 1;
+}
+
+service P2PGrpcService {
+  rpc HandleMessage(P2PMessageRequest) returns (P2PMessageResponse);
+}

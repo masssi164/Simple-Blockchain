@@ -18,5 +18,16 @@ public record HandshakeDto(String nodeId,
                            String peerId,
                            String protocolVersion,
                            int listenPort,
-                           int restPort)
-        implements P2PMessageDto { }
+                           int restPort,
+                           String jwt)
+        implements P2PMessageDto {
+            
+    public HandshakeDto(String nodeId, String peerId, String protocolVersion, int listenPort, int restPort) {
+        this(nodeId, peerId, protocolVersion, listenPort, restPort, null);
+    }
+    
+    @Override
+    public String jwt() {
+        return jwt;
+    }
+}

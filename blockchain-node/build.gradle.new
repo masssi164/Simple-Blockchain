@@ -10,11 +10,14 @@ group   = 'de.flashyotter'
 version = '0.0.1-SNAPSHOT'
 
 java {
-    toolchain { languageVersion = JavaLanguageVersion.of(17) }
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
 }
 
-configurations {
-    compileOnly { extendsFrom annotationProcessor }
+tasks.withType(JavaCompile).configureEach {
+    javaCompiler = javaToolchains.compilerFor {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
 }
 
 repositories {
@@ -54,9 +57,16 @@ dependencies {
     runtimeOnly    'io.jsonwebtoken:jjwt-impl:0.11.5'
     runtimeOnly    'io.jsonwebtoken:jjwt-jackson:0.11.5'
 
-    // gRPC server
+    // gRPC server and client
     implementation 'net.devh:grpc-server-spring-boot-starter:2.15.0.RELEASE'
+    implementation 'net.devh:grpc-client-spring-boot-starter:2.15.0.RELEASE'
     compileOnly 'javax.annotation:javax.annotation-api:1.3.2'
+    implementation 'io.grpc:grpc-protobuf:1.63.0'
+    implementation 'io.grpc:grpc-stub:1.63.0'
+    implementation 'io.grpc:grpc-netty-shaded:1.63.0'
+    implementation 'io.grpc:grpc-all:1.63.0'
+    implementation 'com.google.protobuf:protobuf-java:3.25.3'
+    implementation 'com.google.protobuf:protobuf-java-util:3.25.3'
 
     // Networking and concurrency
     implementation platform("io.netty:netty-bom:4.1.117.Final")
@@ -75,6 +85,37 @@ dependencies {
     testRuntimeOnly    'org.junit.platform:junit-platform-launcher'
 }
 
+configurations {
+    compileOnly { extendsFrom annotationProcessor }
+}
+
+sourceSets {
+    main {
+        java {
+            srcDirs 'src/main/java', 'build/generated/source/proto/main/grpc', 'build/generated/source/proto/main/java'
+        }
+        proto {
+            srcDir 'src/main/proto'
+        }
+    }
+}
+
+protobuf {
+    protoc {
+        artifact = 'com.google.protobuf:protoc:3.25.3'
+    }
+    plugins {
+        grpc {
+            artifact = 'io.grpc:protoc-gen-grpc-java:1.63.0'
+        }
+    }
+    generateProtoTasks {
+        ofSourceSet('main')*.plugins {
+            grpc {}
+        }
+    }
+}
+
 tasks.named('test') {
     useJUnitPlatform()
     finalizedBy 'jacocoTestReport'
@@ -84,17 +125,6 @@ tasks.named('jacocoTestReport') {
     dependsOn 'test'
 }
 
-protobuf {
-    protoc {
-        artifact = "com.google.protobuf:protoc:3.25.3"
-    }
-    plugins {
-        grpc {
-            artifact = "io.grpc:protoc-gen-grpc-java:1.63.0"
-        }
-    }
-    generateProtoTasks {
-        all().forEach { task ->
-            task.plugins { grpc {} }
-        }
-    }}
+tasks.withType(Copy).configureEach {
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+}

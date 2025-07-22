@@ -17,9 +17,28 @@ import java.util.List;
 @ConfigurationProperties(prefix = "node")
 public class NodeProperties {
     private List<String> peers = List.of();
+    
+    /**
+     * Returns the list of known peers.
+     */
+    public List<String> getKnownPeers() {
+        return peers;
+    }
 
     /** Base directory for node data like the ID file. */
     private String dataPath = "data";
+    
+    /**
+     * The base URL for this node
+     */
+    private String baseUrl = "http://localhost:8080";
+    
+    /**
+     * Returns the base URL for this node
+     */
+    public String getBaseUrl() {
+        return baseUrl;
+    }
 
     /**
      * P2P transport mode. Either "legacy" (WebSocket), "libp2p" or "dual" for
