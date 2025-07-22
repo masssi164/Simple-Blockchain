@@ -87,9 +87,9 @@ Use `data2`/`wallet2` etc. for additional nodes.
 
 ### 3. Connect peers
 
-Set `NODE_PEERS` to a comma-separated list of `host:restPort` pairs (the REST
-API port of each peer) and expose your own `NODE_LIBP2P_PORT` so others can
-dial your node.
+Set `NODE_PEERS` to a comma-separated list of `host:port` pairs referencing the
+libp2p port of each peer. Expose your own `NODE_LIBP2P_PORT` so others can dial
+your node.
 
 ### 4. Stop
 

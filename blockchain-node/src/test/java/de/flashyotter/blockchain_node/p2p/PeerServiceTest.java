@@ -61,14 +61,14 @@ class PeerServiceTest {
         svc.init();
 
         // registry.add for each peer string
-        verify(reg).add(new Peer("one", 100));
-        verify(reg).add(new Peer("two", 200));
-        verify(kademlia).store(new Peer("one", 100));
-        verify(kademlia).store(new Peer("two", 200));
+        verify(reg).add(new Peer("one", 0, 100));
+        verify(reg).add(new Peer("two", 0, 200));
+        verify(kademlia).store(new Peer("one", 0, 100));
+        verify(kademlia).store(new Peer("two", 0, 200));
 
         // followPeer called for each peer
-        verify(sync).followPeer(new Peer("one", 100));
-        verify(sync).followPeer(new Peer("two", 200));
+        verify(sync).followPeer(new Peer("one", 0, 100));
+        verify(sync).followPeer(new Peer("two", 0, 200));
         verify(libp2p, times(2)).send(any(Peer.class), any(FindNodeDto.class));
 
         // broadcastPeerList at end

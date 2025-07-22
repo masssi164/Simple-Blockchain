@@ -65,7 +65,11 @@ public class Peer {
             }
             return new Peer(host, 0, port, id);
         }
-        return fromString(s);
+
+        String[] parts = s.split(":");
+        if (parts.length != 2)
+            throw new IllegalArgumentException("host:port expected");
+        return new Peer(parts[0], 0, Integer.parseInt(parts[1]));
     }
 
     @Override
