@@ -45,7 +45,7 @@ services:
     environment:
       SERVER_PORT: 3334
       NODE_LIBP2P_PORT: 4002
-      NODE_PEERS: "${BACKEND1_MULTIADDR:-backend1:4001}"
+      NODE_PEERS: "${BACKEND1_MULTIADDR:-backend1:3333}"
       NODE_JWT_SECRET: changeMeSuperSecret
       NODE_WALLET_PASSWORD: changeMeSuperSecret
       NODE_GRPC_PORT: 9091
