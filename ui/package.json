@@ -21,7 +21,12 @@
     "react-hot-toast": "^2.4.1",
     "react-qr-code": "^2.0.15",
     "react-router-dom": "^7.6.1",
-    "swr": "^2.3.3"
+    "swr": "^2.3.3",
+    "libp2p": "^2.9.0",
+    "@libp2p/tcp": "^1.0.7",
+    "@libp2p/mplex": "^1.1.2",
+    "@chainsafe/libp2p-noise": "^5.0.3",
+    "it-length-prefixed": "^1.0.3"
   },
   "devDependencies": {
     "@eslint/js": "^9.25.0",

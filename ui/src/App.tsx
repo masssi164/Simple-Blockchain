@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { mutate } from 'swr';
 import { Toaster } from 'react-hot-toast';
 import { messageService } from './services/messageService';
-import { wsSingleton } from './api/ws';
+import { p2pSingleton } from './api/p2p';
 import Dashboard from './pages/Dashboard';
 
 /**
@@ -14,15 +14,17 @@ export default function App() {
   /* WebSocket lifecycle                                                */
   /* ------------------------------------------------------------------ */
   useEffect(() => {
-    wsSingleton.connect();
-    return () => wsSingleton.close();
+    p2pSingleton.connect();
+    return () => {
+      void p2pSingleton.close();
+    };
   }, []);
 
   /* ------------------------------------------------------------------ */
   /* React on new blocks                                                */
   /* ------------------------------------------------------------------ */
   useEffect(() => {
-    wsSingleton.on<{ type: string; rawBlockJson?: string }>(m => {
+    p2pSingleton.on<{ type: string; rawBlockJson?: string }>(m => {
       if (m.type === 'NewBlockDto' && m.rawBlockJson) {
         const blk = JSON.parse(m.rawBlockJson);
         console.info('New block', blk.height, blk.hashHex);

@@ -6,8 +6,8 @@ vi.mock('../pages/Dashboard', () => ({
   default: () => <div data-testid="dashboard" />,
 }));
 
-vi.mock('./../api/ws', () => ({
-  wsSingleton: { connect: vi.fn(), close: vi.fn(), on: vi.fn() },
+vi.mock('./../api/p2p', () => ({
+  p2pSingleton: { connect: vi.fn(), close: vi.fn(), on: vi.fn() },
 }));
 vi.mock('../services/messageService', () => ({
   messageService: { success: vi.fn(), error: vi.fn() },
