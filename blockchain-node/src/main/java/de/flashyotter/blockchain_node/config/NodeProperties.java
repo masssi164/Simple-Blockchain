@@ -67,7 +67,7 @@ public class NodeProperties {
     private String walletPassword;
 
     /** Shared secret used to sign and verify JWT tokens. */
-    private String jwtSecret = "changeMeSuperSecret";
+    private String jwtSecret;
 
     /** Number of worker threads used for mining */
     private int miningThreads = Runtime.getRuntime().availableProcessors();
@@ -103,6 +103,20 @@ public class NodeProperties {
             Files.createDirectories(path.getParent());
             id = java.util.UUID.randomUUID().toString();
             Files.writeString(path, id);
+        }
+
+        if (walletPassword == null || walletPassword.isBlank()) {
+            walletPassword = System.getenv("NODE_WALLET_PASSWORD");
+        }
+        if (jwtSecret == null || jwtSecret.isBlank()) {
+            jwtSecret = System.getenv("NODE_JWT_SECRET");
+        }
+
+        if (walletPassword == null || walletPassword.isBlank()) {
+            throw new IllegalStateException("NODE_WALLET_PASSWORD must be set");
+        }
+        if (jwtSecret == null || jwtSecret.isBlank()) {
+            throw new IllegalStateException("NODE_JWT_SECRET must be set");
         }
     }
 }

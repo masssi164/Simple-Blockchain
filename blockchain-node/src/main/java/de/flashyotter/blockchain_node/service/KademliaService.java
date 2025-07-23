@@ -22,21 +22,10 @@ public class KademliaService {
     private final PeerRegistry              registry;
     private final NodeProperties            props;
 
+
     /** Add a peer to the routing table and registry. */
     public void store(Peer peer) {
-        try {
-            java.lang.reflect.Method target = null;
-            for (var m : table.getClass().getMethods()) {
-                if (m.getName().equals("add") && m.getParameterCount() == 1 && m.getReturnType() != boolean.class) {
-                    target = m; break;
-                }
-            }
-            if (target != null) {
-                target.invoke(table, peer);
-            }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        ((java.util.Set<Peer>) table).add(peer);
         registry.add(peer);
     }
 

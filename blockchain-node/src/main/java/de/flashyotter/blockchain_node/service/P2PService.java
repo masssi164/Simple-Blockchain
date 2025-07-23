@@ -59,10 +59,14 @@ public class P2PService {
                                 .build())
                             .build();
                     }
-                    // Create a handshake response
+                    // Create a handshake response with this node's identifiers
                     return P2PMessage.newBuilder()
                         .setHandshake(Handshake.newBuilder()
-                            .setNodeId(props.getBaseUrl())
+                            .setNodeId(props.getId())
+                            .setPeerId(hs.getPeerId())
+                            .setProtocolVersion(hs.getProtocolVersion())
+                            .setListenPort(props.getLibp2pPort())
+                            .setRestPort(props.getPort())
                             .build())
                         .build();
                     
