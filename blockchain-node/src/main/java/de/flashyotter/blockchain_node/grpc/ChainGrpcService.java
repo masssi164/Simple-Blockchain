@@ -20,18 +20,26 @@ public class ChainGrpcService extends ChainGrpc.ChainImplBase {
 
     @Override
     public void latest(Empty request, StreamObserver<Block> responseObserver) {
-        var blk = node.latestBlock();
-        responseObserver.onNext(GrpcMapper.toProto(blk));
-        responseObserver.onCompleted();
+        try {
+            var blk = node.latestBlock();
+            responseObserver.onNext(GrpcMapper.toProto(blk));
+            responseObserver.onCompleted();
+        } catch (Exception e) {
+            responseObserver.onError(e);
+        }
     }
 
     @Override
     public void page(PageRequest request, StreamObserver<BlockList> responseObserver) {
-        var blocks = node.blockPage(request.getPage(), request.getSize());
-        var list = BlockList.newBuilder()
-                .addAllBlocks(blocks.stream().map(GrpcMapper::toProto).toList())
-                .build();
-        responseObserver.onNext(list);
-        responseObserver.onCompleted();
+        try {
+            var blocks = node.blockPage(request.getPage(), request.getSize());
+            var list = BlockList.newBuilder()
+                    .addAllBlocks(blocks.stream().map(GrpcMapper::toProto).toList())
+                    .build();
+            responseObserver.onNext(list);
+            responseObserver.onCompleted();
+        } catch (Exception e) {
+            responseObserver.onError(e);
+        }
     }
 }

@@ -18,8 +18,21 @@ public class MiningGrpcService extends MiningGrpc.MiningImplBase {
 
     @Override
     public void mine(Empty request, StreamObserver<Block> responseObserver) {
-        var blk = node.mineNow().block();
-        responseObserver.onNext(GrpcMapper.toProto(blk));
-        responseObserver.onCompleted();
+        try {
+            var mono = node.mineNow();
+            mono.subscribe(
+                blk -> {
+                    try {
+                        responseObserver.onNext(GrpcMapper.toProto(blk));
+                        responseObserver.onCompleted();
+                    } catch (Exception e) {
+                        responseObserver.onError(e);
+                    }
+                },
+                error -> responseObserver.onError(error)
+            );
+        } catch (Exception e) {
+            responseObserver.onError(e);
+        }
     }
 }

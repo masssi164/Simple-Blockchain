@@ -62,12 +62,17 @@ public class NodeService {
 
     /* ---------- transactions ---------- */
 
-    public void submitTx(Transaction tx) {
-        mempool.submit(tx, currentUtxoIncludingPending());
-        broadcaster.broadcastTx(
-            new NewTxDto(blockchain.core.serialization.JsonUtils.toJson(tx)),
-            null
-        );
+    public boolean submitTx(Transaction tx) {
+        try {
+            mempool.submit(tx, currentUtxoIncludingPending());
+            broadcaster.broadcastTx(
+                new NewTxDto(blockchain.core.serialization.JsonUtils.toJson(tx)),
+                null
+            );
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     public void acceptExternalTx(Transaction tx) {

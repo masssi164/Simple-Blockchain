@@ -80,8 +80,24 @@ tasks.named('test') {
     finalizedBy 'jacocoTestReport'
 }
 
+jacoco {
+    toolVersion = "0.8.8" // Use a compatible version
+}
+
 tasks.named('jacocoTestReport') {
-    dependsOn 'test'
+    reports {
+        xml.required = true
+        csv.required = false
+        html.required = true
+    }
+    
+    // A simpler approach to exclude files
+    classDirectories.setFrom(
+        sourceSets.main.output.asFileTree.matching {
+            exclude '**/grpc/**'
+            exclude '**/*Test*.*'
+        }
+    )
 }
 
 protobuf {
