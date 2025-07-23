@@ -40,11 +40,6 @@ public class NodeProperties {
         return baseUrl;
     }
 
-    /**
-     * P2P transport mode. Either "legacy" (WebSocket), "libp2p" or "dual" for
-     * both. Defaults to legacy to keep backward compatibility.
-     */
-    private String p2pMode = "legacy";
 
     /** Maximum number of transactions kept in the mempool */
     @Value("${mempool.maxSize:1000}")
