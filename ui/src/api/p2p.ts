@@ -51,6 +51,7 @@ export class NodeP2P {
       ) as any);
       this.stream = stream;
       await this.sendHandshake();
+      this.reconnectMs = 1000;
       this.readLoop();
     } catch {
       this.scheduleReconnect();
