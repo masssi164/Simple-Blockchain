@@ -3,6 +3,8 @@ import time
 import requests
 import grpc
 import pytest
+import os
+import jwt
 
 from .node_pb2 import Empty
 from .node_pb2_grpc import MiningStub, ChainStub, WalletStub
@@ -23,6 +25,11 @@ BACKEND1_GRPC = 9090
 BACKEND2_GRPC = 9091
 BACKEND1_REST = 'http://localhost:3333'
 BACKEND2_REST = 'http://localhost:3334'
+
+SECRET = os.getenv('NODE_JWT_SECRET', 'myTopSecret')
+
+def token():
+    return jwt.encode({}, SECRET, algorithm='HS256')
 
 
 def await_until(predicate, timeout=60, interval=2):
@@ -53,9 +60,10 @@ def test_e2e_compose():
     assert wait_for_grpc(BACKEND1_GRPC)
     assert wait_for_grpc(BACKEND2_GRPC)
     # mine first block via gRPC
+    metadata = [('authorization', f'Bearer {token()}')]
     with grpc.insecure_channel(f'localhost:{BACKEND1_GRPC}') as ch:
         mine_stub = MiningStub(ch)
-        first = mine_stub.Mine(Empty())
+        first = mine_stub.Mine(Empty(), metadata=metadata)
     # wait until backend2 sees the block via REST
     def backend2_has_block():
         try:
@@ -77,13 +85,13 @@ def test_e2e_compose():
     # mine second block via gRPC
     with grpc.insecure_channel(f'localhost:{BACKEND1_GRPC}') as ch:
         mine_stub = MiningStub(ch)
-        second = mine_stub.Mine(Empty())
+        second = mine_stub.Mine(Empty(), metadata=metadata)
     # verify backend2 has the second block with our tx
     def backend2_has_tx_block():
         try:
             with grpc.insecure_channel(f'localhost:{BACKEND2_GRPC}') as ch2:
                 chain = ChainStub(ch2)
-                latest = chain.Latest(Empty())
+                latest = chain.Latest(Empty(), metadata=metadata)
                 if latest.height >= second.height and len(latest.txList) > 1:
                     return True
         except Exception:
@@ -93,6 +101,6 @@ def test_e2e_compose():
     # wallet balance should remain positive
     with grpc.insecure_channel(f'localhost:{BACKEND1_GRPC}') as ch:
         wallet_stub = WalletStub(ch)
-        info = wallet_stub.Info(Empty())
+        info = wallet_stub.Info(Empty(), metadata=metadata)
         assert info.balance > 0
 

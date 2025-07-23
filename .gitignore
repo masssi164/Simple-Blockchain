@@ -1,6 +1,14 @@
 # dirs
 data
 
+# macOS Finder metadata
+.DS_Store
+# Build scaffolding leftovers
+blockchain-node/build.gradle.new
+blockchain-node/src/main/java/de/flashyotter/blockchain_node/p2p/P2PProtoMapper.java.tmp
+# LevelDB runtime data
+data/blocks/
+
 # Compiled class file
 *.class
 
