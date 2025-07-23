@@ -27,7 +27,7 @@ class DiscoveryLoopSchedulingTest {
 
     @BeforeEach
     void setUp() {
-        reg = new PeerRegistry();
+        reg = new PeerRegistry(new NodeProperties());
         SyncService sync = mock(SyncService.class);
         kademlia = mock(KademliaService.class);
         de.flashyotter.blockchain_node.p2p.libp2p.Libp2pService libp2p = mock(de.flashyotter.blockchain_node.p2p.libp2p.Libp2pService.class);

@@ -29,7 +29,7 @@ class PeerServiceTest {
     private SyncService sync;
 
     @Spy
-    private PeerRegistry reg = new PeerRegistry();
+    private PeerRegistry reg = new PeerRegistry(new NodeProperties());
 
     @Mock
     private P2PBroadcastService broad;

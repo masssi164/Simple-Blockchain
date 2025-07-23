@@ -1,6 +1,7 @@
 package de.flashyotter.blockchain_node.service;
 
 import de.flashyotter.blockchain_node.p2p.Peer;
+import de.flashyotter.blockchain_node.config.NodeProperties;
 import org.springframework.stereotype.Component;
 
 import java.util.Set;
@@ -13,7 +14,14 @@ import java.util.concurrent.ConcurrentHashMap;
 @Component
 public class PeerRegistry {
 
+    private final NodeProperties props;
     private final Set<Peer> peers = ConcurrentHashMap.newKeySet();
+    private final java.util.concurrent.BlockingQueue<Peer> pending;
+
+    public PeerRegistry(NodeProperties props) {
+        this.props = props;
+        this.pending = new java.util.concurrent.LinkedBlockingQueue<>(props.getPendingQueueLimit());
+    }
 
     public Set<Peer> all() {
          return peers; 
@@ -26,13 +34,10 @@ public class PeerRegistry {
      */
     public boolean add(Peer p) {
         boolean fresh = peers.add(p);
-        if (fresh) pending.add(p);          // mark for dial
+        if (fresh && pending.remainingCapacity() > 0) pending.add(p);
         return fresh;
     }
 
-    /* dial queue consumed by discovery loop */
-    private final java.util.concurrent.BlockingQueue<Peer> pending =
-            new java.util.concurrent.LinkedBlockingQueue<>();
     public java.util.concurrent.BlockingQueue<Peer> pending() { return pending; }
 
     public void addAll(Iterable<Peer> newPeers) {

@@ -28,7 +28,7 @@ class MetricsConfigTest {
     void setup() {
         chain = new Chain();
         mempool = new MempoolService(new NodeProperties());
-        peers = new PeerRegistry();
+        peers = new PeerRegistry(new NodeProperties());
         registry = new SimpleMeterRegistry();
         new MetricsConfig(registry, chain, mempool, peers).init();
     }

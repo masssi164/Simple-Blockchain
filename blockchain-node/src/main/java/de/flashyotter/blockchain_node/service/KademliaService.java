@@ -3,6 +3,7 @@ package de.flashyotter.blockchain_node.service;
 import de.flashyotter.blockchain_node.config.NodeProperties;
 import de.flashyotter.blockchain_node.dto.NodesDto;
 import de.flashyotter.blockchain_node.p2p.Peer;
+import de.flashyotter.blockchain_node.service.PeerStore;
 import org.apache.tuweni.kademlia.KademliaRoutingTable;
 import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
@@ -19,13 +20,14 @@ import java.util.List;
 public class KademliaService {
 
     private final KademliaRoutingTable<Peer> table;
-    private final PeerRegistry              registry;
+    private final PeerStore                store;
+    private final PeerRegistry             registry;
     private final NodeProperties            props;
 
 
     /** Add a peer to the routing table and registry. */
     public void store(Peer peer) {
-        ((java.util.Set<Peer>) table).add(peer);
+        store.addPeer(peer);
         registry.add(peer);
     }
 

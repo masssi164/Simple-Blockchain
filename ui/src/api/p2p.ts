@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { createLibp2p, Libp2p } from 'libp2p';
 import { TCP } from '@libp2p/tcp';
 import { Mplex } from '@libp2p/mplex';
@@ -21,6 +20,7 @@ export type Listener<T = P2PMessage> = (msg: T) => void;
 export class NodeP2P {
   private node?: Libp2p;
   private stream?: any;
+  private reconnectTimer?: ReturnType<typeof setTimeout>;
   private listeners: Listener[] = [];
   private reconnectMs = 1000;
   private closed = false;
@@ -38,10 +38,10 @@ export class NodeP2P {
   private async open(factory: typeof createLibp2p) {
     if (this.node) await this.node.stop();
     this.node = await factory({
-      transports: [() => new TCP()],
-      connectionEncrypters: [() => new Noise()],
-      streamMuxers: [() => new Mplex()],
-    });
+      transports: [() => new TCP() as any] as any,
+      connectionEncrypters: [() => new Noise() as any] as any,
+      streamMuxers: [() => new Mplex() as any] as any,
+    } as any);
     await this.node.start();
     const addr = import.meta.env.VITE_NODE_LIBP2P;
     try {
@@ -52,6 +52,10 @@ export class NodeP2P {
       this.stream = stream;
       await this.sendHandshake();
       this.reconnectMs = 1000;
+      if (this.reconnectTimer) {
+        clearTimeout(this.reconnectTimer);
+        this.reconnectTimer = undefined;
+      }
       this.readLoop();
     } catch {
       this.scheduleReconnect();
@@ -59,12 +63,12 @@ export class NodeP2P {
   }
 
   private async sendHandshake() {
-    const root = p2p.de.flashyotter.blockchain_node.p2p;
-    const Handshake = root.Handshake;
-    const P2PMessage = root.P2PMessage;
-    const hs = Handshake.create({
-      nodeId: 'ui-client',
-      peerId: this.node.peerId.toString(),
+    const root: any = p2p.de.flashyotter.blockchain_node;
+    const Handshake = root.p2p.Handshake;
+    const P2PMessage = root.p2p.P2PMessage;
+      const hs = Handshake.create({
+        nodeId: 'ui-client',
+        peerId: this.node!.peerId.toString(),
       protocolVersion: '1.0.0',
       listenPort: 0,
       restPort: 0,
@@ -78,8 +82,8 @@ export class NodeP2P {
   private async readLoop() {
     if (!this.stream) return;
     try {
-      const root = p2p.de.flashyotter.blockchain_node.p2p;
-      const P2PMessage = root.P2PMessage;
+      const root: any = p2p.de.flashyotter.blockchain_node;
+      const P2PMessage = root.p2p.P2PMessage;
       for await (const buf of pipe(this.stream.source, lp.decode())) {
         const msg = P2PMessage.decode($protobuf.Reader.create(buf));
         if (msg.newBlock || msg.newTx) {
@@ -92,7 +96,7 @@ export class NodeP2P {
               }
             : {
                 type: 'NewTxDto',
-                rawTxJson: root.grpc.Transaction.toObject(msg.newTx.tx, {
+                rawTxJson: root.grpc.Transaction.toObject(msg.newTx!.tx, {
                   json: true,
                 }) as any,
               };
@@ -106,7 +110,8 @@ export class NodeP2P {
 
   private scheduleReconnect() {
     this.stream = undefined;
-    setTimeout(() => this.open(this.factory), this.reconnectMs);
+    if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
+    this.reconnectTimer = setTimeout(() => this.open(this.factory), this.reconnectMs);
     this.reconnectMs = Math.min(this.reconnectMs * 2, 30000);
   }
 

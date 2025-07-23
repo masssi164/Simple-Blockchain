@@ -1,8 +1,7 @@
 package de.flashyotter.blockchain_node.config;
 
 import io.grpc.*;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
+import de.flashyotter.blockchain_node.config.JwtUtils;
 import net.devh.boot.grpc.server.interceptor.GrpcGlobalServerInterceptor;
 import org.springframework.stereotype.Component;
 
@@ -28,13 +27,9 @@ public class JwtGrpcInterceptor implements ServerInterceptor {
         String auth = headers.get(Metadata.Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER));
         if (auth != null && auth.startsWith("Bearer ")) {
             String token = auth.substring(7);
-            try {
-                Jwts.parserBuilder()
-                    .setSigningKey(Keys.hmacShaKeyFor(props.getJwtSecret().getBytes(StandardCharsets.UTF_8)))
-                    .build()
-                    .parseClaimsJws(token);
+            if (JwtUtils.verify(token, props)) {
                 return next.startCall(call, headers);
-            } catch (Exception e) {
+            } else {
                 call.close(Status.UNAUTHENTICATED.withDescription("Invalid token"), new Metadata());
                 return new ServerCall.Listener<>() {};
             }

@@ -10,6 +10,8 @@ import blockchain.core.serialization.JsonUtils;
 import de.flashyotter.blockchain_node.config.NodeProperties;
 import de.flashyotter.blockchain_node.dto.NewTxDto;
 import de.flashyotter.blockchain_node.p2p.libp2p.Libp2pService;
+import de.flashyotter.blockchain_node.service.TablePeerStore;
+import de.flashyotter.blockchain_node.service.PeerRegistry;
 import de.flashyotter.blockchain_node.service.KademliaService;
 import de.flashyotter.blockchain_node.service.NodeService;
 import de.flashyotter.blockchain_node.service.PeerRegistry;
@@ -80,16 +82,16 @@ class Libp2pServiceBroadcastTest {
         n1 = mock(NodeService.class);
         n2 = mock(NodeService.class);
 
-        PeerRegistry r1 = new PeerRegistry();
-        PeerRegistry r2 = new PeerRegistry();
+        PeerRegistry r1 = new PeerRegistry(props1);
+        PeerRegistry r2 = new PeerRegistry(props2);
         KademliaRoutingTable<Peer> t1 = KademliaRoutingTable.create(
                 props1.getId().getBytes(StandardCharsets.UTF_8), 16,
                 p -> p.toString().getBytes(StandardCharsets.UTF_8), p -> 0);
         KademliaRoutingTable<Peer> t2 = KademliaRoutingTable.create(
                 props2.getId().getBytes(StandardCharsets.UTF_8), 16,
                 p -> p.toString().getBytes(StandardCharsets.UTF_8), p -> 0);
-        KademliaService k1 = new KademliaService(t1, r1, props1);
-        KademliaService k2 = new KademliaService(t2, r2, props2);
+        KademliaService k1 = new KademliaService(t1, new TablePeerStore(t1), r1, props1);
+        KademliaService k2 = new KademliaService(t2, new TablePeerStore(t2), r2, props2);
         WebClient client = WebClient.builder().build(); // unused
 
         s1 = new Libp2pService(h1, props1, n1, k1);

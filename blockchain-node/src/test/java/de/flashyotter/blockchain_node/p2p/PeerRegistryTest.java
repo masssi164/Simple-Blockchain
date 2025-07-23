@@ -1,12 +1,13 @@
 package de.flashyotter.blockchain_node.p2p;
 import de.flashyotter.blockchain_node.service.PeerRegistry;
+import de.flashyotter.blockchain_node.config.NodeProperties;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 class PeerRegistryTest {
 
     @Test
     void addAndAllWorks() {
-        PeerRegistry reg = new PeerRegistry();
+        PeerRegistry reg = new PeerRegistry(new NodeProperties());
         Peer a = new Peer("a", 1);
         Peer b = new Peer("b", 2);
 
@@ -22,7 +23,7 @@ class PeerRegistryTest {
 
     @Test
     void addAllWorks() {
-        PeerRegistry reg = new PeerRegistry();
+        PeerRegistry reg = new PeerRegistry(new NodeProperties());
         var list = java.util.List.of(new Peer("x", 9), new Peer("y", 8));
         reg.addAll(list);
         assertEquals(2, reg.all().size());

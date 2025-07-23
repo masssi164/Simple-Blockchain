@@ -6,14 +6,15 @@ import de.flashyotter.blockchain_node.p2p.Peer;
 import de.flashyotter.blockchain_node.p2p.P2PProto;
 import de.flashyotter.blockchain_node.p2p.P2PProtoMapper;
 import de.flashyotter.blockchain_node.p2p.P2PMessage;
-import io.jsonwebtoken.Jwts;
+import de.flashyotter.blockchain_node.config.JwtUtils;
 import io.jsonwebtoken.security.Keys;
+import io.jsonwebtoken.Jwts;
 import de.flashyotter.blockchain_node.service.NodeService;
 import de.flashyotter.blockchain_node.service.KademliaService;
 import io.libp2p.core.Host;
 import io.libp2p.etc.SimpleClientHandler;
 import io.libp2p.etc.SimpleClientHandlerKt;
-import io.libp2p.protocol.autonat.AutonatProtocol;
+import de.flashyotter.blockchain_node.p2p.libp2p.AutoNatService;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import java.nio.ByteBuffer;
@@ -36,6 +37,7 @@ public class Libp2pService {
     private final NodeProperties props;
     private final NodeService node;
     private final KademliaService kademlia;
+    private final AutoNatService autoNat;
 
     public Libp2pService(Host host, NodeProperties props,
                          @org.springframework.context.annotation.Lazy NodeService node,
@@ -44,6 +46,7 @@ public class Libp2pService {
         this.props = props;
         this.node = node;
         this.kademlia = kademlia;
+        this.autoNat = new AutoNatService(host);
     }
 
     private volatile String publicAddr;
@@ -124,17 +127,20 @@ public class Libp2pService {
      * externally visible multiaddress.
      */
     public void discoverPublicAddr(Peer peer) {
-        AutonatProtocol.AutoNatController dummy = msg ->
-                java.util.concurrent.CompletableFuture.completedFuture(
-                        io.libp2p.protocol.autonat.pb.Autonat.Message.getDefaultInstance());
-        dummy.requestDial(host.getPeerId(), host.listenAddresses()).join();
-        if (publicAddr == null && !host.listenAddresses().isEmpty()) {
-            publicAddr = host.listenAddresses().get(0).toString();
+        try {
+            publicAddr = autoNat.discover();
+        } catch (Exception ignore) {}
+        if (publicAddr == null || publicAddr.isBlank()) {
+            if (props.getAdvertisedAddr() != null && !props.getAdvertisedAddr().isBlank()) {
+                publicAddr = props.getAdvertisedAddr();
+            } else if (!host.listenAddresses().isEmpty()) {
+                publicAddr = host.listenAddresses().get(0).toString();
+            }
         }
     }
 
     /** Request a batch of blocks from {@code peer} starting at {@code req.fromHeight()}. */
-    public BlocksDto requestBlocks(Peer peer, GetBlocksDto req) {
+    public java.util.concurrent.CompletableFuture<BlocksDto> requestBlocks(Peer peer, GetBlocksDto req) {
         java.util.concurrent.CompletableFuture<BlocksDto> fut = new java.util.concurrent.CompletableFuture<>();
         try {
             P2PMessage msg = P2PProtoMapper.toProto(req);
@@ -199,18 +205,17 @@ public class Libp2pService {
                         }
                     });
                     stream.writeAndFlush(io.netty.buffer.Unpooled.wrappedBuffer(buf.array()));
-                }).join();
-            // Allow more time for peers on CI runners which may be slow
-            return fut.get(10, java.util.concurrent.TimeUnit.SECONDS);
+                });
+            fut.orTimeout(10, java.util.concurrent.TimeUnit.SECONDS);
         } catch (Exception e) {
-            log.warn("libp2p request failed", e);
-            return new BlocksDto(java.util.List.of());
+            fut.completeExceptionally(e);
         }
+        return fut;
     }
 
     /** Reactive variant of {@link #requestBlocks(Peer, GetBlocksDto)} with retry. */
     public reactor.core.publisher.Mono<BlocksDto> requestBlocksReactive(Peer peer, GetBlocksDto req, long timeoutMs) {
-        return reactor.core.publisher.Mono.fromCallable(() -> requestBlocks(peer, req))
+        return reactor.core.publisher.Mono.fromFuture(requestBlocks(peer, req))
                 .subscribeOn(reactor.core.scheduler.Schedulers.boundedElastic())
                 .timeout(java.time.Duration.ofMillis(timeoutMs))
                 .retryWhen(reactor.util.retry.Retry.backoff(3, java.time.Duration.ofMillis(200))
@@ -244,17 +249,9 @@ public class Libp2pService {
                 byte[] data = new byte[len];
                 msg.readBytes(data);
                 P2PMessage pm = P2PMessage.parseFrom(data);
-                if (!pm.getJwt().isBlank() && props.getJwtSecret().getBytes(java.nio.charset.StandardCharsets.UTF_8).length >= 32) {
-                    try {
-                        Jwts.parserBuilder()
-                                .setSigningKey(Keys.hmacShaKeyFor(
-                                        props.getJwtSecret().getBytes(java.nio.charset.StandardCharsets.UTF_8)))
-                                .build()
-                                .parseClaimsJws(pm.getJwt());
-                    } catch (Exception ex) {
-                        ctx.close();
-                        return;
-                    }
+                if (!JwtUtils.verify(pm.getJwt(), props)) {
+                    ctx.close();
+                    return;
                 }
                 P2PMessageDto dto = P2PProtoMapper.fromProto(pm);
 

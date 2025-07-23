@@ -3,6 +3,8 @@ package de.flashyotter.blockchain_node.service;
 import de.flashyotter.blockchain_node.config.NodeProperties;
 import de.flashyotter.blockchain_node.dto.NodesDto;
 import de.flashyotter.blockchain_node.p2p.Peer;
+import de.flashyotter.blockchain_node.service.TablePeerStore;
+import de.flashyotter.blockchain_node.service.PeerRegistry;
 import org.apache.tuweni.kademlia.KademliaRoutingTable;
 import org.junit.jupiter.api.Test;
 
@@ -22,7 +24,7 @@ class KademliaServiceTest {
                 p -> p.toString().getBytes(StandardCharsets.UTF_8),
                 p -> 0);
         holder[0] = table;
-        return new KademliaService(table, new PeerRegistry(), props);
+        return new KademliaService(table, new TablePeerStore(table), new PeerRegistry(props), props);
     }
 
     @Test
