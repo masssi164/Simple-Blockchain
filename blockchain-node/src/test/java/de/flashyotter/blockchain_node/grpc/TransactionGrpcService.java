@@ -9,7 +9,6 @@ import net.devh.boot.grpc.server.service.GrpcService;
 /**
  * Stub implementation for testing
  */
-@GrpcService
 public class TransactionGrpcService extends TransactionGrpc.TransactionImplBase {
     private final TransactionService txService;
     private final NodeService nodeService;
