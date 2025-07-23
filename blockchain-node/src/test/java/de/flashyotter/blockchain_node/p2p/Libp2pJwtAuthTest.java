@@ -10,6 +10,8 @@ import de.flashyotter.blockchain_node.config.NodeProperties;
 import de.flashyotter.blockchain_node.dto.NewTxDto;
 import de.flashyotter.blockchain_node.p2p.libp2p.Libp2pService;
 import de.flashyotter.blockchain_node.service.KademliaService;
+import de.flashyotter.blockchain_node.service.TablePeerStore;
+import de.flashyotter.blockchain_node.service.PeerRegistry;
 import de.flashyotter.blockchain_node.service.NodeService;
 import de.flashyotter.blockchain_node.service.PeerRegistry;
 import io.jsonwebtoken.Jwts;
@@ -53,7 +55,7 @@ class Libp2pJwtAuthTest {
         KademliaRoutingTable<Peer> table = KademliaRoutingTable.create(
                 props.getId().getBytes(StandardCharsets.UTF_8), 16,
                 p -> p.toString().getBytes(StandardCharsets.UTF_8), p -> 0);
-        KademliaService kad = new KademliaService(table, new PeerRegistry(), props);
+        KademliaService kad = new KademliaService(table, new TablePeerStore(table), new PeerRegistry(props), props);
         Libp2pService svc = new Libp2pService(host, props, node, kad);
 
         Object handler = createTxHandler(svc);
@@ -76,7 +78,7 @@ class Libp2pJwtAuthTest {
         KademliaRoutingTable<Peer> table = KademliaRoutingTable.create(
                 props.getId().getBytes(StandardCharsets.UTF_8), 16,
                 p -> p.toString().getBytes(StandardCharsets.UTF_8), p -> 0);
-        KademliaService kad = new KademliaService(table, new PeerRegistry(), props);
+        KademliaService kad = new KademliaService(table, new TablePeerStore(table), new PeerRegistry(props), props);
         Libp2pService svc = new Libp2pService(host, props, node, kad);
 
         String jwt = Jwts.builder()

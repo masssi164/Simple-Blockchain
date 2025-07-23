@@ -54,6 +54,12 @@ public class NodeProperties {
     /** File storing the persistent libp2p private key */
     private String libp2pKeyPath = "libp2p.key";
 
+    /** Maximum size of the pending peer dial queue */
+    private int pendingQueueLimit = 1000;
+
+    /** Public address advertised to peers if AutoNAT fails */
+    private String advertisedAddr = "";
+
     /** HTTP/WebSocket server port */
     @Value("${server.port:0}")
     private int port;

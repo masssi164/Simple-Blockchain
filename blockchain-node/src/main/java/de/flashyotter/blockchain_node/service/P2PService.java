@@ -3,7 +3,8 @@ package de.flashyotter.blockchain_node.service;
 import com.google.protobuf.ByteString;
 import de.flashyotter.blockchain_node.p2p.*;
 import de.flashyotter.blockchain_node.config.NodeProperties;
-import de.flashyotter.blockchain_node.grpc.GrpcMapper;
+import de.flashyotter.blockchain_node.p2p.P2PProtoMapper;
+import de.flashyotter.blockchain_node.dto.*;
 import blockchain.core.model.Block;
 import blockchain.core.model.Transaction;
 import blockchain.core.serialization.JsonUtils;
@@ -26,82 +27,38 @@ public class P2PService {
 
     public P2PMessage handleMessage(P2PMessage message) {
         try {
-            switch (message.getMsgCase()) {
-                case NEWBLOCK:
-                    Block block = GrpcMapper.fromProto(message.getNewBlock().getBlock());
-                    nodeService.acceptExternalBlock(block);
-                    // Create a message with the new block
-                    return P2PMessage.newBuilder()
-                        .setNewBlock(NewBlock.newBuilder()
-                            .setBlock(GrpcMapper.toProto(block))
-                            .build())
-                        .build();
-                    
-                case NEWTX:
-                    Transaction tx = GrpcMapper.fromProto(message.getNewTx().getTx());
-                    nodeService.acceptExternalTx(tx);
-                    // Create a message with the new transaction
-                    return P2PMessage.newBuilder()
-                        .setNewTx(NewTx.newBuilder()
-                            .setTx(GrpcMapper.toProto(tx))
-                            .build())
-                        .build();
-                    
-                case HANDSHAKE:
-                    Handshake hs = message.getHandshake();
-                    // Just validate node ID format for now
-                    boolean valid = hs.getNodeId() != null && !hs.getNodeId().isEmpty();
-                    if (!valid) {
-                        // Return an error message
-                        return P2PMessage.newBuilder()
-                            .setHandshake(Handshake.newBuilder()
-                                .setNodeId("ERROR: Invalid node ID format")
-                                .build())
-                            .build();
-                    }
-                    // Create a handshake response with this node's identifiers
-                    return P2PMessage.newBuilder()
-                        .setHandshake(Handshake.newBuilder()
-                            .setNodeId(props.getId())
-                            .setPeerId(hs.getPeerId())
-                            .setProtocolVersion(hs.getProtocolVersion())
-                            .setListenPort(props.getLibp2pPort())
-                            .setRestPort(props.getPort())
-                            .build())
-                        .build();
-                    
-                case GETBLOCKS:
-                    GetBlocks gb = message.getGetBlocks();
-                    List<Block> blocks = nodeService.blocksFromHeight(gb.getFromHeight());
-                    var builder = Blocks.newBuilder();
-                    for (Block blk : blocks) {
-                        builder.addBlocks(de.flashyotter.blockchain_node.grpc.GrpcMapper.toProto(blk));
-                    }
-                    return P2PMessage.newBuilder().setBlocks(builder).build();
-                    
-                case FINDNODE:
-                    return P2PMessage.newBuilder()
-                        .setNodes(Nodes.newBuilder()
-                            .addAllNodes(props.getPeers())
-                            .build())
-                        .build();
-                    
-                default:
-                    // Return error for unknown message types
-                    return P2PMessage.newBuilder()
-                        .setHandshake(Handshake.newBuilder()
-                            .setNodeId("ERROR: Unknown message type")
-                            .build())
-                        .build();
+            P2PMessageDto dto = P2PProtoMapper.fromProto(message);
+            if (dto instanceof NewBlockDto nb) {
+                Block blk = JsonUtils.blockFromJson(nb.rawBlockJson());
+                nodeService.acceptExternalBlock(blk);
+                return P2PProtoMapper.toProto(new NewBlockDto(nb.rawBlockJson()));
+            } else if (dto instanceof NewTxDto nt) {
+                Transaction tx = JsonUtils.txFromJson(nt.rawTxJson());
+                nodeService.acceptExternalTx(tx);
+                return P2PProtoMapper.toProto(new NewTxDto(nt.rawTxJson()));
+            } else if (dto instanceof HandshakeDto hs) {
+                if (hs.nodeId() == null || hs.nodeId().isBlank()) {
+                    return P2PProtoMapper.toProto(new HandshakeDto("ERROR: Invalid node ID format", null, "", 0, 0));
+                }
+                return P2PProtoMapper.toProto(new HandshakeDto(
+                        props.getId(),
+                        hs.peerId(),
+                        hs.protocolVersion(),
+                        props.getLibp2pPort(),
+                        props.getPort()
+                ));
+            } else if (dto instanceof GetBlocksDto gb) {
+                List<Block> blocks = nodeService.blocksFromHeight(gb.fromHeight());
+                List<String> raw = blocks.stream().map(JsonUtils::toJson).toList();
+                return P2PProtoMapper.toProto(new BlocksDto(raw));
+            } else if (dto instanceof FindNodeDto) {
+                return P2PProtoMapper.toProto(new NodesDto(props.getPeers()));
+            } else {
+                return P2PProtoMapper.toProto(new HandshakeDto("ERROR: Unknown message type", null, "", 0, 0));
             }
         } catch (Exception e) {
             log.error("Error handling P2P message", e);
-            // Return error message for exceptions
-            return P2PMessage.newBuilder()
-                .setHandshake(Handshake.newBuilder()
-                    .setNodeId("ERROR: " + e.getMessage())
-                    .build())
-                .build();
+            return P2PProtoMapper.toProto(new HandshakeDto("ERROR: " + e.getMessage(), null, "", 0, 0));
         }
     }
 }

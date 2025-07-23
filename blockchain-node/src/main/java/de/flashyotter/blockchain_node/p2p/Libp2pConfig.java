@@ -14,6 +14,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import de.flashyotter.blockchain_node.p2p.Peer;
+import de.flashyotter.blockchain_node.service.PeerStore;
+import de.flashyotter.blockchain_node.service.TablePeerStore;
 import io.libp2p.security.noise.NoiseXXSecureChannel;
 import io.libp2p.security.plaintext.PlaintextInsecureChannel;
 import io.libp2p.transport.tcp.TcpTransport;
@@ -77,5 +79,10 @@ public class Libp2pConfig {
                 16,
                 p -> p.toString().getBytes(StandardCharsets.UTF_8),
                 p -> 0);
+    }
+
+    @Bean
+    public PeerStore peerStore(KademliaRoutingTable<Peer> table) {
+        return new TablePeerStore(table);
     }
 }

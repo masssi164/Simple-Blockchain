@@ -5,6 +5,7 @@ import de.flashyotter.blockchain_node.p2p.libp2p.Libp2pService;
 import de.flashyotter.blockchain_node.service.KademliaService;
 import de.flashyotter.blockchain_node.service.NodeService;
 import de.flashyotter.blockchain_node.service.PeerRegistry;
+import de.flashyotter.blockchain_node.service.TablePeerStore;
 import io.libp2p.core.Host;
 import io.libp2p.core.PeerId;
 import io.libp2p.core.multiformats.Multiaddr;
@@ -32,8 +33,8 @@ class Libp2pAutoNatTest {
         KademliaRoutingTable<Peer> table = KademliaRoutingTable.create(
                 props.getId().getBytes(StandardCharsets.UTF_8), 16,
                 p -> p.toString().getBytes(StandardCharsets.UTF_8), p -> 0);
-        PeerRegistry reg = new PeerRegistry();
-        KademliaService kad = new KademliaService(table, reg, props);
+        PeerRegistry reg = new PeerRegistry(props);
+        KademliaService kad = new KademliaService(table, new TablePeerStore(table), reg, props);
         WebClient client = WebClient.builder().build(); // unused
 
         Libp2pService svc = new Libp2pService(host, props, node, kad);
