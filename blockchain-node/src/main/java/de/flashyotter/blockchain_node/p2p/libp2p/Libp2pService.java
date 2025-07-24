@@ -145,11 +145,11 @@ public class Libp2pService {
         try {
             P2PMessage msg = P2PProtoMapper.toProto(req);
             if (props.getJwtSecret() != null && props.getJwtSecret().getBytes(java.nio.charset.StandardCharsets.UTF_8).length >= 32) {
-                String jwt = Jwts.builder()
+                String signed = Jwts.builder()
                         .signWith(Keys.hmacShaKeyFor(
                                 props.getJwtSecret().getBytes(java.nio.charset.StandardCharsets.UTF_8)))
                         .compact();
-                msg = msg.toBuilder().setJwt(jwt).build();
+                msg = msg.toBuilder().setJwt(signed).build();
             }
             byte[] payload = msg.toByteArray();
             ByteBuffer buf = ByteBuffer.allocate(4 + payload.length).order(java.nio.ByteOrder.LITTLE_ENDIAN);
@@ -249,7 +249,8 @@ public class Libp2pService {
                 byte[] data = new byte[len];
                 msg.readBytes(data);
                 P2PMessage pm = P2PMessage.parseFrom(data);
-                if (!JwtUtils.verify(pm.getJwt(), props)) {
+                String jwt = pm.getJwt();
+                if (jwt == null || jwt.isEmpty() || !JwtUtils.verify(jwt, props)) {
                     ctx.close();
                     return;
                 }
@@ -261,19 +262,21 @@ public class Libp2pService {
                         return;
                     }
                     if (ctx.channel().remoteAddress() instanceof java.net.InetSocketAddress isa) {
-                        String host = isa.getAddress().getHostAddress();
-                        kademlia.store(new Peer(host, hs.restPort(), hs.listenPort(), hs.peerId()));
+                        if (hs.restPort() > 0 && hs.listenPort() > 0) {
+                            String host = isa.getAddress().getHostAddress();
+                            kademlia.store(new Peer(host, hs.restPort(), hs.listenPort(), hs.peerId()));
+                        }
                     }
                 } else if (dto instanceof FindNodeDto find) {
                     var nearest = kademlia.closest(find.nodeId(), 16)
                             .stream().map(Peer::toString).toList();
                     P2PMessage out = P2PProtoMapper.toProto(new NodesDto(nearest));
                     if (props.getJwtSecret() != null && props.getJwtSecret().getBytes(java.nio.charset.StandardCharsets.UTF_8).length >= 32) {
-                        String jwt = Jwts.builder()
+                        String signed = Jwts.builder()
                                 .signWith(Keys.hmacShaKeyFor(
                                         props.getJwtSecret().getBytes(java.nio.charset.StandardCharsets.UTF_8)))
                                 .compact();
-                        out = out.toBuilder().setJwt(jwt).build();
+                        out = out.toBuilder().setJwt(signed).build();
                     }
                     byte[] p = out.toByteArray();
                     ByteBuffer b = ByteBuffer.allocate(4 + p.length).order(java.nio.ByteOrder.LITTLE_ENDIAN);
@@ -288,11 +291,11 @@ public class Libp2pService {
                     var list = blocks.stream().map(blockchain.core.serialization.JsonUtils::toJson).toList();
                     P2PMessage out = P2PProtoMapper.toProto(new BlocksDto(list));
                     if (props.getJwtSecret() != null && props.getJwtSecret().getBytes(java.nio.charset.StandardCharsets.UTF_8).length >= 32) {
-                        String jwt = Jwts.builder()
+                        String signed = Jwts.builder()
                                 .signWith(Keys.hmacShaKeyFor(
                                         props.getJwtSecret().getBytes(java.nio.charset.StandardCharsets.UTF_8)))
                                 .compact();
-                        out = out.toBuilder().setJwt(jwt).build();
+                        out = out.toBuilder().setJwt(signed).build();
                     }
                     byte[] p = out.toByteArray();
                     ByteBuffer b = ByteBuffer.allocate(4 + p.length).order(java.nio.ByteOrder.LITTLE_ENDIAN);
@@ -334,7 +337,9 @@ public class Libp2pService {
                         .thenCompose(c -> host.newStream(protocol, c).getStream());
             }
             byte[] data = buf.array();
-            fut.thenAccept(s -> s.writeAndFlush(io.netty.buffer.Unpooled.wrappedBuffer(data))).join();
+            fut.thenAccept(s -> s.writeAndFlush(io.netty.buffer.Unpooled.wrappedBuffer(data)))
+                    .orTimeout(5, java.util.concurrent.TimeUnit.SECONDS)
+                    .exceptionally(e -> { log.warn("libp2p send failed", e); return null; });
         } catch (Exception e) {
             log.warn("libp2p send failed", e);
         }

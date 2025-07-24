@@ -8,7 +8,9 @@ public final class JwtUtils {
     private JwtUtils() {}
 
     public static boolean verify(String token, NodeProperties props) {
-        if (token == null || token.isBlank()) return false;
+        if (token == null || token.isBlank()) {
+            throw new IllegalArgumentException("Token is missing or blank");
+        }
         if (props.getJwtSecret() == null ||
             props.getJwtSecret().getBytes(StandardCharsets.UTF_8).length < 32) {
             return false;

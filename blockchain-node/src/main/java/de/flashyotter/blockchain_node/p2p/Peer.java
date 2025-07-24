@@ -23,11 +23,6 @@ public class Peer {
         this(host, restPort, libp2pPort, null);
     }
 
-    /** WebSocket URL of this peer’s raw-JSON P2P endpoint. */
-    public String wsUrl() {
-        // was "/p2p" but our server registers on "/ws"
-        return "ws://" + host + ':' + restPort + "/ws";
-    }
 
     /** Multiaddr for libp2p connections. */
     public String multiAddr() {
