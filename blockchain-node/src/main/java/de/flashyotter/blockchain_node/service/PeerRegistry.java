@@ -34,7 +34,7 @@ public class PeerRegistry {
      */
     public boolean add(Peer p) {
         boolean fresh = peers.add(p);
-        if (fresh && pending.remainingCapacity() > 0) pending.add(p);
+        if (fresh) pending.offer(p);
         return fresh;
     }
 

@@ -12,11 +12,11 @@ public class TablePeerStore implements PeerStore {
 
     @Override
     public void addPeer(Peer peer) {
-        ((java.util.Set<Peer>) table).add(peer);
+        table.add(peer);
     }
 
     @Override
     public void removePeer(Peer peer) {
-        ((java.util.Set<Peer>) table).remove(peer);
+        table.remove(peer);
     }
 }
