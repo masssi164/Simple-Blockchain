@@ -8,7 +8,8 @@ export default defineConfig({
     setupFiles: './src/setupTests.ts',
     globals: true,               // let you use "describe/it/expect" everywhere
     coverage: {
-      reporter: ['text', 'html'],  // requires c8
+      provider: 'v8',
+      reporter: ['text', 'html'],
     },
   },
 });
