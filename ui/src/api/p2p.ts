@@ -8,6 +8,13 @@ import lp from 'it-length-prefixed';
 import * as $protobuf from 'protobufjs/minimal';
 import * as p2p from '../services/p2p_pb';
 import { sign } from 'jsonwebtoken';
+import type {
+  Transport,
+  ConnectionEncrypter,
+  StreamMuxerFactory,
+  Stream,
+} from '@libp2p/interface';
+import type { Multiaddr as Libp2pMultiaddr } from '@libp2p/interface/node_modules/@multiformats/multiaddr';
 
 export interface P2PMessage {
   type: 'HandshakeDto' | 'NewBlockDto' | 'NewTxDto' | string;
@@ -29,27 +36,41 @@ export class NodeP2P {
     : undefined;
   private factory: typeof createLibp2p = createLibp2p;
 
+  private withComponents<T>(fn: () => T): (components: any) => T {
+    return () => fn();
+  }
+
   async connect(factory: typeof createLibp2p = createLibp2p) {
     this.closed = false;
     this.factory = factory;
-    await this.open(factory);
+    try {
+      await this.open(factory);
+    } catch {
+      this.scheduleReconnect();
+    }
   }
 
   private async open(factory: typeof createLibp2p) {
     if (this.node) await this.node.stop();
-    this.node = await factory({
-      transports: [() => new TCP() as any] as any,
-      connectionEncrypters: [() => new Noise() as any] as any,
-      streamMuxers: [() => new Mplex() as any] as any,
-    } as any);
+    const opts: Parameters<typeof createLibp2p>[0] = {
+      transports: [
+        this.withComponents(() => new TCP() as unknown as Transport),
+      ],
+      connectionEncrypters: [
+        this.withComponents(() => new Noise() as unknown as ConnectionEncrypter),
+      ],
+      streamMuxers: [
+        this.withComponents(() => new Mplex() as unknown as StreamMuxerFactory),
+      ],
+    };
+    this.node = await factory(opts);
     await this.node.start();
     const addr = import.meta.env.VITE_NODE_LIBP2P;
     try {
-      const { stream } = await (this.node.dialProtocol(
-        multiaddr(addr) as any,
+      this.stream = await this.node.dialProtocol(
+        multiaddr(addr) as unknown as Libp2pMultiaddr,
         '/simple-blockchain/1.0.0'
-      ) as any);
-      this.stream = stream;
+      );
       await this.sendHandshake();
       this.reconnectMs = 1000;
       if (this.reconnectTimer) {
@@ -111,7 +132,9 @@ export class NodeP2P {
   private scheduleReconnect() {
     this.stream = undefined;
     if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
-    this.reconnectTimer = setTimeout(() => this.open(this.factory), this.reconnectMs);
+    this.reconnectTimer = setTimeout(() => {
+      this.open(this.factory).catch(() => this.scheduleReconnect());
+    }, this.reconnectMs);
     this.reconnectMs = Math.min(this.reconnectMs * 2, 30000);
   }
 
