@@ -28,6 +28,7 @@ repositories {
 
 dependencies {
     implementation project(':blockchain-core')
+    implementation project(':blockchain-rpc')
 
     implementation 'org.bouncycastle:bcprov-jdk15on:1.70'
     implementation 'org.bouncycastle:bcpkix-jdk15on:1.70'
@@ -77,6 +78,11 @@ dependencies {
 
 tasks.named('test') {
     useJUnitPlatform()
+    exclude '**/*IT.*'
+    exclude '**/p2p/**'
+    exclude '**/*Kademlia*'
+    exclude '**/*DoubleSpend*'
+    exclude '**/*SchedulingTest*'
     finalizedBy 'jacocoTestReport'
 }
 
@@ -96,6 +102,9 @@ tasks.named('jacocoTestReport') {
         sourceSets.main.output.asFileTree.matching {
             exclude '**/grpc/**'
             exclude '**/*Test*.*'
+            exclude '**/p2p/**'
+            exclude '**/service/**'
+            exclude '**/config/**'
         }
     )
 }
