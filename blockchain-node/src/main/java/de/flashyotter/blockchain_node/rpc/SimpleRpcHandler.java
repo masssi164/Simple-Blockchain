@@ -3,7 +3,6 @@ package de.flashyotter.blockchain_node.rpc;
 import blockchain.core.model.Block;
 import blockchain.core.model.Transaction;
 import com.fasterxml.jackson.databind.JsonNode;
-import org.springframework.stereotype.Component;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -15,7 +14,6 @@ import java.util.Map;
 /**
  * Basic RPC handler bridging to NodeService.
  */
-@Component
 @RequiredArgsConstructor
 @Slf4j
 public class SimpleRpcHandler implements RpcHandler {
@@ -33,13 +31,18 @@ public class SimpleRpcHandler implements RpcHandler {
             case "getBlockByNumber" -> {
                 int height = params.get(0).asInt();
                 Block b = node.blocksFromHeight(height).stream().findFirst().orElse(null);
-                yield b;
+                yield b != null ? b : Map.of("error", "Block not found");
             }
             case "sendTransaction" -> {
                 String raw = params.get(0).asText();
-                Transaction tx = blockchain.core.serialization.JsonUtils.txFromJson(raw);
-                node.submitTx(tx);
-                yield Map.of("hash", tx.calcHashHex());
+                try {
+                    Transaction tx = blockchain.core.serialization.JsonUtils.txFromJson(raw);
+                    node.submitTx(tx);
+                    yield Map.of("hash", tx.calcHashHex());
+                } catch (Exception e) {
+                    log.error("Failed to deserialize transaction from JSON: {}", raw, e);
+                    yield Map.of("error", "Invalid transaction format");
+                }
             }
             default -> {
                 log.warn("Unknown RPC method {}", method);

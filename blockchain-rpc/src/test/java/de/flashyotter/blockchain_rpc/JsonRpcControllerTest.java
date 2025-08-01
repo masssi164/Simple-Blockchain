@@ -39,4 +39,15 @@ class JsonRpcControllerTest {
                 .expectBody()
                 .jsonPath("$.result").isEqualTo("pong");
     }
+
+    @Test
+    void rejectsInvalidRequest() throws Exception {
+        client.post()
+                .uri("/rpc")
+                .bodyValue(mapper.readTree("{\"jsonrpc\":\"2.0\"}"))
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.error.code").isEqualTo(-32600);
+    }
 }
