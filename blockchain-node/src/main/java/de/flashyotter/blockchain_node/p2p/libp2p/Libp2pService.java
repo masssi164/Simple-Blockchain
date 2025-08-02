@@ -262,7 +262,11 @@ public class Libp2pService {
                     }
                     if (ctx.channel().remoteAddress() instanceof java.net.InetSocketAddress isa) {
                         String host = isa.getAddress().getHostAddress();
-                        kademlia.store(new Peer(host, hs.restPort(), hs.listenPort(), hs.peerId()));
+                        if (hs.restPort() > 0 && hs.listenPort() > 0) {
+                            kademlia.store(new Peer(host, hs.restPort(), hs.listenPort(), hs.peerId()));
+                        } else {
+                            log.debug("Ignoring handshake with zero ports from {}", host);
+                        }
                     }
                 } else if (dto instanceof FindNodeDto find) {
                     var nearest = kademlia.closest(find.nodeId(), 16)
@@ -334,7 +338,9 @@ public class Libp2pService {
                         .thenCompose(c -> host.newStream(protocol, c).getStream());
             }
             byte[] data = buf.array();
-            fut.thenAccept(s -> s.writeAndFlush(io.netty.buffer.Unpooled.wrappedBuffer(data))).join();
+            fut.orTimeout(5, java.util.concurrent.TimeUnit.SECONDS)
+               .thenAccept(s -> s.writeAndFlush(io.netty.buffer.Unpooled.wrappedBuffer(data)))
+               .exceptionally(ex -> { log.warn("libp2p send failed", ex); return null; });
         } catch (Exception e) {
             log.warn("libp2p send failed", e);
         }
