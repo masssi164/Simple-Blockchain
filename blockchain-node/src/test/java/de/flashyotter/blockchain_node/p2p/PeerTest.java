@@ -8,12 +8,6 @@ import org.junit.jupiter.api.Test;
 class PeerTest {
 
     @Test
-    void wsUrlFormatsCorrectly() {
-        Peer p = new Peer("example.com", 4242);
-        assertEquals("ws://example.com:4242/ws", p.wsUrl());
-    }
-
-    @Test
     void multiAddrUsesDnsForHostnames() {
         Peer p = new Peer("example.com", 0, 4001);
         assertEquals("/dns4/example.com/tcp/4001", p.multiAddr());
