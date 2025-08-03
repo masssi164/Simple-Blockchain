@@ -9,7 +9,7 @@ services:
       SERVER_PORT: 3333
       NODE_LIBP2P_PORT: 4001
       NODE_PEERS: ""
-      NODE_JWT_SECRET: changeMeSuperSecret
+      NODE_JWT_SECRET: changeMeSuperSecret_changeMeSuperSecret
       NODE_WALLET_PASSWORD: changeMeSuperSecret
       NODE_GRPC_PORT: 9090
       NODE_DATA_PATH: data1
@@ -29,7 +29,7 @@ services:
         VITE_NODE_URL: http://localhost:3333/api
         VITE_NODE_WS: ws://localhost:3333/ws
         VITE_NODE_GRPC: localhost:9090
-        VITE_NODE_JWT_SECRET: changeMeSuperSecret
+        VITE_NODE_JWT_SECRET: changeMeSuperSecret_changeMeSuperSecret
     ports:
       - "8081:80"
     depends_on:
@@ -46,7 +46,7 @@ services:
       SERVER_PORT: 3334
       NODE_LIBP2P_PORT: 4002
       NODE_PEERS: "${BACKEND1_MULTIADDR:-backend1:4001}"
-      NODE_JWT_SECRET: changeMeSuperSecret
+      NODE_JWT_SECRET: changeMeSuperSecret_changeMeSuperSecret
       NODE_WALLET_PASSWORD: changeMeSuperSecret
       NODE_GRPC_PORT: 9091
       NODE_DATA_PATH: data2
@@ -66,7 +66,7 @@ services:
         VITE_NODE_URL: http://localhost:3334/api
         VITE_NODE_WS: ws://localhost:3334/ws
         VITE_NODE_GRPC: localhost:9091
-        VITE_NODE_JWT_SECRET: changeMeSuperSecret
+        VITE_NODE_JWT_SECRET: changeMeSuperSecret_changeMeSuperSecret
     ports:
       - "8082:80"
     depends_on:

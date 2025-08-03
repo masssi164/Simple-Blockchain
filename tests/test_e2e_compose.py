@@ -26,7 +26,8 @@ BACKEND2_GRPC = 9091
 BACKEND1_REST = 'http://localhost:3333'
 BACKEND2_REST = 'http://localhost:3334'
 
-SECRET = os.getenv('NODE_JWT_SECRET', 'myTopSecret')
+# Default to the long shared secret used in CI/docker if env var is missing
+SECRET = os.getenv('NODE_JWT_SECRET', 'changeMeSuperSecret_changeMeSuperSecret')
 
 def token():
     return jwt.encode({}, SECRET, algorithm='HS256')

@@ -15,7 +15,7 @@ public class TablePeerStore implements PeerStore {
     static {
         Method candidate = null;
         for (Method m : KademliaRoutingTable.class.getDeclaredMethods()) {
-            if (m.getName().equals("add") && m.getParameterCount() == 1 && m.getReturnType() != boolean.class) {
+            if (m.getName().equals("add") && m.getParameterCount() == 1 && m.getParameterTypes()[0] == Peer.class) {
                 m.setAccessible(true);
                 candidate = m;
                 break;
@@ -45,7 +45,7 @@ public class TablePeerStore implements PeerStore {
     @Override
     public void removePeer(Peer peer) {
         if (!table.evict(peer)) {
-            throw new IllegalStateException("Failed to remove peer");
+            throw new IllegalStateException("Failed to remove peer", null);
         }
     }
 }
