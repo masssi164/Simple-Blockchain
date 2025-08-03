@@ -5,7 +5,6 @@ import de.flashyotter.blockchain_node.grpc.p2p.P2PMessageRequest;
 import de.flashyotter.blockchain_node.grpc.p2p.P2PMessageResponse;
 import de.flashyotter.blockchain_node.p2p.P2PMessage;
 import de.flashyotter.blockchain_node.service.P2PService;
-import io.grpc.BindableService;
 import io.grpc.stub.StreamObserver;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +19,7 @@ import com.google.protobuf.ByteString;
 @GrpcService
 @RequiredArgsConstructor
 @Slf4j
-public class P2PGrpcService extends P2PGrpcServiceGrpc.P2PGrpcServiceImplBase implements BindableService {
+public class P2PGrpcService extends P2PGrpcServiceGrpc.P2PGrpcServiceImplBase {
 
     private final P2PService p2pService;
 
