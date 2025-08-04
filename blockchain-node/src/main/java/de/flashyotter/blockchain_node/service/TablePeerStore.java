@@ -13,14 +13,23 @@ import java.lang.reflect.Method;
 public class TablePeerStore implements PeerStore {
     private static final Method ADD_METHOD;
     static {
-        Method candidate = null;
+        Method preferred = null;
+        Method fallback = null;
         for (Method m : KademliaRoutingTable.class.getDeclaredMethods()) {
-            if (m.getName().equals("add") && m.getParameterCount() == 1 && m.getParameterTypes()[0] == Peer.class) {
+            if (m.getName().equals("add") && m.getParameterCount() == 1) {
+                // Prefer the variant returning the added peer to avoid the unmodifiable
+                // Set.add implementation. Fallback to the boolean-returning method if
+                // older library versions do not expose the former.
                 m.setAccessible(true);
-                candidate = m;
-                break;
+                if (m.getReturnType() == boolean.class) {
+                    fallback = m;
+                } else {
+                    preferred = m;
+                    break;
+                }
             }
         }
+        Method candidate = preferred != null ? preferred : fallback;
         if (candidate == null) {
             throw new ExceptionInInitializerError("KademliaRoutingTable.add method not found");
         }
@@ -36,7 +45,10 @@ public class TablePeerStore implements PeerStore {
     @Override
     public void addPeer(Peer peer) {
         try {
-            ADD_METHOD.invoke(table, peer);
+            Object result = ADD_METHOD.invoke(table, peer);
+            if (ADD_METHOD.getReturnType() == boolean.class && Boolean.FALSE.equals(result)) {
+                throw new IllegalStateException("Failed to add peer", null);
+            }
         } catch (ReflectiveOperationException e) {
             throw new IllegalStateException("Failed to add peer", e);
         }
