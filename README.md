@@ -47,10 +47,10 @@ Create a `.env` file in the repo root with values similar to:
 ```
 BACKEND_PORT=1002
 FRONTEND_PORT=8892
-NODE_P2P_MODE=dual
 NODE_LIBP2P_PORT=4001
 NODE_LIBP2P_ENCRYPTED=false
 NODE_PEERS=
+NODE_ADVERTISED_ADDR=
 NODE_DATA_PATH=data
 NODE_WALLET_PASSWORD=changeMeSuperSecret
 NODE_JWT_SECRET=myTopSecret
@@ -89,7 +89,8 @@ Use `data2`/`wallet2` etc. for additional nodes.
 
 Set `NODE_PEERS` to a comma-separated list of `host:port` pairs referencing the
 libp2p port of each peer. Expose your own `NODE_LIBP2P_PORT` so others can dial
-your node.
+your node. When AutoNAT fails behind Docker, set `NODE_ADVERTISED_ADDR` to a
+reachable multiaddress like `/dns4/backend1/tcp/4001`.
 
 ### 4. Stop
 

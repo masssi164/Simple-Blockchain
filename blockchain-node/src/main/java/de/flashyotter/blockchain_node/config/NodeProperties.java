@@ -60,6 +60,7 @@ public class NodeProperties {
     /** Public address advertised to peers if AutoNAT fails */
     private String advertisedAddr = "";
 
+
     /** HTTP/WebSocket server port */
     @Value("${server.port:0}")
     private int port;
@@ -99,6 +100,11 @@ public class NodeProperties {
 
         if (!java.nio.file.Path.of(libp2pKeyPath).isAbsolute()) {
             libp2pKeyPath = java.nio.file.Path.of(dataPath, libp2pKeyPath).toString();
+        }
+
+        if (advertisedAddr == null || advertisedAddr.isBlank()) {
+            String env = System.getenv("NODE_ADVERTISED_ADDR");
+            if (env != null && !env.isBlank()) advertisedAddr = env;
         }
 
         if (id != null && !id.isBlank()) return;

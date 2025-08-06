@@ -129,7 +129,9 @@ public class Libp2pService {
     public void discoverPublicAddr(Peer peer) {
         try {
             publicAddr = autoNat.discover();
-        } catch (Exception ignore) {}
+        } catch (Exception e) {
+            log.warn("AutoNAT discovery failed: {}", e.getMessage());
+        }
         if (publicAddr == null || publicAddr.isBlank()) {
             if (props.getAdvertisedAddr() != null && !props.getAdvertisedAddr().isBlank()) {
                 publicAddr = props.getAdvertisedAddr();
@@ -336,7 +338,7 @@ public class Libp2pService {
             byte[] data = buf.array();
             fut.thenAccept(s -> s.writeAndFlush(io.netty.buffer.Unpooled.wrappedBuffer(data))).join();
         } catch (Exception e) {
-            log.warn("libp2p send failed", e);
+            log.warn("libp2p send to {} failed: {}", peer, e.getMessage());
         }
     }
 
