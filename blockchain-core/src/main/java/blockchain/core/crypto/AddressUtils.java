@@ -25,12 +25,30 @@ public final class AddressUtils {
         byte[] sha256 = HashingUtils.computeSha256Bytes(pub.getEncoded());
         byte[] ripemd = ripemd160(sha256);
 
-        byte[] payload = new byte[1 + ripemd.length + 4];
-        payload[0] = VERSION;
-        System.arraycopy(ripemd, 0, payload, 1, ripemd.length);
+        return hash160ToAddress(ripemd);
+    }
 
-        byte[] checksum = checksum(payload, 0, 1 + ripemd.length);
-        System.arraycopy(checksum, 0, payload, 1 + ripemd.length, 4);
+    /**
+     * Encodes a raw RIPEMD-160 hash into a Base58Check address.
+     *
+     * <p>This mirrors the encoding performed in {@link #publicKeyToAddress(PublicKey)}
+     * but allows callers that already operate on wallet hashes (e.g. when
+     * interoperating with external tooling) to derive the textual address.
+     *
+     * @param hash160 20-byte RIPEMD-160 digest of the public key
+     * @return Base58Check-encoded address
+     */
+    public static String hash160ToAddress(byte[] hash160) {
+        if (hash160 == null || hash160.length != 20) {
+            throw new IllegalArgumentException("hash160 must be exactly 20 bytes");
+        }
+
+        byte[] payload = new byte[1 + hash160.length + 4];
+        payload[0] = VERSION;
+        System.arraycopy(hash160, 0, payload, 1, hash160.length);
+
+        byte[] checksum = checksum(payload, 0, 1 + hash160.length);
+        System.arraycopy(checksum, 0, payload, 1 + hash160.length, 4);
 
         return Base58.encode(payload);
     }

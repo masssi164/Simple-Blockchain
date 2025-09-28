@@ -26,7 +26,7 @@ class JsonRpcControllerTest {
 
     @Test
     void dispatchesCall() throws Exception {
-        when(handler.dispatch(eq("ping"), any())).thenReturn("pong");
+        when(handler.dispatch(eq("ping"), any())).thenReturn(RpcResponse.success("pong"));
         client.post()
                 .uri("/rpc")
                 .bodyValue(mapper.readTree("{" +

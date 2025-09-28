@@ -41,6 +41,12 @@ public class NodeProperties {
     }
 
 
+    /**
+     * Chain identifier returned via the JSON-RPC API.
+     */
+    private long chainId = 1337L;
+
+
     /** Maximum number of transactions kept in the mempool */
     @Value("${mempool.maxSize:1000}")
     private int mempoolMaxSize = 1000;
