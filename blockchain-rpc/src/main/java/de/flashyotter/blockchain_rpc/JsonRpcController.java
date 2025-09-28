@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -38,11 +39,19 @@ public class JsonRpcController {
         String method = req.get("method").asText();
         JsonNode params = req.get("params");
         JsonNode id = req.get("id");
-        Object result = handler.dispatch(method, params);
-        return Map.of(
-                "jsonrpc", "2.0",
-                "id", id,
-                "result", result
-        );
+        RpcResponse response = handler.dispatch(method, params);
+
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("jsonrpc", "2.0");
+        payload.put("id", id);
+
+        if (response.hasError()) {
+            payload.put("error", response.error().toMap());
+            payload.put("result", null);
+        } else {
+            payload.put("result", response.result());
+        }
+
+        return payload;
     }
 }

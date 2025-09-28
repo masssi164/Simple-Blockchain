@@ -129,6 +129,25 @@ public class NodeService {
         return effective;
     }
 
+    public long chainId() {
+        return props.getChainId();
+    }
+
+    public int latestHeight() {
+        return chain.getLatest().getHeight();
+    }
+
+    public Block blockAtHeight(int height) {
+        List<Block> blocks = chain.getBlocks();
+        if (height < 0 || height >= blocks.size()) {
+            return null;
+        }
+        Block candidate = blocks.get(height);
+        return candidate.getHeight() == height ? candidate :
+               blocks.stream().filter(b -> b.getHeight() == height)
+                     .findFirst().orElse(null);
+    }
+
     public List<Block> blocksFromHeight(int from) {
         return chain.getBlocks().stream()
                     .filter(b -> b.getHeight() >= from)

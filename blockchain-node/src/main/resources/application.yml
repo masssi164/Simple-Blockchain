@@ -26,6 +26,7 @@ node:
   data-path: data
   wallet-password: ${NODE_WALLET_PASSWORD:changeMe}
   jwt-secret:    ${NODE_JWT_SECRET:changeMeSuperSecret}
+  chain-id:     ${NODE_CHAIN_ID:1337}
   libp2p-port:   ${NODE_LIBP2P_PORT:4001}
   libp2p-encrypted: ${NODE_LIBP2P_ENCRYPTED:true}
   snapshot-interval-sec: ${NODE_SNAPSHOT_INTERVAL_SEC:300}
