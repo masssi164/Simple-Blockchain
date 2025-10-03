@@ -1,4 +1,4 @@
-Implements the gRPC services defined in `src/main/proto`.
+Protocol buffer mappers shared by transport layers.
 
-- `ChainGrpcService`, `MiningGrpcService`, `WalletGrpcService` delegate to the corresponding services.
-- `GrpcMapper` converts between protobuf messages and domain objects.
+- `GrpcMapper` converts between protobuf messages and domain objects used by the
+  node and libp2p bridge.

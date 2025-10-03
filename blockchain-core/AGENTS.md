@@ -14,4 +14,5 @@ Unit tests live under `src/test/java/simple/blockchain` mirroring these packages
 They cover consensus rules, wallet operations and mempool edge cases.
 
 `build.gradle` configures JDK 21 toolchains and generates JaCoCo reports.
-Proto definitions in `blockchain-node/src/main/proto` map these models for gRPC.
+Proto definitions in `blockchain-node/src/main/proto` map these models for
+libp2p and JSON-RPC payloads.

@@ -1,5 +1,5 @@
 import type { Block } from '../types/block';
-import { chainLatest } from './grpc';
+import { chainLatest } from './jsonRpc';
 
 export type NodeEvent =
   | { type: 'block'; block: Block };
@@ -7,8 +7,8 @@ export type NodeEvent =
 export type NodeEventListener = (event: NodeEvent) => void;
 
 /**
- * Lightweight polling-based event stream. The backend currently exposes
- * gRPC endpoints but no dedicated WebSocket feed, so we emulate a
+ * Lightweight polling-based event stream. The backend exposes REST/JSON-RPC
+ * endpoints but no dedicated WebSocket feed, so we emulate a
  * push channel by periodically fetching the latest block and emitting an
  * event whenever the height or hash changes. dApp clients can reuse the same
  * surface without depending on libp2p internals.

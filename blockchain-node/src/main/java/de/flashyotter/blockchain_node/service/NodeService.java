@@ -148,6 +148,16 @@ public class NodeService {
                      .findFirst().orElse(null);
     }
 
+    public Block blockByHash(String hashHex) {
+        if (hashHex == null || hashHex.isBlank()) {
+            return null;
+        }
+        return chain.getBlocks().stream()
+                .filter(b -> b.getHashHex().equalsIgnoreCase(hashHex))
+                .findFirst()
+                .orElse(null);
+    }
+
     public List<Block> blocksFromHeight(int from) {
         return chain.getBlocks().stream()
                     .filter(b -> b.getHeight() >= from)

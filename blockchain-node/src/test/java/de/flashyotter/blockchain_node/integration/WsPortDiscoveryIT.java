@@ -18,8 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     properties = {"node.data-path=build/test-data/ws-discovery",
-                  "node.libp2p-port=0",
-                  "grpc.server.port=19080"})
+                  "node.libp2p-port=0"})
 @ActiveProfiles("test")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @org.junit.jupiter.api.Disabled("Flaky in CI")
@@ -39,7 +38,6 @@ class WsPortDiscoveryIT {
         ctxB = new org.springframework.boot.builder.SpringApplicationBuilder(BlockchainNodeApplication.class)
                 .properties(
                     "server.port=0",
-                    "grpc.server.port=19081",
                     "node.wallet-password=test",
                     "node.libp2p-port=0",
                     "node.data-path=build/test-data/ws-discovery-b",

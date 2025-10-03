@@ -1,52 +1,47 @@
-# dApp gRPC API
+# dApp JSON-RPC API
 
-The node exposes a lightweight gRPC surface for decentralised applications. It
-is defined in [`blockchain-node/src/main/proto/node.proto`](../blockchain-node/src/main/proto/node.proto)
-and served by the Spring Boot application on `NODE_GRPC_PORT` (defaults to
-`9090`). The UI consumes the same API via the protobuf.js generated clients.
+The node exposes an Ethereum-inspired JSON-RPC 2.0 surface on
+`http://<host>:<port>/rpc`. It is powered by
+[`JsonRpcController`](../blockchain-node/src/main/java/de/flashyotter/blockchain_node/controller/JsonRpcController.java)
+and consumed by the React UI and browser wallets such as MetaMask.
 
 ## Authentication
 
-If `NODE_JWT_SECRET` is configured the server expects a Bearer token on every
-call. Tokens can be created by signing an empty payload with the shared secret,
-mirroring the behaviour in `ui/src/api/grpc.ts`.
+If `NODE_JWT_SECRET` is configured the UI includes a Bearer token with each
+request. External clients can do the same by signing an empty payload with the
+shared secret, mirroring the behaviour in `ui/src/api/jsonRpc.ts`.
 
-## Services
+## Methods
 
-### `Chain`
+### Ethereum-compatible
 
-| Method | Request | Response | Description |
+| Method | Params | Result | Description |
 | --- | --- | --- | --- |
-| `Latest` | `Empty` | `Block` | Returns the most recent block. |
-| `Page` | `PageRequest` | `BlockList` | Provides simple pagination over the
-  canonical chain. |
+| `web3_clientVersion` | none | string | Identifies the node implementation. |
+| `net_version` | none | string | Returns the chain ID as a decimal string. |
+| `eth_chainId` | none | hex string | Chain ID encoded as a quantity. |
+| `eth_blockNumber` | none | hex string | Latest block height. |
+| `eth_getBlockByNumber` | `[blockTag, fullTx?]` | object \| null | Fetches a block by tag (`latest`, `earliest`) or height. |
+| `eth_getBlockByHash` | `[hash, fullTx?]` | object \| null | Fetches a block by hash. |
+| `eth_accounts` | none | string[] | Returns the local wallet address. |
+| `eth_getBalance` | `[address]` | hex string | Returns the account balance in base units. |
+| `eth_sendTransaction` | `[tx]` | hash | Creates and broadcasts a transaction from the local wallet. |
 
-### `Mining`
+### SimpleBlockchain extensions
 
-| Method | Request | Response | Description |
+| Method | Params | Result | Description |
 | --- | --- | --- | --- |
-| `Mine` | `Empty` | `Block` | Mines a new block using the pending mempool
-  transactions. |
+| `sb_mineBlock` | none | `BlockView` | Mines a block immediately. |
+| `sb_chainLatest` | none | `BlockView` | Returns the tip of the chain. |
+| `sb_chainPage` | `[page, size]` | `BlockView[]` | Provides descending pagination over the chain. |
+| `sb_walletInfo` | none | object | Returns address, confirmed balance and pending deltas. |
 
-### `Wallet`
-
-| Method | Request | Response | Description |
-| --- | --- | --- | --- |
-| `Send` | `SendRequest` | `Transaction` | Submits a signed transaction to the
-  mempool. |
-| `Info` | `Empty` | `WalletInfo` | Returns the local wallet address and its
-  confirmed balance. |
-| `History` | `HistoryRequest` | `TxList` | Streams recent wallet transactions.
-
-## Data model
-
-Messages mirror the Java domain objects. For instance, `Block` contains the
-height, hash metadata, and a list of transactions (each with `TxInput` and
-`TxOutput` entries). All monetary values use floating point numbers to match the
-existing wallet implementation.
+`BlockView` mirrors the Java domain model and includes the block height, hashes,
+timestamp, difficulty bits, nonce, merkle root and the raw transactions.
 
 ## Error handling
 
-gRPC status codes are surfaced directly to the client. Application level
-failures—such as rejected transactions—propagate as `INVALID_ARGUMENT` errors
-with descriptive messages from the backend services.
+Errors follow the JSON-RPC 2.0 specification. Invalid requests or parameters
+return errors with codes `-32600` to `-32602`. Unexpected failures result in
+`-32603` alongside a descriptive message. All responses include the request `id`
+so clients can match them with outstanding calls.

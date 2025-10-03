@@ -11,13 +11,11 @@ services:
       NODE_PEERS: ""
       NODE_JWT_SECRET: changeMeSuperSecret_changeMeSuperSecret
       NODE_WALLET_PASSWORD: changeMeSuperSecret
-      NODE_GRPC_PORT: 9090
       NODE_DATA_PATH: data1
       CONSENSUS_COINBASE_MATURITY: 0
     ports:
       - "3333:3333"
       - "4001:4001"
-      - "9090:9090"
     volumes:
       - ./data1:/app/data1
       - ./wallet1:/root/.simple-chain
@@ -27,7 +25,7 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_NODE_URL: http://localhost:3333/api
-        VITE_NODE_GRPC: localhost:9090
+        VITE_NODE_RPC_HTTP: http://localhost:3333/rpc
         VITE_NODE_JWT_SECRET: changeMeSuperSecret_changeMeSuperSecret
     ports:
       - "8081:80"
@@ -47,13 +45,11 @@ services:
       NODE_PEERS: "${BACKEND1_MULTIADDR:-backend1:4001}"
       NODE_JWT_SECRET: changeMeSuperSecret_changeMeSuperSecret
       NODE_WALLET_PASSWORD: changeMeSuperSecret
-      NODE_GRPC_PORT: 9091
       NODE_DATA_PATH: data2
       CONSENSUS_COINBASE_MATURITY: 0
     ports:
       - "3334:3334"
       - "4002:4002"
-      - "9091:9091"
     volumes:
       - ./data2:/app/data2
       - ./wallet2:/root/.simple-chain
@@ -63,7 +59,7 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_NODE_URL: http://localhost:3334/api
-        VITE_NODE_GRPC: localhost:9091
+        VITE_NODE_RPC_HTTP: http://localhost:3334/rpc
         VITE_NODE_JWT_SECRET: changeMeSuperSecret_changeMeSuperSecret
     ports:
       - "8082:80"

@@ -1,13 +1,8 @@
 import subprocess
 import time
-import requests
-import grpc
-import pytest
-import os
-import jwt
 
-from .node_pb2 import Empty
-from .node_pb2_grpc import MiningStub, ChainStub, WalletStub
+import pytest
+import requests
 
 
 def _docker_available():
@@ -21,16 +16,23 @@ def _docker_available():
 if not _docker_available():
     pytest.skip('Docker not available', allow_module_level=True)
 
-BACKEND1_GRPC = 9090
-BACKEND2_GRPC = 9091
-BACKEND1_REST = 'http://localhost:3333'
-BACKEND2_REST = 'http://localhost:3334'
 
-# Default to the long shared secret used in CI/docker if env var is missing
-SECRET = os.getenv('NODE_JWT_SECRET', 'changeMeSuperSecret_changeMeSuperSecret')
+BACKEND1_RPC = 'http://localhost:3333/rpc'
+BACKEND2_RPC = 'http://localhost:3334/rpc'
+COIN_SCALE = 100_000_000
 
-def token():
-    return jwt.encode({}, SECRET, algorithm='HS256')
+
+def rpc_call(url, method, params=None):
+    payload = {'jsonrpc': '2.0', 'id': 1, 'method': method, 'params': params or []}
+    response = requests.post(url, json=payload, timeout=5)
+    response.raise_for_status()
+    data = response.json()
+    assert 'error' not in data, data['error']
+    return data['result']
+
+
+def encode_amount(amount):
+    return hex(int(amount * COIN_SCALE))
 
 
 def await_until(predicate, timeout=60, interval=2):
@@ -42,66 +44,47 @@ def await_until(predicate, timeout=60, interval=2):
     return False
 
 
-def wait_for_grpc(port):
+def wait_for_rpc(url):
     end = time.time() + 60
     while time.time() < end:
-        channel = grpc.insecure_channel(f'localhost:{port}')
         try:
-            grpc.channel_ready_future(channel).result(timeout=3)
-            channel.close()
+            rpc_call(url, 'web3_clientVersion')
             return True
         except Exception:
-            channel.close()
             time.sleep(3)
     return False
 
 
+def latest_height(url):
+    block = rpc_call(url, 'sb_chainLatest')
+    return block['height'] if block else -1
+
 
 def test_e2e_compose():
-    assert wait_for_grpc(BACKEND1_GRPC)
-    assert wait_for_grpc(BACKEND2_GRPC)
-    # mine first block via gRPC
-    metadata = [('authorization', f'Bearer {token()}')]
-    with grpc.insecure_channel(f'localhost:{BACKEND1_GRPC}') as ch:
-        mine_stub = MiningStub(ch)
-        first = mine_stub.Mine(Empty(), metadata=metadata)
-    # wait until backend2 sees the block via REST
-    def backend2_has_block():
-        try:
-            r = requests.get(f'{BACKEND2_REST}/api/chain/latest', timeout=5)
-            if r.ok and r.json()['height'] >= first.height:
-                return True
-        except Exception:
-            pass
-        return False
-    assert await_until(backend2_has_block)
-    # send transaction via REST
-    wallet = requests.get(f'{BACKEND1_REST}/api/wallet', timeout=5).json()
-    tx_resp = requests.post(
-        f'{BACKEND1_REST}/api/wallet/send',
-        json={'recipient': wallet['address'], 'amount': 1.0},
-        timeout=5,
+    assert wait_for_rpc(BACKEND1_RPC)
+    assert wait_for_rpc(BACKEND2_RPC)
+
+    first = rpc_call(BACKEND1_RPC, 'sb_mineBlock')
+
+    assert await_until(lambda: latest_height(BACKEND2_RPC) >= first['height'])
+
+    wallet = rpc_call(BACKEND1_RPC, 'sb_walletInfo')
+    rpc_call(
+        BACKEND1_RPC,
+        'eth_sendTransaction',
+        [{'to': wallet['address'], 'value': encode_amount(1.0)}],
     )
-    assert tx_resp.status_code == 200
-    # mine second block via gRPC
-    with grpc.insecure_channel(f'localhost:{BACKEND1_GRPC}') as ch:
-        mine_stub = MiningStub(ch)
-        second = mine_stub.Mine(Empty(), metadata=metadata)
-    # verify backend2 has the second block with our tx
+
+    second = rpc_call(BACKEND1_RPC, 'sb_mineBlock')
+
     def backend2_has_tx_block():
         try:
-            with grpc.insecure_channel(f'localhost:{BACKEND2_GRPC}') as ch2:
-                chain = ChainStub(ch2)
-                latest = chain.Latest(Empty(), metadata=metadata)
-                if latest.height >= second.height and len(latest.txList) > 1:
-                    return True
+            tip = rpc_call(BACKEND2_RPC, 'sb_chainLatest')
+            return tip['height'] >= second['height'] and len(tip.get('txList', [])) > 1
         except Exception:
-            pass
-        return False
-    assert await_until(backend2_has_tx_block)
-    # wallet balance should remain positive
-    with grpc.insecure_channel(f'localhost:{BACKEND1_GRPC}') as ch:
-        wallet_stub = WalletStub(ch)
-        info = wallet_stub.Info(Empty(), metadata=metadata)
-        assert info.balance > 0
+            return False
 
+    assert await_until(backend2_has_tx_block)
+
+    info = rpc_call(BACKEND1_RPC, 'sb_walletInfo')
+    assert info['confirmedBalance'] > 0

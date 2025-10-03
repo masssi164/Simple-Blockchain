@@ -2,8 +2,8 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import Dashboard from '../pages/Dashboard';
 
-/* gRPC-Call stubben ------------------------------------------------------- */
-vi.mock('../api/grpc', () => ({
+/* JSON-RPC-Calls stubben -------------------------------------------------- */
+vi.mock('../api/jsonRpc', () => ({
   chainLatest: vi.fn(() =>
     Promise.resolve({
       height: 7,

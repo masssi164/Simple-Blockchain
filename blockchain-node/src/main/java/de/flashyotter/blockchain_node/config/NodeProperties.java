@@ -29,7 +29,7 @@ public class NodeProperties {
     private String dataPath = "data";
     
     /**
-     * Chain identifier returned by external APIs (REST/gRPC).
+     * Chain identifier returned by external APIs (REST/JSON-RPC).
      */
     private long chainId = 1337L;
 

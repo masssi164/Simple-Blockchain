@@ -6,7 +6,10 @@ import blockchain.core.model.TxInput;
 import blockchain.core.model.TxOutput;
 import com.google.protobuf.ByteString;
 
-/** Utility converting domain objects to their gRPC representations. */
+/**
+ * Utility converting domain objects to the protobuf messages shared across the
+ * node (JSON-RPC) and libp2p bridges.
+ */
 public final class GrpcMapper {
     private GrpcMapper() {}
 
