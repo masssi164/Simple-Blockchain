@@ -1,6 +1,6 @@
 # Simple-Chain Node (v0.2-DEV)
 
-A lean Java&nbsp;21 and Spring Boot&nbsp;3 blockchain node demonstrating a modern architecture in a concise code base. It implements Proof-of-Work mining, a UTXO ledger and libp2p networking. Clients interact via REST, WebSocket or gRPC.
+A lean Java&nbsp;21 and Spring Boot&nbsp;3 blockchain node demonstrating a modern architecture in a concise code base. It implements Proof-of-Work mining, a UTXO ledger and libp2p networking. Clients interact via REST or gRPC.
 
 **Status: Beta** – breaking changes may occur until v1.0.
 
@@ -27,9 +27,9 @@ A lean Java&nbsp;21 and Spring Boot&nbsp;3 blockchain node demonstrating a moder
 | Consensus | Bitcoin-style PoW, UTXO model, compact-bits difficulty retarget, fork choice by total work |
 | Wallet | HD wallet stored in encrypted PKCS#12 keystore |
 | Mining | Parallel PoW engine with configurable worker threads |
-| Networking | WebSocket gossip and libp2p with Kademlia DHT, optional Noise encryption |
+| Networking | libp2p gossip with Kademlia DHT, optional Noise encryption |
 | Mempool | Fee-based priority queue with base fee and tips |
-| API | Reactive REST & WebSocket push, JWT secured, Prometheus metrics |
+| API | Reactive REST & gRPC endpoints, JWT secured, Prometheus metrics |
 | UI | React dashboard using REST and gRPC clients |
 
 The Docker image is under 120&nbsp;MB and starts in less than two seconds on a laptop.

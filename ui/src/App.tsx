@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { mutate } from 'swr';
 import { Toaster } from 'react-hot-toast';
 import { messageService } from './services/messageService';
-import { p2pSingleton } from './api/p2p';
+import { nodeEvents } from './api/ws';
 import Dashboard from './pages/Dashboard';
 
 /**
@@ -11,12 +11,12 @@ import Dashboard from './pages/Dashboard';
  */
 export default function App() {
   /* ------------------------------------------------------------------ */
-  /* WebSocket lifecycle                                                */
+  /* Event stream lifecycle                                             */
   /* ------------------------------------------------------------------ */
   useEffect(() => {
-    p2pSingleton.connect();
+    nodeEvents.start();
     return () => {
-      void p2pSingleton.close();
+      nodeEvents.stop();
     };
   }, []);
 
@@ -24,16 +24,22 @@ export default function App() {
   /* React on new blocks                                                */
   /* ------------------------------------------------------------------ */
   useEffect(() => {
-    p2pSingleton.on<{ type: string; rawBlockJson?: string }>(m => {
-      if (m.type === 'NewBlockDto' && m.rawBlockJson) {
-        const blk = JSON.parse(m.rawBlockJson);
+    const unsubscribe = nodeEvents.on(event => {
+      if (event.type === 'block') {
+        const blk = event.block;
         console.info('New block', blk.height, blk.hashHex);
 
         mutate('/chain/latest');
         mutate('/wallet');
-        messageService.success(`New block #${blk.height} accepted`);
+        if (typeof blk.height === 'number') {
+          messageService.success(`New block #${blk.height} accepted`);
+        } else {
+          messageService.success('New block accepted');
+        }
       }
     });
+
+    return unsubscribe;
   }, []);
 
   return (

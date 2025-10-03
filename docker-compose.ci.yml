@@ -27,7 +27,6 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_NODE_URL: http://localhost:3333/api
-        VITE_NODE_WS: ws://localhost:3333/ws
         VITE_NODE_GRPC: localhost:9090
         VITE_NODE_JWT_SECRET: changeMeSuperSecret_changeMeSuperSecret
     ports:
@@ -64,7 +63,6 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_NODE_URL: http://localhost:3334/api
-        VITE_NODE_WS: ws://localhost:3334/ws
         VITE_NODE_GRPC: localhost:9091
         VITE_NODE_JWT_SECRET: changeMeSuperSecret_changeMeSuperSecret
     ports:
