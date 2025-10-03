@@ -14,7 +14,7 @@ import blockchain.core.consensus.Chain;
 import blockchain.core.consensus.ConsensusParams;
 import blockchain.core.model.Block;
 import blockchain.core.model.Transaction;
-import de.flashyotter.blockchain_node.wallet.WalletService;
+import blockchain.core.model.TxOutput;
 import de.flashyotter.blockchain_node.config.NodeProperties;
 import lombok.RequiredArgsConstructor;
 
@@ -29,7 +29,6 @@ public class MiningService {
 
     private final Chain          chain;
     private final MempoolService mempool;
-    private final WalletService  wallet;          // ➊ neu
     private final NodeProperties props;
 
     private ForkJoinPool pool;
@@ -57,13 +56,11 @@ public class MiningService {
         double baseFee = mempool.getBaseFee();
         double tips    = memTx.stream().mapToDouble(mempool::tipFor).sum();
 
-        /* 2) Coinbase für lokale Wallet bauen --------------------------- */
+        /* 2) Coinbase for configured miner address --------------------- */
         int height   = chain.getLatest().getHeight() + 1;
         double reward = ConsensusParams.blockReward(height) + tips;
-        Transaction coinbase = new Transaction(
-                wallet.getLocalWallet().getPublicKey(),
-                reward,
-                String.valueOf(height));
+        Transaction coinbase = new Transaction();
+        coinbase.getOutputs().add(new TxOutput(reward, props.getMinerAddress()));
 
         /* 3) Liste zusammenstellen  (coinbase immer an Position 0) ------ */
         List<Transaction> txs = new java.util.ArrayList<>(1 + memTx.size());

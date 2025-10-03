@@ -1,6 +1,5 @@
 package de.flashyotter.blockchain_node.controller;
 
-import blockchain.core.crypto.AddressUtils;
 import blockchain.core.model.Block;
 import blockchain.core.model.Transaction;
 import blockchain.core.model.TxOutput;
@@ -8,7 +7,7 @@ import de.flashyotter.blockchain_node.dto.BlockView;
 import de.flashyotter.blockchain_node.dto.JsonRpcRequest;
 import de.flashyotter.blockchain_node.dto.JsonRpcResponse;
 import de.flashyotter.blockchain_node.service.NodeService;
-import de.flashyotter.blockchain_node.wallet.WalletService;
+import de.flashyotter.blockchain_node.config.NodeProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
@@ -27,7 +26,7 @@ import java.util.Map;
 /**
  * JSON-RPC facade exposing Ethereum-inspired methods so browser wallets such as
  * MetaMask can connect to the node. Custom {@code sb_*} methods cover features
- * unique to this project (mining, chain pagination, extended wallet info).
+ * unique to this project (mining helpers, chain pagination).
  */
 @RestController
 @RequestMapping(value = "/rpc", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -38,8 +37,8 @@ public class JsonRpcController {
     private static final BigDecimal COIN_SCALE      = new BigDecimal("100000000"); // 1 coin = 1e8 base units
     private static final Duration   MINE_TIMEOUT    = Duration.ofMinutes(5);
 
-    private final NodeService   node;
-    private final WalletService wallet;
+    private final NodeService node;
+    private final NodeProperties props;
 
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     public JsonRpcResponse handle(@RequestBody JsonRpcRequest request) {
@@ -56,13 +55,10 @@ public class JsonRpcController {
                 case "eth_blockNumber" -> encodeQuantity(node.latestHeight());
                 case "eth_getBlockByNumber" -> getBlockByNumber(request.params());
                 case "eth_getBlockByHash" -> getBlockByHash(request.params());
-                case "eth_accounts" -> List.of(localAddress());
                 case "eth_getBalance" -> getBalance(request.params());
-                case "eth_sendTransaction" -> sendTransaction(request.params());
                 case "sb_mineBlock" -> mineBlock();
                 case "sb_chainLatest" -> BlockView.from(node.latestBlock());
                 case "sb_chainPage" -> chainPage(request.params());
-                case "sb_walletInfo" -> walletInfo();
                 default -> throw JsonRpcError.methodNotFound(request.method());
             };
             return JsonRpcResponse.success(request.id(), result);
@@ -122,7 +118,7 @@ public class JsonRpcController {
         map.put("nonce", encodeQuantity(block.getNonce()));
         map.put("difficulty", encodeQuantity(block.getCompactDifficultyBits()));
         map.put("timestamp", encodeQuantity(block.getTimeMillis() / 1000));
-        map.put("miner", addHexPrefix(localAddress()));
+        map.put("miner", addHexPrefix(props.getMinerAddress()));
         map.put("size", encodeQuantity(block.getTxList().size()));
         map.put("transactions", fullTx
                 ? block.getTxList().stream().map(this::toEthTransaction).toList()
@@ -155,49 +151,10 @@ public class JsonRpcController {
         return encodeQuantity(toBaseUnits(balance));
     }
 
-    private Object sendTransaction(List<Object> params) {
-        if (params.isEmpty()) {
-            throw JsonRpcError.invalidParams("Missing transaction object");
-        }
-        Object raw = params.get(0);
-        if (!(raw instanceof Map<?, ?> txMap)) {
-            throw JsonRpcError.invalidParams("Transaction must be an object");
-        }
-        Object toValue = txMap.get("to");
-        Object valueRaw = txMap.get("value");
-        if (toValue == null || valueRaw == null) {
-            throw JsonRpcError.invalidParams("`to` and `value` are required");
-        }
-        String recipient = stripHexPrefix(String.valueOf(toValue));
-        double amount = toCoins(decodeQuantity(valueRaw));
-
-        Transaction tx = wallet.createTx(recipient, amount, node.currentUtxo());
-        if (!node.submitTx(tx)) {
-            throw JsonRpcError.internalError("Transaction rejected by mempool");
-        }
-        return addHexPrefix(tx.calcHashHex());
-    }
-
     private List<BlockView> chainPage(List<Object> params) {
         int page = params.size() > 0 ? toInt(params.get(0)) : 0;
         int size = params.size() > 1 ? toInt(params.get(1)) : 5;
         return node.blockPage(page, size).stream().map(BlockView::from).toList();
-    }
-
-    private Map<String, Object> walletInfo() {
-        Map<String, TxOutput> confirmed = node.currentUtxo();
-        Map<String, TxOutput> effective = node.currentUtxoIncludingPending();
-        double confirmedBalance = wallet.balance(confirmed);
-        double effectiveBalance = wallet.balance(effective);
-        double pendingIncoming = Math.max(0.0, effectiveBalance - confirmedBalance);
-        double pendingOutgoing = Math.max(0.0, confirmedBalance - effectiveBalance);
-
-        Map<String, Object> map = new LinkedHashMap<>();
-        map.put("address", localAddress());
-        map.put("confirmedBalance", confirmedBalance);
-        map.put("pendingIncoming", pendingIncoming);
-        map.put("pendingOutgoing", pendingOutgoing);
-        return map;
     }
 
     private int toInt(Object value) {
@@ -226,10 +183,6 @@ public class JsonRpcController {
         return new BigDecimal(coins).multiply(COIN_SCALE).toBigInteger();
     }
 
-    private double toCoins(BigInteger baseUnits) {
-        return new BigDecimal(baseUnits).divide(COIN_SCALE).doubleValue();
-    }
-
     private String encodeQuantity(long value) {
         return "0x" + Long.toHexString(value);
     }
@@ -247,10 +200,6 @@ public class JsonRpcController {
             return null;
         }
         return hex.startsWith("0x") || hex.startsWith("0X") ? hex.substring(2) : hex;
-    }
-
-    private String localAddress() {
-        return AddressUtils.publicKeyToAddress(wallet.getLocalWallet().getPublicKey());
     }
 
     private static class JsonRpcError extends RuntimeException {

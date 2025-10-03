@@ -16,15 +16,13 @@ import org.junit.jupiter.api.Test;
 import blockchain.core.consensus.Chain;
 import blockchain.core.model.Block;
 import blockchain.core.model.Transaction;
-import blockchain.core.model.Wallet;
+import blockchain.core.model.TxOutput;
 import de.flashyotter.blockchain_node.config.NodeProperties;
-import de.flashyotter.blockchain_node.wallet.WalletService;
 
 class MiningServicePoolTest {
 
     private Chain chain;
     private MempoolService mempool;
-    private WalletService wallet;
     private NodeProperties props;
     private MiningService svc;
 
@@ -32,14 +30,12 @@ class MiningServicePoolTest {
     void setUp() throws Exception {
         chain = mock(Chain.class);
         mempool = mock(MempoolService.class);
-        wallet = mock(WalletService.class);
         props = new NodeProperties();
         props.setMiningThreads(2);
+        props.setMinerAddress("miner-address");
 
-        Wallet w = new Wallet();
-        when(wallet.getLocalWallet()).thenReturn(w);
-
-        Transaction coinbase = new Transaction(w.getPublicKey(), 0.0, "0");
+        Transaction coinbase = new Transaction();
+        coinbase.getOutputs().add(new TxOutput(0.0, props.getMinerAddress()));
         Block latest = new Block(0, "0", List.of(coinbase), 0x207fffff, 1L, 0);
         when(chain.getLatest()).thenReturn(latest);
         when(chain.nextCompactBits()).thenReturn(0x207fffff);
@@ -48,7 +44,7 @@ class MiningServicePoolTest {
         when(mempool.getBaseFee()).thenReturn(0.0);
         when(mempool.tipFor(org.mockito.ArgumentMatchers.any())).thenReturn(0.0);
 
-        svc = new MiningService(chain, mempool, wallet, props);
+        svc = new MiningService(chain, mempool, props);
         Method init = MiningService.class.getDeclaredMethod("initPool");
         init.setAccessible(true);
         init.invoke(svc);

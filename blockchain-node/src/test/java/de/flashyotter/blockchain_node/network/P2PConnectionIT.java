@@ -33,7 +33,7 @@ class P2PConnectionIT {
         portB = randomFreePort();
         new Thread(() -> BlockchainNodeApplication.main(new String[]{
                 "--server.port=" + portB,
-                "--node.wallet-password=test",
+                "--node.miner-address=testMinerAddress",
                 "--node.peers=localhost:" + portA
         })).start();
 

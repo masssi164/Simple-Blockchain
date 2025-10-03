@@ -1,68 +1,68 @@
-# Debugging Report
-
-## P2P Configuration Mismatch
-
-- `.env` sets `NODE_P2P_MODE=legacy` which implies a WebSocket based peer transport.
-- `NodeProperties` also defaults to `p2pMode` = "legacy" but this value is unused in the application.
-- The codebase only implements a libp2p service; there is no WebSocket P2P server.
-- Running the node with the default configuration therefore leaves it without any active peer transport.
-
-Relevant lines:
-```
-.env line 9: NODE_P2P_MODE=legacy
-NodeProperties.java line 44-47: p2pMode = "legacy"
-```
-
-## Missing WebSocket Endpoint
-
-- The UI's `NodeWs` helper expects a `/ws` endpoint derived from the `VITE_NODE_WS` variable.
-- `docker-compose.yml` passes `VITE_NODE_WS: ws://localhost:${BACKEND_PORT}/ws` to the frontend build.
-- `WebSocketConfig` exposes only a STOMP endpoint at `/stomp`; no handler registers `/ws`.
-- Consequently the browser tries to open a WebSocket that the backend does not provide.
-
-Relevant lines:
-```
-NodeWs (ws.ts) lines 26-28
-docker-compose.yml line 42-45
-WebSocketConfig.java lines 29-32
-Peer.java lines 26-29
-```
-
-## Consensus Checks
-
-- `Chain.validateTxs` verifies signatures and prevents double spends but does not check that transaction inputs cover their outputs.
-- Only the mempool performs this balance check. Blocks composed outside the mempool could bypass it.
-
-Relevant lines:
-```
-Chain.java lines 174-226
-```
-
-## Mempool Concurrency
-
-- `Mempool.add` checks for double spends using an iteration over the current pool but the check and insertion are not atomic. Under high concurrency conflicting transactions might pass the check before being stored.
-
-## Mining Service Result Handling
-
-- `MiningService.mine` returns `result.get()` from the worker threads without null checking. If the pool shuts down early or no thread finds a block, callers may receive `null` and trigger an NPE.
-
-## Front‑End Peer Connection
-
-- Because the backend lacks a `/ws` endpoint and only exposes libp2p, the UI cannot establish a real-time connection. The WebSocket helper should be replaced or reconfigured to use libp2p or to remove the unused legacy transport.
-
-## Test Execution
-
-Running `make ci` after installing JDK 17 still results in failing tests from the `blockchain-node` module:
-```
-107 tests completed, 13 failed, 10 skipped
-FAILURE: Build failed with an exception.
-```
-See `/tmp/make_ci.log` for details.
-
-## Latest Fixes
-
-- Replaced the front-end WebSocket client with a libp2p implementation.
-- Generated protobuf bindings provide the libp2p message schema.
-- Removed the unused `p2pMode` property from `NodeProperties`.
-- Updated Docker and `.env` to expose `VITE_NODE_LIBP2P` instead of `VITE_NODE_WS`.
-- Added unit tests confirming the libp2p client connects and the UI build succeeds.
+[
+  {
+    "id": "ISSUE-001",
+    "category": "Security",
+    "module": "docker-compose",
+    "file": "docker-compose.yml",
+    "line": "40-44",
+    "type": "SecretExposure",
+    "description": "Frontend build receives backend JWT secret via build args",
+    "cause": "compose passes NODE_JWT_SECRET to VITE_NODE_JWT_SECRET",
+    "impact": "Exposes server authentication secret to all clients",
+    "recommendation": "Do not include NODE_JWT_SECRET in frontend build arguments",
+    "snippet": "40:  VITE_NODE_URL: http://localhost:${BACKEND_PORT}/api\n41:  VITE_NODE_RPC_HTTP: http://localhost:${BACKEND_PORT}/rpc\n42:  VITE_NODE_JWT_SECRET: ${NODE_JWT_SECRET}"
+  },
+  {
+    "id": "ISSUE-002",
+    "category": "Security",
+    "module": "ui",
+    "file": "src/api/p2p.ts",
+    "line": "82-108",
+    "type": "MissingVerification",
+    "description": "P2P client processes incoming messages without validating JWT",
+    "cause": "readLoop() decodes messages but ignores the jwt field",
+    "impact": "Malicious peers can inject forged data into the UI",
+    "recommendation": "Verify and reject messages with invalid or missing JWT",
+    "snippet": "86: const P2PMessage = root.p2p.P2PMessage;\n87: for await (const buf of pipe(this.stream.source, lp.decode())) {\n88:   const msg = P2PMessage.decode($protobuf.Reader.create(buf));\n89:   if (msg.newBlock || msg.newTx) {\n90:     const dto: P2PMessage = msg.newBlock"
+  },
+  {
+    "id": "ISSUE-003",
+    "category": "Network",
+    "module": "ui + blockchain-node",
+    "file": "src/api/p2p.ts + p2p/libp2p/Libp2pService.java",
+    "line": "66-75 + 258-265",
+    "type": "InvalidHandshake",
+    "description": "UI sends handshake with constant nodeId and zero ports which the server stores as a peer",
+    "cause": "sendHandshake() hardcodes 'ui-client' and ports 0 while ControlHandler blindly stores peers",
+    "impact": "Kademlia table fills with unreachable entries and wasted dials",
+    "recommendation": "Differentiate UI clients or ignore handshakes lacking valid ports",
+    "snippet": "ui/src/api/p2p.ts lines 66-75 and Libp2pService.java lines 258-265"
+  },
+  {
+    "id": "ISSUE-004",
+    "category": "Performance",
+    "module": "blockchain-node",
+    "file": "p2p/libp2p/Libp2pService.java",
+    "line": "313-338",
+    "type": "BlockingCall",
+    "description": "send() waits on CompletableFuture.join which may block caller threads",
+    "cause": "fut.thenAccept(...).join() inside send method",
+    "impact": "Slow or unreachable peers stall broadcast operations",
+    "recommendation": "Use asynchronous send with timeout instead of blocking join",
+    "snippet": "313: private void send(...){\n324: ByteBuffer buf...\n331: fut = host.newStream...\n336: byte[] data = buf.array();\n337: fut.thenAccept(...).join();" 
+  },
+  {
+    "id": "ISSUE-005",
+    "category": "Maintainability",
+    "module": "blockchain-node",
+    "file": "p2p/Peer.java",
+    "line": "24-30",
+    "type": "DeadCode",
+    "description": "Method wsUrl() remains even though WebSocket transport was removed",
+    "cause": "Legacy API helper never called anywhere",
+    "impact": "Confuses developers about supported transports",
+    "recommendation": "Delete wsUrl() or repurpose it if WebSocket support returns",
+    "snippet": "24: public Peer(String host, int restPort, int libp2pPort, ... )\n26: /** WebSocket URL... */\n27: public String wsUrl() {\n28:   return \"ws://\" + host + ':' + restPort + \"/ws\";\n29: }"
+  },
+  "_self_reflection": "All modules under blockchain-node, blockchain-core, ui plus .env and compose file were scanned for peer connection logic. I reviewed Java and TypeScript source for security checks, handshake management, and network flows in three passes, ensuring overlapping issues were consistently observed."
+]

@@ -1,12 +1,19 @@
 package de.flashyotter.blockchain_node.controller;
 
-import blockchain.core.crypto.AddressUtils;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.util.List;
+import java.util.Map;
+
 import blockchain.core.model.Block;
 import blockchain.core.model.Transaction;
 import blockchain.core.model.TxOutput;
-import blockchain.core.model.Wallet;
+import de.flashyotter.blockchain_node.config.NodeProperties;
 import de.flashyotter.blockchain_node.service.NodeService;
-import de.flashyotter.blockchain_node.wallet.WalletService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,15 +22,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-
-import java.util.List;
-import java.util.Map;
-
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(JsonRpcController.class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -36,16 +34,11 @@ class JsonRpcControllerTest {
     private NodeService node;
 
     @MockBean
-    private WalletService wallet;
-
-    private Wallet localWallet;
-    private String localAddress;
+    private NodeProperties props;
 
     @BeforeEach
     void setUp() {
-        localWallet = new Wallet();
-        localAddress = AddressUtils.publicKeyToAddress(localWallet.getPublicKey());
-        when(wallet.getLocalWallet()).thenReturn(localWallet);
+        when(props.getMinerAddress()).thenReturn("abcd");
     }
 
     @Test
@@ -66,53 +59,42 @@ class JsonRpcControllerTest {
     }
 
     @Test
-    void ethSendTransactionReturnsHash() throws Exception {
-        Transaction tx = new Transaction();
-        tx.getOutputs().add(new TxOutput(1.0, localAddress));
-        when(wallet.createTx(eq(localAddress), eq(1.0), anyMap())).thenReturn(tx);
-        when(node.currentUtxo()).thenReturn(Map.of());
-        when(node.submitTx(tx)).thenReturn(true);
+    void ethGetBalanceSumsOutputs() throws Exception {
+        Map<String, TxOutput> utxo = Map.of(
+                "one", new TxOutput(1.0, "abcd"),
+                "two", new TxOutput(0.5, "abcd"),
+                "other", new TxOutput(2.0, "zzzz")
+        );
+        when(node.currentUtxoIncludingPending()).thenReturn(utxo);
 
         mvc.perform(post("/rpc")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{" +
                         "\"jsonrpc\":\"2.0\"," +
-                        "\"id\":7," +
-                        "\"method\":\"eth_sendTransaction\"," +
-                        "\"params\":[{" +
-                        "\"to\":\"" + localAddress + "\"," +
-                        "\"value\":\"0x5f5e100\"" +
-                        "}]" +
+                        "\"id\":5," +
+                        "\"method\":\"eth_getBalance\"," +
+                        "\"params\":[\"abcd\"]" +
                         "}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.result").value("0x" + tx.calcHashHex()));
+                .andExpect(jsonPath("$.result").value("0x8f0d180"));
     }
 
     @Test
-    void walletInfoExposesPendingBalances() throws Exception {
-        Map<String, TxOutput> confirmed = Map.of(
-                "a", new TxOutput(5.0, localAddress)
-        );
-        Map<String, TxOutput> effective = Map.of(
-                "a", new TxOutput(5.0, localAddress),
-                "b", new TxOutput(1.0, localAddress)
-        );
-        when(node.currentUtxo()).thenReturn(confirmed);
-        when(node.currentUtxoIncludingPending()).thenReturn(effective);
-        when(wallet.balance(confirmed)).thenReturn(5.0);
-        when(wallet.balance(effective)).thenReturn(6.0);
+    void ethGetBlockByNumberUsesConfiguredMiner() throws Exception {
+        Transaction coinbase = new Transaction();
+        coinbase.getOutputs().add(new TxOutput(1.0, "miner-address"));
+        Block block = new Block(5, "00", List.of(coinbase), 0x1f0fffff, 1L, 0);
+        when(node.blockAtHeight(anyInt())).thenReturn(block);
 
         mvc.perform(post("/rpc")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{" +
                         "\"jsonrpc\":\"2.0\"," +
-                        "\"id\":9," +
-                        "\"method\":\"sb_walletInfo\"" +
+                        "\"id\":6," +
+                        "\"method\":\"eth_getBlockByNumber\"," +
+                        "\"params\":[\"0x5\",true]" +
                         "}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.result.address").value(localAddress))
-                .andExpect(jsonPath("$.result.confirmedBalance").value(5.0))
-                .andExpect(jsonPath("$.result.pendingIncoming").value(1.0))
-                .andExpect(jsonPath("$.result.pendingOutgoing").value(0.0));
+                .andExpect(jsonPath("$.result.miner").value("0xabcd"));
     }
 }

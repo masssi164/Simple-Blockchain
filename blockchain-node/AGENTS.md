@@ -4,13 +4,12 @@ Important paths under `src/main/java/de/flashyotter/blockchain_node`:
 - `BlockchainNodeApplication.java` – entry point starting the HTTP server and libp2p host.
 - `bootstrap/StartupInitializer.java` – tasks executed at startup.
 - `config/` – Spring configuration classes (`SecurityConfig`, `P2PConfig`, ...).
-- `controller/` – REST controllers for chain, mining, transactions and wallet.
+- `controller/` – REST controllers for chain, mining, transactions and UTXO listings.
   `NodeController` exposes `/node/enr` and `SnapshotController` serves snapshot
   files for syncing.
 - `service/` – business logic (`NodeService`, `MiningService`, etc.).
 - `p2p/` – `Peer`, `PeerClient` and `PeerServer` for libp2p networking.
 - `storage/` – `BlockStore` with LevelDB and in-memory implementations.
-- `wallet/` – wallet and keystore utilities.
 - `grpc/` – protobuf mappers reused by JSON-RPC and libp2p layers.
 
 Protobuf message schemas are defined in `src/main/proto`. The module

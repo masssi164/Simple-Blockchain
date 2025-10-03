@@ -1,3 +1,3 @@
 Application startup utilities.
 
-- `StartupInitializer` — seeds peers and ensures the wallet is ready when the app starts.
+- `StartupInitializer` — starts peer discovery once the Spring context is ready.

@@ -19,7 +19,8 @@ if not _docker_available():
 
 BACKEND1_RPC = 'http://localhost:3333/rpc'
 BACKEND2_RPC = 'http://localhost:3334/rpc'
-COIN_SCALE = 100_000_000
+BACKEND1_API = 'http://localhost:3333/api'
+MINER_ADDRESS = '1111111111111111111114oLvT2'
 
 
 def rpc_call(url, method, params=None):
@@ -29,10 +30,6 @@ def rpc_call(url, method, params=None):
     data = response.json()
     assert 'error' not in data, data['error']
     return data['result']
-
-
-def encode_amount(amount):
-    return hex(int(amount * COIN_SCALE))
 
 
 def await_until(predicate, timeout=60, interval=2):
@@ -60,31 +57,32 @@ def latest_height(url):
     return block['height'] if block else -1
 
 
+def utxo_balance(api_url, address=MINER_ADDRESS):
+    response = requests.get(f"{api_url}/utxo", params={'address': address}, timeout=5)
+    response.raise_for_status()
+    outputs = response.json() or []
+    return sum(item['value'] for item in outputs)
+
+
+def sync_height(target_height):
+    return (await_until(lambda: latest_height(BACKEND1_RPC) >= target_height) and
+            await_until(lambda: latest_height(BACKEND2_RPC) >= target_height))
+
+
 def test_e2e_compose():
     assert wait_for_rpc(BACKEND1_RPC)
     assert wait_for_rpc(BACKEND2_RPC)
 
+    balance_before = utxo_balance(BACKEND1_API)
+
     first = rpc_call(BACKEND1_RPC, 'sb_mineBlock')
+    assert sync_height(first['height'])
 
-    assert await_until(lambda: latest_height(BACKEND2_RPC) >= first['height'])
-
-    wallet = rpc_call(BACKEND1_RPC, 'sb_walletInfo')
-    rpc_call(
-        BACKEND1_RPC,
-        'eth_sendTransaction',
-        [{'to': wallet['address'], 'value': encode_amount(1.0)}],
-    )
+    balance_after_first = utxo_balance(BACKEND1_API)
+    assert balance_after_first > balance_before
 
     second = rpc_call(BACKEND1_RPC, 'sb_mineBlock')
+    assert sync_height(second['height'])
 
-    def backend2_has_tx_block():
-        try:
-            tip = rpc_call(BACKEND2_RPC, 'sb_chainLatest')
-            return tip['height'] >= second['height'] and len(tip.get('txList', [])) > 1
-        except Exception:
-            return False
-
-    assert await_until(backend2_has_tx_block)
-
-    info = rpc_call(BACKEND1_RPC, 'sb_walletInfo')
-    assert info['confirmedBalance'] > 0
+    balance_after_second = utxo_balance(BACKEND1_API)
+    assert balance_after_second > balance_after_first

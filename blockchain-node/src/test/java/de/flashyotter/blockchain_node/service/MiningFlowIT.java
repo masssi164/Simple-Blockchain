@@ -15,7 +15,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 
 import blockchain.core.model.Block;
-import de.flashyotter.blockchain_node.dto.WalletInfoDto;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
@@ -35,8 +34,7 @@ class MiningFlowIT {
         int    startHeight = http.getForObject(
                 base + "/api/chain/latest", Block.class).getHeight();
 
-        double startBalance = http.getForObject(
-                base + "/api/wallet", WalletInfoDto.class).confirmedBalance();
+        double startBalance = balance(base);
 
         /* mine one block synchronously -------------------------------- */
         ResponseEntity<Block> mined = http.postForEntity(
@@ -47,12 +45,19 @@ class MiningFlowIT {
         Awaitility.await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> {
 
             Block tip = http.getForObject(base + "/api/chain/latest", Block.class);
-            WalletInfoDto wallet = http.getForObject(
-                    base + "/api/wallet", WalletInfoDto.class);
 
-            assertEquals(startHeight + 1, tip.getHeight(),   "height must advance");
-            assertEquals(startBalance + 50.0, wallet.confirmedBalance(), 1e-9,
+            assertEquals(startHeight + 1, tip.getHeight(), "height must advance");
+            assertEquals(startBalance + 50.0, balance(base), 1e-9,
                          "coinbase reward credited");
         });
     }
+
+    private double balance(String base) {
+        UtxoView[] utxos = http.getForObject(base + "/api/utxo?address=testMinerAddress",
+                UtxoView[].class);
+        if (utxos == null) return 0.0;
+        return java.util.Arrays.stream(utxos).mapToDouble(UtxoView::value).sum();
+    }
+
+    private record UtxoView(String id, double value, String recipientAddress) { }
 }

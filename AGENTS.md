@@ -14,7 +14,7 @@ Directories and notable files
   - `package.json` and `vite.config.ts` drive the Node build.
   - `src` holds React components and API helpers.
 - `gradle/` – Gradle wrapper and version catalog `libs.versions.toml`.
-- `data/` – runtime LevelDB store for blocks and wallet.
+- `data/` – runtime LevelDB store for blocks.
 - `tests/` – Python regression tests executed in CI.
 - `scripts/` – auxiliary scripts removed in favour of `make ci`.
 - `.github/` – GitHub Actions workflow; see its `AGENTS.md`.

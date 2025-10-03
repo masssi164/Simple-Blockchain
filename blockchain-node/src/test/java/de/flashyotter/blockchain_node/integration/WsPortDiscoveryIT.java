@@ -38,7 +38,7 @@ class WsPortDiscoveryIT {
         ctxB = new org.springframework.boot.builder.SpringApplicationBuilder(BlockchainNodeApplication.class)
                 .properties(
                     "server.port=0",
-                    "node.wallet-password=test",
+                    "node.miner-address=testMinerAddress",
                     "node.libp2p-port=0",
                     "node.data-path=build/test-data/ws-discovery-b",
                     "node.peers=localhost:" + portA)

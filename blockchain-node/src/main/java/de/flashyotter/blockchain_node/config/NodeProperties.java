@@ -33,6 +33,8 @@ public class NodeProperties {
      */
     private long chainId = 1337L;
 
+    /** Address receiving mining rewards */
+    private String minerAddress;
 
     /** Maximum number of transactions kept in the mempool */
     @Value("${mempool.maxSize:1000}")
@@ -60,11 +62,6 @@ public class NodeProperties {
     /** Stable node identifier persisted in dataPath/nodeId */
     private String id;
     
-    /**
-     * Password for encrypting/decrypting the PKCS12 keystore.
-     */
-    private String walletPassword;
-
     /** Shared secret used to sign and verify JWT tokens. */
     private String jwtSecret;
 
@@ -94,6 +91,13 @@ public class NodeProperties {
             libp2pKeyPath = java.nio.file.Path.of(dataPath, libp2pKeyPath).toString();
         }
 
+        if (minerAddress == null || minerAddress.isBlank()) {
+            minerAddress = System.getenv("NODE_MINER_ADDRESS");
+        }
+        if (minerAddress == null || minerAddress.isBlank()) {
+            throw new IllegalStateException("NODE_MINER_ADDRESS (node.miner-address) must be set");
+        }
+
         if (id != null && !id.isBlank()) return;
         Path path = Path.of(dataPath, "nodeId");
         if (Files.exists(path)) {
@@ -104,16 +108,10 @@ public class NodeProperties {
             Files.writeString(path, id);
         }
 
-        if (walletPassword == null || walletPassword.isBlank()) {
-            walletPassword = System.getenv("NODE_WALLET_PASSWORD");
-        }
         if (jwtSecret == null || jwtSecret.isBlank()) {
             jwtSecret = System.getenv("NODE_JWT_SECRET");
         }
 
-        if (walletPassword == null || walletPassword.isBlank()) {
-            throw new IllegalStateException("NODE_WALLET_PASSWORD must be set");
-        }
         if (jwtSecret == null || jwtSecret.isBlank()) {
             throw new IllegalStateException("NODE_JWT_SECRET must be set");
         }

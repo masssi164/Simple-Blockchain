@@ -2,8 +2,6 @@ import type { Block } from '../types/block';
 
 type FetchLike = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 
-const COIN_SCALE = 100_000_000n; // 1 coin = 1e8 base units
-
 function normalize(raw?: string | null): string | undefined {
   if (!raw) return undefined;
   const trimmed = raw.trim();
@@ -67,31 +65,8 @@ export function createRpcCaller(
 
 const callRpc = createRpcCaller();
 
-export type WalletInfo = {
-  address: string;
-  confirmedBalance: number;
-  pendingIncoming: number;
-  pendingOutgoing: number;
-};
-
-function toQuantity(amount: number): string {
-  if (!Number.isFinite(amount) || amount < 0) {
-    throw new Error('Amount must be a finite positive number');
-  }
-  const scaled = BigInt(Math.round(amount * Number(COIN_SCALE)));
-  return `0x${scaled.toString(16)}`;
-}
-
 export async function mineBlock(): Promise<Block> {
   return callRpc<Block>('sb_mineBlock');
-}
-
-export async function sendFunds(recipient: string, amount: number): Promise<void> {
-  await callRpc('eth_sendTransaction', [{ to: recipient, value: toQuantity(amount) }]);
-}
-
-export async function walletInfo(): Promise<WalletInfo> {
-  return callRpc<WalletInfo>('sb_walletInfo');
 }
 
 export async function chainLatest(): Promise<Block> {

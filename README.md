@@ -7,11 +7,11 @@ A lean Java&nbsp;21 and Spring Boot&nbsp;3 blockchain node demonstrating a moder
 ## Recent additions
 - Fee market with base fee and optional transaction tips
 - Periodic UTXO snapshots with pruning
-- HD wallet derived from a mnemonic seed
+- Client-side signing via MetaMask-compatible JSON-RPC (read-only)
 - REST API secured with JWT tokens
 - Optional Noise encryption for libp2p
 - Prometheus metrics exported at `/actuator/prometheus`
-- JSON-RPC API for chain, wallet and mining operations
+- JSON-RPC API for chain queries and mining operations (read-only `eth_*`)
 - Compose tasks `composeUp` and `composeDown` manage Docker
 - If the runtime image `simple-blockchain-node:runtime` doesn't exist
   locally, Compose builds it automatically from `Dockerfile.backend`.
@@ -25,7 +25,7 @@ A lean Java&nbsp;21 and Spring Boot&nbsp;3 blockchain node demonstrating a moder
 | Area | Details |
 |------|---------|
 | Consensus | Bitcoin-style PoW, UTXO model, compact-bits difficulty retarget, fork choice by total work |
-| Wallet | HD wallet stored in encrypted PKCS#12 keystore |
+| Client signing | Transactions signed in the browser; node only validates |
 | Mining | Parallel PoW engine with configurable worker threads |
 | Networking | libp2p gossip with Kademlia DHT, optional Noise encryption |
 | Mempool | Fee-based priority queue with base fee and tips |
@@ -52,7 +52,7 @@ NODE_LIBP2P_PORT=4001
 NODE_LIBP2P_ENCRYPTED=false
 NODE_PEERS=
 NODE_DATA_PATH=data
-NODE_WALLET_PASSWORD=changeMeSuperSecret
+NODE_MINER_ADDRESS=1111111111111111111114oLvT2
 NODE_JWT_SECRET=myTopSecret
 VITE_NODE_JWT_SECRET=myTopSecret
 VITE_NODE_RPC_HTTP=http://localhost:1002/rpc
@@ -74,15 +74,15 @@ This builds the backend and UI and then launches both containers. Browse to `htt
 
 ### Multiple nodes
 
-Give each instance its own data and wallet folder:
+Give each instance its own data directory and miner address:
 
 ```yaml
 volumes:
   - ./data1:${NODE_DATA_PATH}
-  - ./wallet1:/root/.simple-chain
 ```
 
-Use `data2`/`wallet2` etc. for additional nodes.
+Generate a wallet in the UI (see below) and copy its Base58 address into
+`NODE_MINER_ADDRESS`. Use a different address per node so rewards stay isolated.
 
 ### 3. Connect peers
 
@@ -96,14 +96,40 @@ your node.
 ./gradlew composeDown
 ```
 
+## Client-side wallet & MetaMask
+
+The React dashboard now owns the wallet logic:
+
+- A secp256k1 key pair is generated on first load and persisted in the browser
+  under the key `simple-chain:wallet-privkey`.
+- Balances are derived from `GET /api/utxo?address=…`, which already includes
+  pending mempool transactions.
+- The transfer dialog builds a transaction, signs every input locally and posts
+  the payload to `POST /api/tx`. The node never stores private keys.
+
+To direct mining rewards to the UI wallet, copy the address shown in the
+dashboard and set it as `NODE_MINER_ADDRESS` before starting the node.
+
+### Using MetaMask (read-only)
+
+MetaMask can attach to the node for inspection, but writes are deliberately
+disabled on the JSON-RPC surface. Add a custom network with:
+
+1. **Network name**: `Simple Chain`
+2. **RPC URL**: `http://localhost:<BACKEND_PORT>/rpc`
+3. **Chain ID**: value of `NODE_CHAIN_ID` (defaults to `1337`)
+4. **Currency symbol**: choose any (e.g. `SBC`)
+
+MetaMask will display balances and blocks, while actual transfers must be sent
+through the dashboard so that the browser can produce valid signatures.
+
 ## REST API (excerpt)
 
 ```
-GET  /api/wallet                 → address, confirmed balance
-GET  /api/wallet/transactions    → last N wallet transactions
-POST /api/wallet/send            → create, sign & broadcast TX
-POST /api/mining/mine            → mine one block immediately
-GET  /api/chain/latest           → current tip
+GET  /api/utxo?address=ADDR     → spendable outputs for the address
+POST /api/tx                      → submit a client-signed transaction
+POST /api/mining/mine             → mine one block immediately
+GET  /api/chain/latest            → current tip
 GET  /api/chain/page?page=0&size=5 → paginated blocks (desc)
 ```
 
@@ -112,9 +138,10 @@ The full API is documented via Swagger / OpenAPI at runtime.
 ### JSON-RPC API
 
 Browser wallets and the UI communicate with the node via JSON-RPC on
-`/rpc`. Methods mirror Ethereum primitives (e.g. `eth_blockNumber` and
-`eth_sendTransaction`) plus project-specific helpers with the `sb_*`
-prefix for mining and pagination.
+`/rpc`. Methods mirror Ethereum primitives (e.g. `eth_blockNumber`) plus
+project-specific helpers with the `sb_*` prefix for mining and pagination.
+State-changing calls such as `eth_sendTransaction` are intentionally absent;
+clients must submit fully signed payloads via REST.
 
 ## P2P protocol
 

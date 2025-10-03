@@ -1,11 +1,11 @@
 // src/components/Transfer.tsx
 // ----------------------------------------------------------------------------
-//  Transfer modal – sends coins from the local wallet to any valid recipient
-//  address by POSTing to the backend REST endpoint. Includes:
+//  Transfer modal – builds and signs transactions client side, then POSTs them
+//  to the node’s `/api/tx` endpoint. Includes:
 //    • Client‑side Base‑58 address validation (same alphabet as BTC)
 //    • Safari‑safe <input type="number"> handling by storing the value as a
 //      string until submission, then converting to Number
-//    • Optimistic SWR cache update so the UI reflects the new balance instantly
+//    • Balance checks against the locally tracked UTXO set
 //    • Toast feedback (react‑hot‑toast) for success / error cases
 // ----------------------------------------------------------------------------
 
@@ -25,14 +25,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { messageService } from '../services/messageService';
 import { Fragment, useCallback, useState } from 'react';
-import { mutate } from 'swr';
-import { sendFunds } from '../api/jsonRpc';
-
-// DTO produced by the WalletController on the backend
-export type SendFundsDto = {
-  recipient: string;
-  amount: number;
-};
+import { useWallet } from '../hooks/useWallet';
 
 // Base‑58 alphabet without visually ambiguous characters
 const BASE58_REGEX = /^[1-9A-HJ-NP-Za-km-z]{25,40}$/;
@@ -50,6 +43,8 @@ export function Transfer() {
   const [amountStr, setAmountStr] = useState(''); // keep raw string for Safari
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const { balance, send, isLoading } = useWallet();
 
   /* ------------------------------------------------------------------------ */
   /* Helpers                                                                  */
@@ -82,28 +77,15 @@ export function Transfer() {
         setErrorMsg('Please enter an amount greater than zero.');
         return;
       }
+      if (amount > balance) {
+        setErrorMsg('Insufficient balance for this transfer.');
+        return;
+      }
 
       setSubmitting(true);
       setErrorMsg(null);
       try {
-        // ---- POST /api/wallet/send ----------------------------------------
-        await sendFunds(recipient, amount);
-
-        /* ------------------------------------------------------------------ */
-        /* Optimistic SWR cache update – decrease confirmed balance           */
-        /* ------------------------------------------------------------------ */
-          mutate(
-            '/wallet',
-            (current: { confirmedBalance?: number } | undefined) =>
-              current && typeof current.confirmedBalance === 'number'
-                ? {
-                  ...current,
-                  confirmedBalance: current.confirmedBalance - amount,
-                }
-              : current,
-          false,
-        );
-        mutate('/wallet'); // trigger re‑fetch so pending/outgoing shows up
+        await send(recipient, amount);
 
         /* ------------------------------------------------------------------ */
         /* User feedback                                                      */
@@ -214,13 +196,16 @@ export function Transfer() {
                       value={amountStr}
                       onChange={e => setAmountStr(e.target.value)}
                     />
+                    <p className="mt-1 text-xs text-slate-500">
+                      Available: {balance.toFixed(8)} coins
+                    </p>
                   </label>
 
                   {/* Submit button */}
                   <div className="pt-4 text-right">
                     <button
                       type="submit"
-                      disabled={submitting || !recipient || !amountStr}
+                      disabled={submitting || isLoading || !recipient || !amountStr}
                       className="inline-flex items-center rounded-md bg-green-600 px-4 py-2 font-medium text-white shadow hover:bg-green-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 disabled:opacity-50"
                     >
                       <PaperAirplaneIcon

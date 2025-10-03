@@ -19,18 +19,15 @@ server:
 node:
   peers: ${NODE_PEERS:}
   data-path: data
-  wallet-password: ${NODE_WALLET_PASSWORD:changeMe}
   jwt-secret:    ${NODE_JWT_SECRET:changeMeSuperSecret}
   chain-id:     ${NODE_CHAIN_ID:1337}
+  miner-address: ${NODE_MINER_ADDRESS:0000000000000000000000000000000000000000}
   libp2p-port:   ${NODE_LIBP2P_PORT:4001}
   libp2p-encrypted: ${NODE_LIBP2P_ENCRYPTED:true}
   snapshot-interval-sec: ${NODE_SNAPSHOT_INTERVAL_SEC:300}
   history-depth: ${NODE_HISTORY_DEPTH:1000}
   p2p-push-enabled: ${P2P_PUSH_ENABLED:true}
   sync-timeout-ms: ${SYNC_TIMEOUT_MS:10000}
-
-wallet:
-  store-path: .simple-chain/wallet.p12
 
 mempool:
   maxSize: 1000

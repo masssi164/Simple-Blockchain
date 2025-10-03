@@ -4,12 +4,14 @@ import { Toaster } from 'react-hot-toast';
 import { messageService } from './services/messageService';
 import { nodeEvents } from './api/ws';
 import Dashboard from './pages/Dashboard';
+import { useWallet } from './hooks/useWallet';
 
 /**
  * Root component – keeps the SWR cache in sync with node events
  * and provides global toast notifications.
  */
 export default function App() {
+  const { refresh } = useWallet();
   /* ------------------------------------------------------------------ */
   /* Event stream lifecycle                                             */
   /* ------------------------------------------------------------------ */
@@ -30,7 +32,7 @@ export default function App() {
         console.info('New block', blk.height, blk.hashHex);
 
         mutate('/chain/latest');
-        mutate('/wallet');
+        refresh().catch(err => console.warn('Failed to refresh wallet', err));
         if (typeof blk.height === 'number') {
           messageService.success(`New block #${blk.height} accepted`);
         } else {
@@ -40,7 +42,7 @@ export default function App() {
     });
 
     return unsubscribe;
-  }, []);
+  }, [refresh]);
 
   return (
     <>

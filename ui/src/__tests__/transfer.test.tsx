@@ -2,18 +2,37 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Transfer } from '../components/Transfer';
 import { vi } from 'vitest';
-import type { Mock } from 'vitest';
 
 // Message-Service-Mock für alle Tests
 vi.mock('../services/messageService', () => ({
   messageService: { success: vi.fn(), error: vi.fn() },
 }));
 
-// JSON-RPC-Modul mocken – einheitliches Mock-Objekt
-vi.mock('../api/jsonRpc', () => ({
-  __esModule: true,
-  sendFunds: vi.fn(), // wird pro Test konfiguriert
+const { mockedUseWallet, mockedSend } = vi.hoisted(() => ({
+  mockedUseWallet: vi.fn(),
+  mockedSend: vi.fn(),
 }));
+
+vi.mock('../hooks/useWallet', () => ({
+  useWallet: mockedUseWallet,
+}));
+
+beforeEach(() => {
+  mockedSend.mockResolvedValue({});
+  mockedUseWallet.mockReturnValue({
+    wallet: { address: 'myAddress' },
+    balance: 10,
+    utxos: [],
+    isLoading: false,
+    refresh: vi.fn(),
+    send: mockedSend,
+  });
+});
+
+afterEach(() => {
+  mockedSend.mockReset();
+  mockedUseWallet.mockReset();
+});
 
 describe('<Transfer />', () => {
   it('blockiert Submit bei ungültiger Empfänger-Adresse', async () => {
@@ -41,9 +60,6 @@ describe('<Transfer />', () => {
 
   it('schließt Modal nach erfolgreichem Senden & ruft API korrekt auf', async () => {
     // --- Mock konfigurieren ---
-    const { sendFunds } = await import('../api/jsonRpc');
-    (sendFunds as Mock).mockResolvedValueOnce(undefined);
-
     render(<Transfer />);
     await userEvent.click(screen.getByRole('button', { name: /transfer/i }));
 
@@ -61,7 +77,7 @@ describe('<Transfer />', () => {
     );
 
     // API-Aufruf korrekt
-    expect(sendFunds).toHaveBeenCalledWith(
+    expect(mockedSend).toHaveBeenCalledWith(
       '17VZNX1SN5NtKa8UQFxwQbFeFc3iqRYhem',
       3.1415,
     );

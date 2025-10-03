@@ -1,17 +1,22 @@
 import { render, screen } from '@testing-library/react';
 import WalletView from '../components/WalletView';
 
-/* SWR und JSON-RPC stubs -------------------------------------------------- */
-vi.mock('swr', () => ({
-  __esModule: true,
-  default: () => ({
-    data: { address: 'addr', confirmedBalance: 10.5 },
-  }),
+const mockedUseWallet = vi.hoisted(() => vi.fn());
+
+vi.mock('../hooks/useWallet', () => ({
+  useWallet: mockedUseWallet,
 }));
 
-vi.mock('../api/jsonRpc', () => ({ walletInfo: vi.fn() }));
-
 it('shows balances and QR code', () => {
+  mockedUseWallet.mockReturnValue({
+    wallet: { address: 'addr', publicKeyBase64: 'pk', privateKeyHex: 'dead' },
+    balance: 10.5,
+    utxos: [{ id: 'a', value: 10.5, recipientAddress: 'addr' }],
+    isLoading: false,
+    refresh: vi.fn(),
+    send: vi.fn(),
+  });
+
   render(<WalletView />);
 
   expect(screen.getByText('addr')).toBeInTheDocument();
