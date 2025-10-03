@@ -10,7 +10,7 @@
     "cause": "compose passes NODE_JWT_SECRET to VITE_NODE_JWT_SECRET",
     "impact": "Exposes server authentication secret to all clients",
     "recommendation": "Do not include NODE_JWT_SECRET in frontend build arguments",
-    "snippet": "40:  VITE_NODE_URL: http://localhost:${BACKEND_PORT}/api\n41:  VITE_NODE_LIBP2P: /ip4/127.0.0.1/tcp:${NODE_LIBP2P_PORT}\n42:  VITE_NODE_GRPC: localhost:${NODE_GRPC_PORT}\n43:  VITE_NODE_JWT_SECRET: ${NODE_JWT_SECRET}"
+    "snippet": "40:  VITE_NODE_URL: http://localhost:${BACKEND_PORT}/api\n41:  VITE_NODE_RPC_HTTP: http://localhost:${BACKEND_PORT}/rpc\n42:  VITE_NODE_JWT_SECRET: ${NODE_JWT_SECRET}"
   },
   {
     "id": "ISSUE-002",

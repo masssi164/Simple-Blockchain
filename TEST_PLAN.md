@@ -18,7 +18,7 @@ Dieser Plan fasst die End-to-End und Regressionstests zusammen, die die alte Git
 Die Tests werden lokal mit `make ci` ausgeführt.
 - **Auth-Tests**
   - Integrationstest prueft, dass REST Endpunkte ein gueltiges JWT benoetigen.
-- **gRPC-Tests**
-  - Testet Wallet- und Chain-Service ueber einen in-memory GRPC Server.
+- **JSON-RPC-Tests**
+  - Decken die `JsonRpcController`-Methoden fuer Mining, Pagination und Wallet-Infos per MockMvc ab.
 - **P2P-Tests**
   - Stellt sicher, dass Libp2p Nachrichten mit falschem Token verworfen werden.

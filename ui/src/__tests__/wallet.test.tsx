@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import WalletView from '../components/WalletView';
 
-/* SWR und gRPC stubs ------------------------------------------------------ */
+/* SWR und JSON-RPC stubs -------------------------------------------------- */
 vi.mock('swr', () => ({
   __esModule: true,
   default: () => ({
@@ -9,7 +9,7 @@ vi.mock('swr', () => ({
   }),
 }));
 
-vi.mock('../api/grpc', () => ({ walletInfo: vi.fn() }));
+vi.mock('../api/jsonRpc', () => ({ walletInfo: vi.fn() }));
 
 it('shows balances and QR code', () => {
   render(<WalletView />);

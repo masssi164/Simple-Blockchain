@@ -7,7 +7,7 @@ Key files:
 - `vite.config.ts` – Vite build configuration.
 - `src/` – TypeScript sources and tests.
 - `tsconfig*.json` – TypeScript compiler settings.
-- Communicates with the backend via REST and gRPC clients.
+- Communicates with the backend via REST and JSON-RPC clients.
 
 Unit tests under `src/__tests__` run with Vitest. A Gradle task delegates to
 `npm test` so backend and frontend tests can be executed together.

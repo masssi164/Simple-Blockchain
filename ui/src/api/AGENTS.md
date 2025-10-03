@@ -1,4 +1,4 @@
 Client-side helpers for communicating with the backend.
 
-- `grpc.ts` – gRPC-web wrapper using generated stubs.
+- `jsonRpc.ts` – JSON-RPC wrapper used by the dashboard and dApps.
 - `ws.ts` – Lightweight polling/event helpers.

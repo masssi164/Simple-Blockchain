@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { CpuChipIcon } from '@heroicons/react/24/outline';
-import { mineBlock } from '../api/grpc';
+import { mineBlock } from '../api/jsonRpc';
 import { messageService } from '../services/messageService';
 import type { Block } from '../types/block';
 

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import useSWR from 'swr';
-import { chainPage } from '../api/grpc';
+import { chainPage } from '../api/jsonRpc';
 import type { Block } from '../types/block';
 
 export default function BlockHistory() {

@@ -1,7 +1,7 @@
 import { DocumentDuplicateIcon } from '@heroicons/react/24/outline';
 import QRCode from 'react-qr-code';
 import useSWR from 'swr';
-import { walletInfo } from '../api/grpc';
+import { walletInfo } from '../api/jsonRpc';
 import { MineArea } from './MiningArea';
 import { Transfer } from './Transfer';
 

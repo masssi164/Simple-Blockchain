@@ -1,6 +1,6 @@
 # Simple-Chain Node (v0.2-DEV)
 
-A lean Java&nbsp;21 and Spring Boot&nbsp;3 blockchain node demonstrating a modern architecture in a concise code base. It implements Proof-of-Work mining, a UTXO ledger and libp2p networking. Clients interact via REST or gRPC.
+A lean Java&nbsp;21 and Spring Boot&nbsp;3 blockchain node demonstrating a modern architecture in a concise code base. It implements Proof-of-Work mining, a UTXO ledger and libp2p networking. Clients interact via REST and JSON-RPC.
 
 **Status: Beta** – breaking changes may occur until v1.0.
 
@@ -11,7 +11,7 @@ A lean Java&nbsp;21 and Spring Boot&nbsp;3 blockchain node demonstrating a moder
 - REST API secured with JWT tokens
 - Optional Noise encryption for libp2p
 - Prometheus metrics exported at `/actuator/prometheus`
-- gRPC API for chain, wallet and mining operations
+- JSON-RPC API for chain, wallet and mining operations
 - Compose tasks `composeUp` and `composeDown` manage Docker
 - If the runtime image `simple-blockchain-node:runtime` doesn't exist
   locally, Compose builds it automatically from `Dockerfile.backend`.
@@ -29,8 +29,8 @@ A lean Java&nbsp;21 and Spring Boot&nbsp;3 blockchain node demonstrating a moder
 | Mining | Parallel PoW engine with configurable worker threads |
 | Networking | libp2p gossip with Kademlia DHT, optional Noise encryption |
 | Mempool | Fee-based priority queue with base fee and tips |
-| API | Reactive REST & gRPC endpoints, JWT secured, Prometheus metrics |
-| UI | React dashboard using REST and gRPC clients |
+| API | Reactive REST & JSON-RPC endpoints, JWT secured, Prometheus metrics |
+| UI | React dashboard using REST and JSON-RPC clients |
 
 The Docker image is under 120&nbsp;MB and starts in less than two seconds on a laptop.
 
@@ -55,11 +55,10 @@ NODE_DATA_PATH=data
 NODE_WALLET_PASSWORD=changeMeSuperSecret
 NODE_JWT_SECRET=myTopSecret
 VITE_NODE_JWT_SECRET=myTopSecret
-VITE_NODE_GRPC=localhost:9090
+VITE_NODE_RPC_HTTP=http://localhost:1002/rpc
 NODE_MINING_THREADS=4
 NODE_SNAPSHOT_INTERVAL_SEC=300
 NODE_HISTORY_DEPTH=1000
-NODE_GRPC_PORT=9090
 BUILD_CA_CERT=
 ```
 
@@ -110,9 +109,12 @@ GET  /api/chain/page?page=0&size=5 → paginated blocks (desc)
 
 The full API is documented via Swagger / OpenAPI at runtime.
 
-### gRPC API
+### JSON-RPC API
 
-Set `NODE_GRPC_PORT` to expose the same endpoints over gRPC (defaults to `9090`). Service definitions reside in `blockchain-node/src/main/proto` and are used by the React UI for low-latency communication.
+Browser wallets and the UI communicate with the node via JSON-RPC on
+`/rpc`. Methods mirror Ethereum primitives (e.g. `eth_blockNumber` and
+`eth_sendTransaction`) plus project-specific helpers with the `sb_*`
+prefix for mining and pagination.
 
 ## P2P protocol
 

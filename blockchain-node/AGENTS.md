@@ -11,9 +11,9 @@ Important paths under `src/main/java/de/flashyotter/blockchain_node`:
 - `p2p/` – `Peer`, `PeerClient` and `PeerServer` for libp2p networking.
 - `storage/` – `BlockStore` with LevelDB and in-memory implementations.
 - `wallet/` – wallet and keystore utilities.
-- `grpc/` – service implementations from `src/main/proto`.
+- `grpc/` – protobuf mappers reused by JSON-RPC and libp2p layers.
 
-gRPC and P2P message schemas are defined in `src/main/proto`. The module
+Protobuf message schemas are defined in `src/main/proto`. The module
 produces a runnable Spring Boot JAR via `build.gradle` which also configures
 protobuf code generation.
 

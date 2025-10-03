@@ -12,7 +12,7 @@ package de.flashyotter.blockchain_node.dto;
  * @param peerId          base58 libp2p peer id of this node
  * @param protocolVersion semantic protocol version (major.minor.patch)
  * @param listenPort      TCP port the node is accepting peer connections on
- * @param restPort        HTTP port for REST/gRPC endpoints
+ * @param restPort        HTTP port for REST/JSON-RPC endpoints
  */
 public record HandshakeDto(String nodeId,
                            String peerId,

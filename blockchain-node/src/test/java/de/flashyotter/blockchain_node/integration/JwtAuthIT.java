@@ -17,7 +17,6 @@ import java.util.Date;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     properties = {
         "node.jwt-secret=integration-secret-0123456789abcdef0123456789ab",
-        "grpc.server.port=19091",
         "node.data-path=build/test-data/jwt",
         "node.libp2p-port=0"
     })

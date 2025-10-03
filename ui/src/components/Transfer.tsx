@@ -26,7 +26,7 @@ import {
 import { messageService } from '../services/messageService';
 import { Fragment, useCallback, useState } from 'react';
 import { mutate } from 'swr';
-import { sendFunds } from '../api/grpc';
+import { sendFunds } from '../api/jsonRpc';
 
 // DTO produced by the WalletController on the backend
 export type SendFundsDto = {

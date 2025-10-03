@@ -9,8 +9,8 @@ vi.mock('../services/messageService', () => ({
   messageService: { success: vi.fn(), error: vi.fn() },
 }));
 
-// gRPC-Modul mocken – einheitliches Mock-Objekt
-vi.mock('../api/grpc', () => ({
+// JSON-RPC-Modul mocken – einheitliches Mock-Objekt
+vi.mock('../api/jsonRpc', () => ({
   __esModule: true,
   sendFunds: vi.fn(), // wird pro Test konfiguriert
 }));
@@ -41,7 +41,7 @@ describe('<Transfer />', () => {
 
   it('schließt Modal nach erfolgreichem Senden & ruft API korrekt auf', async () => {
     // --- Mock konfigurieren ---
-    const { sendFunds } = await import('../api/grpc');
+    const { sendFunds } = await import('../api/jsonRpc');
     (sendFunds as Mock).mockResolvedValueOnce(undefined);
 
     render(<Transfer />);

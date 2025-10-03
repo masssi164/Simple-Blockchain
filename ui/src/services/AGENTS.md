@@ -1,4 +1,3 @@
-Generated gRPC client files and small helpers.
+Shared utilities for React services.
 
-- `node_pb.js` and `node_pb.d.ts` – protobuf stubs.
-- `messageService.tsx` – React context using the gRPC service.
+- `messageService.tsx` – Toast helpers for success/error notifications.

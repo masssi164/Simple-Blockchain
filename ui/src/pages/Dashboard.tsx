@@ -1,5 +1,5 @@
 import useSWR from 'swr';
-import { chainLatest } from '../api/grpc';
+import { chainLatest } from '../api/jsonRpc';
 import type { Block } from '../types/block';   // ❶ Type-only-Import
 import { StatCard } from '../components/StatCard';
 import WalletView from '../components/WalletView';
