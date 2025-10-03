@@ -29,20 +29,7 @@ public class NodeProperties {
     private String dataPath = "data";
     
     /**
-     * The base URL for this node
-     */
-    private String baseUrl = "http://localhost:8080";
-    
-    /**
-     * Returns the base URL for this node
-     */
-    public String getBaseUrl() {
-        return baseUrl;
-    }
-
-
-    /**
-     * Chain identifier returned via the JSON-RPC API.
+     * Chain identifier returned by external APIs (REST/gRPC).
      */
     private long chainId = 1337L;
 
@@ -66,7 +53,7 @@ public class NodeProperties {
     /** Public address advertised to peers if AutoNAT fails */
     private String advertisedAddr = "";
 
-    /** HTTP/WebSocket server port */
+    /** HTTP server port */
     @Value("${server.port:0}")
     private int port;
 

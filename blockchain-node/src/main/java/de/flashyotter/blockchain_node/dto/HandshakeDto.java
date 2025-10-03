@@ -1,8 +1,8 @@
 package de.flashyotter.blockchain_node.dto;
 
 /**
- * First message each peer sends after the TCP/WebSocket upgrade has
- * finished. Contains a unique node ID and the protocol version so that
+ * First message each peer sends after establishing the libp2p stream.
+ * Contains a unique node ID and the protocol version so that
  * incompatible nodes can immediately disconnect.
  *
  * A handshake is **idempotent**: if both ends send it at the same time,

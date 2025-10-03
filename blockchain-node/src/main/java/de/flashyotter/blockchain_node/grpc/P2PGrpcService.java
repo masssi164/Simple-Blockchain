@@ -14,7 +14,7 @@ import com.google.protobuf.ByteString;
 
 /**
  * Implementation of the P2P gRPC service for handling peer-to-peer messages.
- * This service is used when nodes communicate over gRPC instead of direct TCP/WebSocket connections.
+ * This service is used when nodes communicate over gRPC instead of direct TCP connections.
  */
 @GrpcService
 @RequiredArgsConstructor

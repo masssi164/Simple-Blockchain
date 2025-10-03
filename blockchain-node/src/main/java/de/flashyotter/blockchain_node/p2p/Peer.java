@@ -8,7 +8,7 @@ import lombok.Data;
 @AllArgsConstructor
 public class Peer {
     private final String host;
-    /** HTTP/WebSocket API port */
+    /** HTTP API port */
     private final int    restPort;
     /** TCP port for libp2p connections */
     private final int    libp2pPort;
