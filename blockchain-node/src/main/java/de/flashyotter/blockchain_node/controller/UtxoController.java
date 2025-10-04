@@ -29,6 +29,7 @@ public class UtxoController {
         Map<String, TxOutput> utxo = node.currentUtxoIncludingPending();
         return utxo.entrySet().stream()
                 .filter(e -> e.getValue().recipientAddress().equals(address))
+                .sorted(Map.Entry.comparingByKey())
                 .map(e -> Map.<String, Object>of(
                         "id", e.getKey(),
                         "value", e.getValue().value(),
