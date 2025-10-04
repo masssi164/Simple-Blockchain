@@ -71,12 +71,27 @@ dependencies {
 
 tasks.named('test') {
     useJUnitPlatform()
-    exclude '**/*IT.*'
-    exclude '**/p2p/**'
-    exclude '**/*Kademlia*'
-    exclude '**/*DoubleSpend*'
-    exclude '**/*SchedulingTest*'
     finalizedBy 'jacocoTestReport'
+
+    def defaultExcludes = [
+        '**/*IT.*',
+        '**/p2p/**',
+        '**/*Kademlia*',
+        '**/*DoubleSpend*',
+        '**/*SchedulingTest*'
+    ]
+
+    doFirst {
+        // Allow explicitly requested tests (via --tests) to run even if they
+        // match patterns that are excluded by default in CI.
+        getExcludes().clear()
+        if (filter.commandLineIncludePatterns.empty && filter.includePatterns.empty) {
+            defaultExcludes.forEach { exclude(it) }
+        } else {
+            logger.info("Skipping default test excludes for requested patterns: {}",
+                    (filter.commandLineIncludePatterns + filter.includePatterns))
+        }
+    }
 }
 
 jacoco {

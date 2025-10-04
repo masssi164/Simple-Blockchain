@@ -33,9 +33,50 @@ public class PeerRegistry {
      * @return {@code true} if the peer was not known yet
      */
     public boolean add(Peer p) {
-        boolean fresh = peers.add(p);
-        if (fresh && pending.remainingCapacity() > 0) pending.add(p);
-        return fresh;
+        synchronized (peers) {
+            Peer existing = peers.stream()
+                    .filter(candidate -> samePeer(candidate, p))
+                    .findFirst()
+                    .orElse(null);
+
+            if (existing != null) {
+                Peer merged = merge(existing, p);
+                if (!existing.equals(merged)) {
+                    peers.remove(existing);
+                    peers.add(merged);
+                    pending.remove(existing);
+                    if (pending.remainingCapacity() > 0) {
+                        pending.add(merged);
+                    }
+                }
+                return false;
+            }
+
+            boolean fresh = peers.add(p);
+            if (fresh && pending.remainingCapacity() > 0) {
+                pending.add(p);
+            }
+            return fresh;
+        }
+    }
+
+    private boolean samePeer(Peer a, Peer b) {
+        if (a.getId() != null && b.getId() != null) {
+            return a.getId().equals(b.getId());
+        }
+        return a.getHost().equals(b.getHost()) && a.getLibp2pPort() == b.getLibp2pPort();
+    }
+
+    private Peer merge(Peer existing, Peer incoming) {
+        String host = incoming.getHost() != null && !incoming.getHost().isBlank()
+                ? incoming.getHost()
+                : existing.getHost();
+        int restPort = incoming.getRestPort() > 0 ? incoming.getRestPort() : existing.getRestPort();
+        int libp2pPort = incoming.getLibp2pPort() > 0 ? incoming.getLibp2pPort() : existing.getLibp2pPort();
+        String id = incoming.getId() != null && !incoming.getId().isBlank()
+                ? incoming.getId()
+                : existing.getId();
+        return new Peer(host, restPort, libp2pPort, id);
     }
 
     public java.util.concurrent.BlockingQueue<Peer> pending() { return pending; }
