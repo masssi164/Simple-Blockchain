@@ -1,8 +1,10 @@
+import os
 import subprocess
 import time
 
 import pytest
 import requests
+import jwt
 
 
 def _docker_available():
@@ -21,6 +23,18 @@ BACKEND1_RPC = 'http://localhost:3333/rpc'
 BACKEND2_RPC = 'http://localhost:3334/rpc'
 BACKEND1_API = 'http://localhost:3333/api'
 MINER_ADDRESS = '1111111111111111111114oLvT2'
+
+JWT_SECRET = os.environ.get('NODE_JWT_SECRET', 'changeMeSuperSecret_changeMeSuperSecret')
+
+
+def _auth_headers():
+    if len(JWT_SECRET.encode('utf-8')) < 32:
+        raise RuntimeError('NODE_JWT_SECRET must be at least 32 bytes for HS256 authentication')
+    token = jwt.encode({'sub': 'pytest'}, JWT_SECRET, algorithm='HS256')
+    # PyJWT may return bytes in older versions; normalise to str for requests
+    if isinstance(token, bytes):
+        token = token.decode('utf-8')
+    return {'Authorization': f'Bearer {token}'}
 
 
 def rpc_call(url, method, params=None):
@@ -58,7 +72,12 @@ def latest_height(url):
 
 
 def utxo_balance(api_url, address=MINER_ADDRESS):
-    response = requests.get(f"{api_url}/utxo", params={'address': address}, timeout=5)
+    response = requests.get(
+        f"{api_url}/utxo",
+        params={'address': address},
+        headers=_auth_headers(),
+        timeout=5,
+    )
     response.raise_for_status()
     outputs = response.json() or []
     return sum(item['value'] for item in outputs)
