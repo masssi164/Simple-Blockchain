@@ -55,7 +55,8 @@ class JsonRpcControllerTest {
                         "}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.result.height").value(3))
-                .andExpect(jsonPath("$.result.hashHex").value(block.getHashHex()));
+                .andExpect(jsonPath("$.result.hashHex").value(block.getHashHex()))
+                .andExpect(jsonPath("$.error").doesNotExist());
     }
 
     @Test
@@ -76,7 +77,8 @@ class JsonRpcControllerTest {
                         "\"params\":[\"abcd\"]" +
                         "}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.result").value("0x8f0d180"));
+                .andExpect(jsonPath("$.result").value("0x8f0d180"))
+                .andExpect(jsonPath("$.error").doesNotExist());
     }
 
     @Test
@@ -95,6 +97,7 @@ class JsonRpcControllerTest {
                         "\"params\":[\"0x5\",true]" +
                         "}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.result.miner").value("0xabcd"));
+                .andExpect(jsonPath("$.result.miner").value("0xabcd"))
+                .andExpect(jsonPath("$.error").doesNotExist());
     }
 }
