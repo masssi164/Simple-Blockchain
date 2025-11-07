@@ -20,12 +20,12 @@ jobs:
       - name: Build project
         run: ./gradlew build --no-daemon
       - name: Start services
-        run: docker compose -f docker-compose.ci.yml up -d
+        run: ./gradlew composeUp --no-daemon
       - name: Run pipeline
         run: make ci
       - name: Show logs
         if: always()
-        run: docker compose -f docker-compose.ci.yml logs
+        run: docker compose logs
       - name: Stop services
         if: always()
-        run: docker compose -f docker-compose.ci.yml down -v
+        run: ./gradlew composeDown --no-daemon

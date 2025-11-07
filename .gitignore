@@ -1,6 +1,9 @@
 # dirs
 data
 
+# Environment files
+.env
+
 # Compiled class file
 *.class
 
