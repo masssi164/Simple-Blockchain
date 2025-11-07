@@ -25,7 +25,7 @@ jobs:
         run: make ci
       - name: Show logs
         if: always()
-        run: docker compose logs
+        run: docker compose -f docker-compose.yml logs
       - name: Stop services
         if: always()
         run: ./gradlew composeDown --no-daemon
