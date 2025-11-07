@@ -18,6 +18,15 @@ tasks.register('installDocker', Exec) {
     commandLine 'sh', '-c', "command -v docker >/dev/null || curl -fsSL https://get.docker.com | sh"
 }
 
+tasks.register('ensureEnvFile', Copy) {
+    group = 'docker'
+    description = 'Copy .env.example to .env if .env does not exist'
+    from "${projectDir}/.env.example"
+    into "${projectDir}"
+    rename { '.env' }
+    onlyIf { !file("${projectDir}/.env").exists() }
+}
+
 tasks.register('ciLocal') {
     group = 'verification'
     description = 'Run pipeline tests with Docker Compose'
@@ -30,9 +39,9 @@ tasks.named('build') {
 }
 
 tasks.named('composeUp') {
-    dependsOn 'installDocker'
+    dependsOn 'installDocker', 'ensureEnvFile'
 }
 
 tasks.named('composeBuild') {
-    dependsOn 'installDocker'
+    dependsOn 'installDocker', 'ensureEnvFile'
 }
