@@ -38,6 +38,7 @@ import blockchain.core.model.Transaction;
 import blockchain.core.model.TxOutput;
 import blockchain.core.model.Wallet;
 import blockchain.core.consensus.ConsensusParams;
+import blockchain.core.consensus.Constants;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -115,7 +116,7 @@ public class Chain {
     /* ───────────────────────── Block-Append ───────────────────────── */
     public synchronized void addBlock(Block b) {
 
-        if (!"0".repeat(64).equals(b.getPreviousHashHex())
+        if (!Constants.GENESIS_PREV_HASH.equals(b.getPreviousHashHex())
             && !allBlocks.containsKey(b.getPreviousHashHex()))
             throw new BlockchainException("prev-hash mismatch");
 
@@ -152,7 +153,7 @@ public class Chain {
         Transaction cb = new Transaction(miner.getPublicKey(),
                                          ConsensusParams.blockReward(0),
                                          "GENESIS");
-        return new Block(0, "0".repeat(64),
+        return new Block(0, Constants.GENESIS_PREV_HASH,
                          List.of(cb), 0x1f0fffff,
                          1_694_303_200_000L, 0);
     }
@@ -232,7 +233,7 @@ public class Chain {
         allBlocks.put(h, b);
         parent.put(h, b.getPreviousHashHex());
 
-        BigInteger parentWork = "0".repeat(64).equals(b.getPreviousHashHex())
+        BigInteger parentWork = Constants.GENESIS_PREV_HASH.equals(b.getPreviousHashHex())
                 ? BigInteger.ZERO
                 : cumulativeWork.get(b.getPreviousHashHex());
         cumulativeWork.put(h, parentWork.add(workForBits(b.getCompactDifficultyBits())));

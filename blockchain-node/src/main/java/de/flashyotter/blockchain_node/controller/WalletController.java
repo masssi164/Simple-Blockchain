@@ -31,11 +31,26 @@ public class WalletController {
 
     @PostMapping("/send")
     public Transaction send(@RequestBody @Valid SendFundsDto dto) {
+        // Validate recipient address format (Base58, 25-40 characters)
+        if (!dto.recipient().matches("^[1-9A-HJ-NP-Za-km-z]{25,40}$")) {
+            throw new IllegalArgumentException("Invalid recipient address format");
+        }
+        
+        // Check sufficient balance before creating transaction
+        Map<String, TxOutput> utxo = node.currentUtxo();
+        double currentBalance = wallet.balance(utxo);
+        if (dto.amount() > currentBalance) {
+            throw new IllegalArgumentException(
+                String.format("Insufficient balance. Available: %.8f, Requested: %.8f", 
+                    currentBalance, dto.amount())
+            );
+        }
+        
         // Create a transaction consuming UTXOs and producing outputs (including change)
         Transaction tx = wallet.createTx(
             dto.recipient(),
             dto.amount(),
-            node.currentUtxo()
+            utxo
         );
         // Submit to mempool and broadcast
         node.submitTx(tx);
