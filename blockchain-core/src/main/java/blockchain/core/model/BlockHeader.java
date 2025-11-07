@@ -23,8 +23,8 @@ public final class BlockHeader implements java.io.Serializable {
     public final String merkleRootHex;
     public final int    compactDifficultyBits;
 
-    private int    nonce;
-    private String hashHex;
+    private volatile int    nonce;
+    private volatile String hashHex;
 
     /* ================================================================= */
     /*  ctors                                                            */
@@ -57,12 +57,12 @@ public final class BlockHeader implements java.io.Serializable {
     /* ================================================================= */
     /*  mining helpers                                                   */
     /* ================================================================= */
-    public void incrementNonce() {
+    public synchronized void incrementNonce() {
         nonce++;
         hashHex = computeHash();
     }
 
-    public boolean isProofValid() {
+    public synchronized boolean isProofValid() {
         BigInteger target = HashingUtils.compactToTarget(compactDifficultyBits);
         BigInteger val    = new BigInteger(1, HashingUtils.computeSha256Bytes(hashPreimage()));
         return val.compareTo(target) <= 0;
@@ -71,8 +71,8 @@ public final class BlockHeader implements java.io.Serializable {
     /* ================================================================= */
     /*  accessors                                                        */
     /* ================================================================= */
-    public int    getNonce()   { return nonce; }
-    public String getHashHex() { return hashHex; }
+    public synchronized int    getNonce()   { return nonce; }
+    public synchronized String getHashHex() { return hashHex; }
 
     /* ================================================================= */
     /*  internal                                                         */

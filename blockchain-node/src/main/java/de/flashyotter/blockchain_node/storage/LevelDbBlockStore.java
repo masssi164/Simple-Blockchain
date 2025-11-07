@@ -5,6 +5,7 @@ import blockchain.core.model.Transaction;
 import blockchain.core.serialization.JsonUtils;
 import de.flashyotter.blockchain_node.config.NodeProperties;
 import jakarta.annotation.PreDestroy;
+import lombok.extern.slf4j.Slf4j;
 import org.iq80.leveldb.DB;
 import org.iq80.leveldb.DBIterator;
 import org.iq80.leveldb.Options;
@@ -27,6 +28,7 @@ import static org.iq80.leveldb.impl.Iq80DBFactory.factory;
 
 /** Persistent LevelDB-based BlockStore. */
 @Component
+@Slf4j
 public class LevelDbBlockStore implements BlockStore, AutoCloseable {
     private final DB db;
 
@@ -58,9 +60,18 @@ public class LevelDbBlockStore implements BlockStore, AutoCloseable {
     public Iterable<Block> loadAll() {
         List<Block> blocks = new ArrayList<>();
         try (DBIterator it = db.iterator()) {
-            for (it.seekToFirst(); it.hasNext(); it.next()) {
-                Map.Entry<byte[], byte[]> entry = it.peekNext();
-                blocks.add(decode(entry.getValue()));
+            it.seekToFirst();
+            while (it.hasNext()) {
+                try {
+                    it.next();
+                    Map.Entry<byte[], byte[]> entry = it.peekNext();
+                    Block decoded = decode(entry.getValue());
+                    blocks.add(decoded);
+                } catch (Exception e) {
+                    // Log error but continue loading other blocks
+                    // This prevents a single corrupted block from failing the entire load
+                    log.error("Failed to decode block during loadAll, skipping", e);
+                }
             }
         } catch (IOException e) {
             throw new IllegalStateException("Failed to iterate DB", e);

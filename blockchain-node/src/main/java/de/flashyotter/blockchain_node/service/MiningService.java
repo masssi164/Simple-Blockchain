@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import blockchain.core.consensus.Chain;
 import blockchain.core.consensus.ConsensusParams;
+import blockchain.core.consensus.Constants;
 import blockchain.core.model.Block;
 import blockchain.core.model.Transaction;
 import de.flashyotter.blockchain_node.wallet.WalletService;
@@ -53,7 +54,7 @@ public class MiningService {
     public Block mine() {
 
         /* 1) alle pending TXs holen ------------------------------------ */
-        List<Transaction> memTx = mempool.take(500);
+        List<Transaction> memTx = mempool.take(Constants.DEFAULT_TX_PER_BLOCK);
         double baseFee = mempool.getBaseFee();
         double tips    = memTx.stream().mapToDouble(mempool::tipFor).sum();
 
@@ -86,16 +87,25 @@ public class MiningService {
         try {
             pool.submit(() -> java.util.stream.IntStream.range(0, threads).parallel().forEach(t -> {
                 Block work = new Block(height, prevHash, txs, bits, fixedTime, t);
-                while (result.get() == null) {
+                while (result.get() == null && !Thread.currentThread().isInterrupted()) {
                     if (work.isProofValid()) {
-                        result.compareAndSet(null, work);
-                        break;
+                        // Use compareAndSet to ensure only one thread sets the result
+                        if (result.compareAndSet(null, work)) {
+                            // This thread won - break immediately
+                            break;
+                        } else {
+                            // Another thread already found a solution - stop working
+                            break;
+                        }
                     }
                     work.getHeader().incrementNonce();
                 }
             })).get();
-        } catch (InterruptedException | ExecutionException e) {
+        } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+            log.warn("Mining was interrupted");
+        } catch (ExecutionException e) {
+            log.error("Mining execution failed", e);
         }
 
         return result.get();
